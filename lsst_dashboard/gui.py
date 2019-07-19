@@ -5,7 +5,7 @@ import holoviews as hv
 
 from functools import partial
 
-from .panel_base import Component
+from .base import Application, Component, TabComponent
 
 
 class QuickLookComponent(Component):
@@ -159,3 +159,7 @@ class DetailComponent(Component):
     
     def panel(self):
         return self.overview._selected_info
+
+
+pn.extension()
+dashboard = Application(body=TabComponent(QuickLookComponent()))
