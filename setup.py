@@ -9,10 +9,9 @@ __name__ == "__main__" and setuptools.setup(**dict(
     url="https://github.com/quanisght/lsst_dashboard",
     python_requires=">=3.6",
     license="BSD-3-Clause",
-    install_requires="vdom importnb holoviews param pandas ibis scikit-learn".split(),
+    install_requires=[],
     include_package_data=True,
-    packages=setuptools.find_packages(where='src'),
-    package_dir={'':'src',},
+    packages=setuptools.find_packages(),
     entry_points = {'pytest11': [],})
 )
 
