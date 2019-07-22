@@ -71,10 +71,10 @@ class Dataset():
                 dataset[filt][table] = {}
                 for tract in tracts:
                     dataset[filt][table][tract] = self.get_table(table, tract, filt)
-                    #if 'coord' in table:
-                    #    dataset[filt][table][tract] = dataset[filt][table][tract].toDataFrame(columns=metrics)
-                    #else:
-                    #    dataset[filt][table][tract] = dataset[filt][table][tract].toDataFrame()
+                    if 'coadd' in table.lower():
+                        dataset[filt][table][tract] = dataset[filt][table][tract].toDataFrame(columns=metrics)
+                    else:
+                        dataset[filt][table][tract] = dataset[filt][table][tract].toDataFrame()
 
         self.tables = dataset
 
