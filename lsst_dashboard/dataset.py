@@ -50,7 +50,7 @@ class Dataset():
         else:
             return pd.read_parquet(self.path.joinpath(f'{table}_{tract}_{filter}.parq'))
 
-    def parse_tables(self, tables=None, tracts=None, filters=None, metrics=None):
+    def fetch_tables(self, tables=None, tracts=None, filters=None, metrics=None):
 
         if tables is None:
             tables = self.metadata['tables']
