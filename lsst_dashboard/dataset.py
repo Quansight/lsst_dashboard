@@ -45,13 +45,15 @@ class Dataset():
         if Butler: # 
             self.conn = Butler(str(self.path))
 
-    def get_table(self, table, tract, filt):
+    def get_table(self, table, tract, filt, sample=None):
         if self.conn:
-            return self.conn.get(table, tract=tract, filter=filt)
-        else:
-            return pd.read_parquet(self.path.joinpath(f'{table}_{tract}_{filt}.parq'))
+            df = self.conn.get(table, tract=int(tract), filter=filt)
+        else: 
+            raise NotImplementedError
 
-    def fetch_tables(self, tables=None, tracts=None, filters=None, metrics=None):
+        return df
+
+    def fetch_tables(self, tables=None, tracts=None, filters=None, metrics=None, sample=None):
 
         if tables is None:
             tables = self.metadata['tables']
@@ -71,24 +73,51 @@ class Dataset():
             for table in tables:
                 dataset[filt][table] = {}
                 for tract in tracts:
-                    dataset[filt][table][tract] = self.get_table(table, tract, filt)
+                    print(f'filt={filt}, table={table}, tract={tract}')
+                    dataset[filt][table][tract] = self.get_table(table, tract, filt, sample)
                     if 'coadd' in table.lower():
-                        dataset[filt][table][tract] = dataset[filt][table][tract].toDataFrame(columns=metrics)
+                        df = dataset[filt][table][tract].toDataFrame(columns=metrics)
                     else:
-                        dataset[filt][table][tract] = dataset[filt][table][tract].toDataFrame()
+                        df = dataset[filt][table][tract].toDataFrame()
+                    
+                    if sample:
+                        df = df.sample(sample)
+                    dataset[filt][table][tract] = df
 
         self.tables = dataset
 
-    def fetch_visit(self, visit, tract, filt):
-        return self.conn.get('analysisVisitTable', visit=visit, tract=tract, filter=filt).toDataFrame(self.metadata['metrics'])
+    def fetch_visit(self, visit, tract, filt, sample=None):
+        df = self.conn.get('analysisVisitTable', visit=int(visit), tract=int(tract), filter=filt).toDataFrame(self.metadata['metrics'])
+        if sample:
+            df = df.sample(sample)
+        return df
 
-    def fetch_visits(self, tracts, filters):
-        for tract in tracts:
-            for filt in filters:
-                print(f'tract={tract}, filt={filt}')
-                visits = pd.concat({visit: self.fetch_visit(visit, tract, filt)for visit in self.tables[filt]['visitMatchTable'][tract]['matchId'].columns})
-                visits = visits.set_index(pandas.MultiIndex.from_arrays([pandas.CategoricalIndex(visits.index.get_level_values(0).astype(str), name='visit'), visits.index.get_level_values('id')]))
-                self.visits = visits
+    def fetch_visits(self, tracts, filters, sample=None):
+        self.visits = {}
+        for filt in filters:
+            self.visits[filt] = {}
+            for tract in tracts:
+                print(f'filt={filt}, tract={tract}')
+                visits = pd.concat({str(visit): self.fetch_visit(visit, tract, filt, sample) for visit in self.tables[filt]['visitMatchTable'][tract]['matchId'].columns.astype(str)})
+                # leave this transform for later so we can save a simpler file
+                # visits = visits.set_index(pd.MultiIndex.from_arrays([pd.CategoricalIndex(visits.index.get_level_values(0).astype(str), name='visit'), visits.index.get_level_values('id')]))
+                self.visits[filt][tract] = visits
+
+    def write_tables(self, path, filt, sample=None):
+        p = Path(path)
+        p.mkdir(parents=True, exist_ok=True)
+        h5_file = p.joinpath(f'{filt}.h5')
+
+        for table, v1 in self.tables[filt].items():
+            for tract in v1.keys():
+                df = self.tables[filt][table][tract]
+                if sample:
+                    df = df.sample(sample)
+                df.to_hdf(h5_file, f'{table}_{tract}')
+
+        for tract in self.visits[filt].keys():
+            self.visits[filt][tract].to_hdf(h5_file, f'visits_{tract}')
+
 
 
 #def open_dataset(path):
