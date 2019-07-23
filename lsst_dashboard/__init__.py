@@ -1,6 +1,4 @@
 import panel as pn
 
-
-from .gui import dashboard
 from .utils import *
-from .dataset import *
+from .dataset import Dataset
