@@ -1,1 +1,1 @@
-recursive-include src/lsst_dashboard *.ipynb
+recursive-include examples *.ipynb

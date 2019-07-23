@@ -1,0 +1,20 @@
+name: lsst-panel
+
+channels:
+    - conda-forge
+    - defaults
+
+dependencies:
+    - python>=3.7
+    - param
+    - panel
+    - holoviews
+    - hvplot
+    - geoviews
+    - numpy
+    - pandas
+    - dask
+    - datashader
+    - colorcet
+    - jupyterlab
+    - fastparquet
