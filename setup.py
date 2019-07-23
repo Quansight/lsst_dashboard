@@ -1,6 +1,6 @@
 import setuptools
 __name__ == "__main__" and setuptools.setup(**dict(
-    name="lsst_dashbard",
+    name="lsst_dashboard",
     version='0.0.1',
     author="quansight",
     author_email="tony.fast@quansight.com",
