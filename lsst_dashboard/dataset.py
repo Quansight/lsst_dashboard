@@ -44,11 +44,11 @@ class Dataset():
         if Butler: # 
             self.conn = Butler(str(self.path))
 
-    def get_table(self, table, tract, filter):
+    def get_table(self, table, tract, filt):
         if self.conn:
-            return self.conn.get(table, tract=tract, filter=filter)
+            return self.conn.get(table, tract=tract, filter=filt)
         else:
-            return pd.read_parquet(self.path.joinpath(f'{table}_{tract}_{filter}.parq'))
+            return pd.read_parquet(self.path.joinpath(f'{table}_{tract}_{filt}.parq'))
 
     def fetch_tables(self, tables=None, tracts=None, filters=None, metrics=None):
 
@@ -78,7 +78,14 @@ class Dataset():
 
         self.tables = dataset
 
+    def fetch_visit(self, visit, tract, filt):
+        return self.conn.get('analysisVisitTable', visit=visit, tract=tract, filter=filt).toDataFrame(self.metadata['metrics'])
 
+    def fetch_visits(self, tracts, filters):
+        for tract in tracts:
+            for filt in filters:
+                print(f'tract={tract}, filt={filt}')
+                self.visits = {visit: self.fetch_visit(visit, tract, filt)for visit in self.tables[filt]['visitMatchTable'][tract]['matchId'].columns}
 #def open_dataset(path):
 #    
 #    p = Path(path)
