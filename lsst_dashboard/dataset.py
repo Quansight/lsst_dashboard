@@ -1,5 +1,6 @@
 import yaml
 from pathlib import Path
+import pandas as pd
 
 try:
     from lsst.daf.persistence import Butler
@@ -85,7 +86,11 @@ class Dataset():
         for tract in tracts:
             for filt in filters:
                 print(f'tract={tract}, filt={filt}')
-                self.visits = {visit: self.fetch_visit(visit, tract, filt)for visit in self.tables[filt]['visitMatchTable'][tract]['matchId'].columns}
+                visits = pd.concat({visit: self.fetch_visit(visit, tract, filt)for visit in self.tables[filt]['visitMatchTable'][tract]['matchId'].columns})
+                visits = visits.set_index(pandas.MultiIndex.from_arrays([pandas.CategoricalIndex(visits.index.get_level_values(0).astype(str), name='visit'), visits.index.get_level_values('id')]))
+                self.visits = visits
+
+
 #def open_dataset(path):
 #    
 #    p = Path(path)
