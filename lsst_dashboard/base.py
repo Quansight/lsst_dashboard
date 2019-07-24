@@ -22,13 +22,21 @@ class Application(param.Parameterized):
 
     def __init__(self, **params):
         super().__init__(**params)
-        self._title = pn.pane.HTML(
-            '<h1>%s</h1>' % self.title, margin=(40, 80), height=100,
-            sizing_mode='stretch_width', style={'white-space': 'nowrap'}
-        )
-        logo = pn.pane.PNG(self.logo, width=400, height=150)
+
+        styles = {
+            'white-space': 'nowrap',
+        }
+
+        text = '<h1>%s</h1>' % self.title
+
+        self._title = pn.pane.HTML(text, margin=(0, 0),
+                                   height=100, sizing_mode='stretch_width',
+                                   style=styles)
+
+        logo = pn.pane.PNG(self.logo, width=400 // 3, height=150 // 3)
+
         self.header = pn.Row(self._title, pn.layout.HSpacer(max_height=0),
-                             logo, margin=0, max_height=200)
+                             logo, margin=0, max_height=100, )
 
     @param.depends('title', watch=True)
     def _update_title(self):
