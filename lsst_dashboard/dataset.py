@@ -4,10 +4,18 @@ import pandas as pd
 
 try:
     from lsst.daf.persistence import Butler
+    from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
 except ImportError:
     Butler = None
+    StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor = [None, None, None, None, None]
 
 METADATA_FILENAME = 'metadata.yaml'
+
+funcs = CompositeFunctor({'label': StarGalaxyLabeller(), 
+                          'psfMag': Magnitude('base_PsfFlux_instFlux'),
+                          'ra': RAColumn(),
+                          'dec': DecColumn()})
+
 
 def _default_metrics():
     return [
@@ -53,7 +61,7 @@ class Dataset():
 
         return df
 
-    def fetch_tables(self, tables=None, tracts=None, filters=None, metrics=None, sample=None):
+    def fetch_tables(self, tables=None, tracts=None, filters=None, metrics=None, flags=None, sample=None):
 
         if tables is None:
             tables = self.metadata['tables']
@@ -67,6 +75,9 @@ class Dataset():
         if metrics is None:
             metrics = self.metadata['metrics']
 
+        if flags is None:
+            flags = self.metadata['flags']
+
         dataset = {}
         for filt in filters:
             dataset[filt] = {}
@@ -76,10 +87,13 @@ class Dataset():
                     print(f'filt={filt}, table={table}, tract={tract}')
                     dataset[filt][table][tract] = self.get_table(table, tract, filt, sample)
                     if 'coadd' in table.lower():
-                        df = dataset[filt][table][tract].toDataFrame(columns=metrics)
+                        df = dataset[filt][table][tract]
+                        new_cols = funcs(df)
+                        cols = metrics + flags + ['patchId', 'id']
+                        df = pd.concat([df.toDataFrame(columns=cols), new_cols], axis=1)
                     else:
                         df = dataset[filt][table][tract].toDataFrame()
-                    
+
                     if sample:
                         df = df.sample(sample)
                     dataset[filt][table][tract] = df
