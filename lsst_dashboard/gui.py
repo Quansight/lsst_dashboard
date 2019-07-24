@@ -32,7 +32,7 @@ class QuickLookComponent(Component):
         self._info = pn.pane.HTML(width=600)
         self._metric_panels = []
         self._metric_layout = pn.Column()
-        self._selected_info = pn.pane.HTML(width=300)
+        self._plot_layout = pn.Row('A plot will appear here')
         self._update(None)
 
     def title(self):
@@ -77,8 +77,7 @@ class QuickLookComponent(Component):
         
     @param.depends('selected', watch=True)
     def _update_selected(self):
-        self._selected_info.object = (
-            "Selected metric: %s<br> Filter: %s<br> Clicked on: (%s, %s)" % self.selected)
+        self._plot_layout[0] = mock_plot(self.selected)        
         self._open_detailed.disabled = False
 
     def panel(self):
@@ -94,7 +93,7 @@ class QuickLookComponent(Component):
             pn.Row(
                 self._metric_layout,
                 pn.Column(
-                    self._selected_info,
+                    self._plot_layout,
                     self._open_detailed
                 )
             ),
@@ -161,7 +160,7 @@ class DetailComponent(Component):
         return self.overview._selected_info
 
 
-def mock_plot():
+def mock_plot(selected):
 
     from bokeh.models import ColumnDataSource
     from bokeh.palettes import Spectral6
@@ -173,7 +172,7 @@ def mock_plot():
 
     source = ColumnDataSource(data=dict(fruits=fruits, counts=counts))
 
-    p = figure(x_range=fruits, plot_height=350, toolbar_location=None, title="Fruit Counts")
+    p = figure(x_range=fruits, plot_height=350, toolbar_location=None, title=str(selected))
     p.vbar(x='fruits', top='counts', width=0.9, source=source, legend="fruits",
            line_color='white', fill_color=factor_cmap('fruits', palette=Spectral6, factors=fruits))
 
