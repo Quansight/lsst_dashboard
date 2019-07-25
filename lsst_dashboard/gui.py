@@ -1,21 +1,59 @@
-import param
-import panel as pn
-import numpy as np
-import holoviews as hv
-
+import logging
 from functools import partial
 
-from .base import Application, Component, TabComponent
+import param
+import panel as pn
+import holoviews as hv
+
+from .base import Application
+from .base import Component
+from .base import TabComponent
+
+from .plots import create_top_metric_line_plot
+from .plots import create_metric_star_plot
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.FileHandler('dashboard.log'))
+
+
+def get_available_metrics():
+
+    metrics = ['base_Footprint_nPix',
+               'Gaussian-PSF_magDiff_mmag',
+               'CircAper12pix-PSF_magDiff_mmag',
+               'Kron-PSF_magDiff_mmag',
+               'CModel-PSF_magDiff_mmag',
+               'traceSdss_pixel',
+               'traceSdss_fwhm_pixel',
+               'psfTraceSdssDiff_percent',
+               'e1ResidsSdss_milli',
+               'e2ResidsSdss_milli',
+               'deconvMoments',
+               'compareUnforced_Gaussian_magDiff_mmag',
+               'compareUnforced_CircAper12pix_magDiff_mmag',
+               'compareUnforced_Kron_magDiff_mmag',
+               'compareUnforced_CModel_magDiff_mmag']
+
+    return metrics
 
 
 class QuickLookComponent(Component):
-    
+
     data_repository = param.String()
-    
+
     comparison = param.String()
-    
+
     selected = param.Tuple(default=(None, None, None, None), length=4)
-    
+
+    selected = param.Tuple(default=(None, None, None, None), length=4)
+
+    selected_metrics_by_filter = param.Dict(default={'HSC-G': [],
+                                                     'HSC-R': [],
+                                                     'HSC-I': [],
+                                                     'HSC-Y': [],
+                                                     'HSC-Z': []})
+
     label = param.String(default='Quick Look')
 
     def __init__(self, **param):
@@ -24,20 +62,24 @@ class QuickLookComponent(Component):
             name='Submit', width=50, align='end')
         self._submit_comparison = pn.widgets.Button(
             name='Submit', width=50, align='end')
-        self._open_detailed = pn.widgets.Button(
-            name='Open Detailed View', disabled=any(v is None for v in self.selected))
         self._submit_repository.on_click(self._update)
         self._submit_comparison.on_click(self._update)
-        self._open_detailed.on_click(self._open_detailed_view)
         self._info = pn.pane.HTML(width=600)
         self._metric_panels = []
         self._metric_layout = pn.Column()
-        self._plot_layout = pn.Row('A plot will appear here')
+        self._plot_layout = pn.Column()
         self._update(None)
 
     def title(self):
         return 'LSST Data Processing Explorer - Quick Look'
-    
+
+    def update_selected_by_filter(self, filter_type, selected_values):
+        logger.info('.update_selected_by_filter')
+        self.selected_metrics_by_filter.update({filter_type: selected_values})
+        self.param.trigger('selected_metrics_by_filter')
+
+        #self._update_selected_metrics_by_filter()
+
     def _update(self, event):
         self._update_info()
         self._load_metrics()
@@ -56,29 +98,28 @@ class QuickLookComponent(Component):
         """
         self._info.object = html
         
-    def _open_detailed_view(self, event):
-        """
-        This opens the detail dashboard in a new Tab.
-        """
-        self.parent.current = DetailComponent(
-            parent=self.parent, overview=self)
-
     def _load_metrics(self):
         """
         Populates the _metrics Row with metrics loaded from the repository
         """
         # Load filters from repository
         filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
+
         # Load metrics from repository
         metrics = ['Photometry', 'Astrometry', 'Shape', 'Color']
-        panels = [MetricPanel(metric=metric, filters=filters, parent=self) for metric in metrics]
+
+        # TODO: Here there was a performance issue with rendering too many checkboxes
+        panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
+        #panels = [MetricPanel(metric=metric, filters=filters, parent=self) for metric in metrics]
         self._metric_panels = panels
         self._metric_layout.objects = [p.panel() for p in panels]
         
-    @param.depends('selected', watch=True)
-    def _update_selected(self):
-        self._plot_layout[0] = mock_plot(self.selected)        
-        self._open_detailed.disabled = False
+    @param.depends('selected_metrics_by_filter', watch=True)
+    def _update_selected_metrics_by_filter(self):
+        for filt, plots in self.selected_metrics_by_filter.items():
+            for p in plots:
+                plot = create_metric_star_plot('{} - {}'.format(filt, p))
+                self._plot_layout.append(plot)
 
     def panel(self):
         row1 = pn.Row(self.param.data_repository, self._submit_repository)
@@ -94,7 +135,6 @@ class QuickLookComponent(Component):
                 self._metric_layout,
                 pn.Column(
                     self._plot_layout,
-                    self._open_detailed
                 )
             ),
             sizing_mode='stretch_both'
@@ -106,30 +146,37 @@ class MetricPanel(param.Parameterized):
     A MetricPanel displays clickable heatmaps for a particular metric,
     broken down into separate tabs for each filter.
     """
-    
+
     metric = param.String()
 
     parent = param.ClassSelector(class_=QuickLookComponent)
-    
+
     filters = param.List()
-    
+
     def __init__(self, **params):
         super().__init__(**params)
-        self._streams = []
-        self._heatmaps = [(filt, self._create_metric_heatmap(filt)) for filt in self.filters]
 
-    def _create_metric_heatmap(self, filt):
+        self._streams = []
+        self._chkbox_groups = [(filt, self._create_metric_checkbox_group(filt)) for filt in self.filters]
+
+    def _create_metric_checkbox_group(self, filt):
         """
         Access repository from parent and populate heatmap
         """
-        heatmap = hv.HeatMap((range(5), range(2), np.random.randint(0, 2, (2, 5)))).opts(
-            height=100, cmap=['red', 'green'], xaxis=None, yaxis=None, toolbar=None,
-            line_alpha=1, line_width=5, line_color='white', width=500, nonselection_fill_alpha=0.2)
-        tap = hv.streams.Tap(source=heatmap)
-        self._streams.append(tap)
-        tap.param.watch(partial(self._tapped, filt), ['x', 'y'])
-        return heatmap
-    
+        metrics = get_available_metrics()
+        chkbox_group = MetricCheckboxGroup(metrics)
+
+        chkbox_group.param.watch(partial(self._checkbox_callback, filt), 'metrics')
+        widget_kwargs = dict(metrics=pn.widgets.CheckBoxGroup)
+        return pn.panel(chkbox_group.param, widgets=widget_kwargs, show_name=False)
+        # pn.pane.Param
+
+    def _checkbox_callback(self, filt, event):
+        logger.info('._checkbox_callback')
+        self.parent.selected = (filt, event.new, filt, event.new)
+        self.parent.update_selected_by_filter(filt, event.new)
+
+
     def _tapped(self, filt, *args):
         """
         This method is called with information about the metric that was clicked.
@@ -139,53 +186,21 @@ class MetricPanel(param.Parameterized):
     def panel(self):
         return pn.Column(
             pn.pane.Markdown('### %s Metrics' % self.metric, margin=0),
-            pn.Tabs(*self._heatmaps, sizing_mode='stretch_width', margin=0),
+            pn.Tabs(*self._chkbox_groups, sizing_mode='stretch_width',
+                    margin=0),
             sizing_mode='stretch_width'
         )
 
 
-class DetailComponent(Component):
-    """
-    This is a mockup of the detailed dashboard.
-    """
-    
-    overview = param.ClassSelector(class_=QuickLookComponent)
+class MetricCheckboxGroup(param.Parameterized):
 
-    label = param.String(default='Detail')
-    
-    def title(self):
-        return 'LSST Data Processing Explorer - Detailed View'
-    
-    def panel(self):
-        return self.overview._selected_info
+    metrics = param.ListSelector(default=[])
+
+    def __init__(self, available_metrics, **kwargs):
+        self.param.metrics.objects = available_metrics
+        super().__init__(**kwargs)
 
 
-def mock_plot(selected):
-
-    from bokeh.models import ColumnDataSource
-    from bokeh.palettes import Spectral6
-    from bokeh.plotting import figure
-    from bokeh.transform import factor_cmap
-
-    fruits = ['Apples', 'Pears', 'Nectarines', 'Plums', 'Grapes', 'Strawberries']
-    counts = [5, 3, 4, 2, 4, 6]
-
-    source = ColumnDataSource(data=dict(fruits=fruits, counts=counts))
-
-    p = figure(x_range=fruits, plot_height=350, toolbar_location=None, title=str(selected))
-    p.vbar(x='fruits', top='counts', width=0.9, source=source, legend="fruits",
-           line_color='white', fill_color=factor_cmap('fruits', palette=Spectral6, factors=fruits))
-
-    p.xgrid.grid_line_color = None
-    p.y_range.start = 0
-    p.y_range.end = 9
-    p.legend.orientation = "horizontal"
-    p.legend.location = "top_center"
-
-    return p
-
-
-import holoviews as hv
 hv.extension('bokeh')
 pn.extension()
 dashboard = Application(body=TabComponent(QuickLookComponent()))

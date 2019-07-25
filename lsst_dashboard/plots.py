@@ -419,3 +419,41 @@ class skyshade(Operation):
         # decimated = decimate(element, max_samples=self.p.max_samples).opts(**decimate_opts)
 
         return datashaded  # * decimated
+
+
+def mock_plot(title):
+
+    from bokeh.models import ColumnDataSource
+    from bokeh.palettes import Spectral6
+    from bokeh.plotting import figure
+    from bokeh.transform import factor_cmap
+
+    fruits = ['Aples', 'Pears', 'Nectarines',
+              'Plums', 'Grapes', 'Strawberries']
+    counts = [5, 3, 4, 2, 4, 6]
+
+    source = ColumnDataSource(data=dict(fruits=fruits, counts=counts))
+
+    p = figure(x_range=fruits, plot_height=350, toolbar_location=None,
+               title=str(title))
+
+    cmap = factor_cmap('fruits', palette=Spectral6, factors=fruits)
+    p.vbar(x='fruits', top='counts', width=0.9,
+           source=source, legend="fruits",
+           line_color='white', fill_color=cmap)
+
+    p.xgrid.grid_line_color = None
+    p.y_range.start = 0
+    p.y_range.end = 9
+    p.legend.orientation = "horizontal"
+    p.legend.location = "top_center"
+
+    return p
+
+
+def create_top_metric_line_plot(title):
+    return mock_plot(title)
+
+
+def create_metric_star_plot(title):
+    return mock_plot(title)
