@@ -38,13 +38,18 @@ def get_available_metrics():
     return metrics
 
 
+def get_metric_categories():
+
+    categories = ['Photometry', 'Astrometry', 'Shape', 'Color']
+
+    return categories
+
+
 class QuickLookComponent(Component):
 
     data_repository = param.String()
 
     comparison = param.String()
-
-    selected = param.Tuple(default=(None, None, None, None), length=4)
 
     selected = param.Tuple(default=(None, None, None, None), length=4)
 
@@ -64,40 +69,39 @@ class QuickLookComponent(Component):
             name='Submit', width=50, align='end')
         self._submit_repository.on_click(self._update)
         self._submit_comparison.on_click(self._update)
-        self._info = pn.pane.HTML(width=600)
+        self._info = pn.pane.HTML(sizing_mode='stretch_width')
         self._metric_panels = []
         self._metric_layout = pn.Column()
-        self._plot_layout = pn.Column()
+        self._plot_layout = pn.Column(sizing_mode='stretch_width')
         self._update(None)
 
     def title(self):
-        return 'LSST Data Processing Explorer - Quick Look'
+        return 'LSST Data Processing Explorer'
 
     def update_selected_by_filter(self, filter_type, selected_values):
-        logger.info('.update_selected_by_filter')
         self.selected_metrics_by_filter.update({filter_type: selected_values})
         self.param.trigger('selected_metrics_by_filter')
-
-        #self._update_selected_metrics_by_filter()
 
     def _update(self, event):
         self._update_info()
         self._load_metrics()
-    
+
     def _update_info(self):
         """
-        Updates the _info HTML pane with info loaded from the current repository.
+        Updates the _info HTML pane with info loaded
+        from the current repository.
         """
         html = """
         <code>
         Tracts: 8, patches = 648<br>
         Visits: 129<br>
-        Filters (visits): HSC-G (25), HSG-R (24), HSC-I (22), HSC-Y (30), HSC-Z (28)<br>
+        Filters (visits): HSC-G (25), HSG-R (24), HSC-I (22),
+        HSC-Y (30), HSC-Z (28)<br>
         Unique Objects: 8,250,442
         </code>
         """
         self._info.object = html
-        
+
     def _load_metrics(self):
         """
         Populates the _metrics Row with metrics loaded from the repository
@@ -106,14 +110,13 @@ class QuickLookComponent(Component):
         filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
 
         # Load metrics from repository
-        metrics = ['Photometry', 'Astrometry', 'Shape', 'Color']
 
         # TODO: Here there was a performance issue with rendering too many checkboxes
         panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
         #panels = [MetricPanel(metric=metric, filters=filters, parent=self) for metric in metrics]
         self._metric_panels = panels
         self._metric_layout.objects = [p.panel() for p in panels]
-        
+
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
 
@@ -141,6 +144,7 @@ class QuickLookComponent(Component):
                 self._metric_layout,
                 pn.Column(
                     self._plot_layout,
+                    sizing_mode='stretch_width'
                 )
             ),
             sizing_mode='stretch_both'
