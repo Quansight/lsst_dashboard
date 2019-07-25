@@ -116,6 +116,12 @@ class QuickLookComponent(Component):
         
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
+
+        top_plot = create_top_metric_line_plot('', self.selected_metrics_by_filter)
+
+        self._plot_layout.clear()
+        self._plot_layout.append(top_plot)
+
         for filt, plots in self.selected_metrics_by_filter.items():
             for p in plots:
                 plot = create_metric_star_plot('{} - {}'.format(filt, p))

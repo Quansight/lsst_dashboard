@@ -1,6 +1,7 @@
 from functools import partial
 
 import param
+import numpy as np
 import holoviews as hv
 import datashader as ds
 import colorcet as cc
@@ -12,6 +13,12 @@ from holoviews.streams import Stream, BoundsXY, LinkedStream
 from holoviews.plotting.bokeh.callbacks import Callback
 from holoviews.operation.datashader import datashade, dynspread, rasterize
 from holoviews.operation import decimate
+
+from bokeh.models import ColumnDataSource
+from bokeh.palettes import Spectral6
+from bokeh.plotting import figure
+from bokeh.transform import factor_cmap
+
 decimate.max_samples = 5000
 
 
@@ -423,10 +430,6 @@ class skyshade(Operation):
 
 def mock_plot(title):
 
-    from bokeh.models import ColumnDataSource
-    from bokeh.palettes import Spectral6
-    from bokeh.plotting import figure
-    from bokeh.transform import factor_cmap
 
     fruits = ['Aples', 'Pears', 'Nectarines',
               'Plums', 'Grapes', 'Strawberries']
@@ -434,7 +437,8 @@ def mock_plot(title):
 
     source = ColumnDataSource(data=dict(fruits=fruits, counts=counts))
 
-    p = figure(x_range=fruits, plot_height=350, toolbar_location=None,
+    p = figure(x_range=fruits, plot_height=350, sizing_mode='stretch_width',
+               toolbar_location=None,
                title=str(title))
 
     cmap = factor_cmap('fruits', palette=Spectral6, factors=fruits)
@@ -451,8 +455,22 @@ def mock_plot(title):
     return p
 
 
-def create_top_metric_line_plot(title):
-    return mock_plot(title)
+def create_top_metric_line_plot(title, filters_to_metrics):
+
+    p = figure(plot_height=200)
+
+    for filt, metrics in filters_to_metrics.items():
+        for m in metrics:
+            xs, ys = mock_line_data()
+            color = Spectral6[np.random.randint(len(Spectral6))]
+            p.line(xs, ys, line_width=2, color=color)
+
+    return p
+
+
+def mock_line_data(size=5):
+    return (np.random.randint(10, size=(size)),
+            np.random.randint(10, size=(size)))
 
 
 def create_metric_star_plot(title):
