@@ -4,6 +4,7 @@ from functools import partial
 import param
 import panel as pn
 import holoviews as hv
+import numpy as np
 
 from .base import Application
 from .base import Component
@@ -44,6 +45,26 @@ def get_metric_categories():
     return categories
 
 
+def get_tract_count():
+    return np.random.randint(10e3, 10e4, size=(1))[0]
+
+
+def get_patch_count():
+    return np.random.randint(10e5, 10e7, size=(1))[0]
+
+
+def get_visit_count():
+    return np.random.randint(10e5, 10e7, size=(1))[0]
+
+
+def get_filter_count():
+    return np.random.randint(10e5, 10e7, size=(1))[0]
+
+
+def get_unique_object_count():
+    return np.random.randint(10e5, 10e7, size=(1))[0]
+
+
 class QuickLookComponent(Component):
 
     logo = param.String('https://www.lsst.org/sites/default/files/logos/LSST_web_white.png', doc="""
@@ -57,7 +78,7 @@ class QuickLookComponent(Component):
 
     visit_count = param.Number(default=0)
 
-    filter_counts = param.Number(default=0)
+    filter_count = param.Number(default=0)
 
     unique_object_count = param.Number(default=0)
 
@@ -109,21 +130,42 @@ class QuickLookComponent(Component):
         self._update_info()
         self._load_metrics()
 
+    def create_info_element(self, name, value):
+
+        box_css = """
+        background-color: #EEEEEE;
+        border: 1px solid #777777;
+        display: inline-block;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-left:7px;
+        """
+
+        fval = format(value, ',')
+        return '<span style="{}"><b>{}</b> {}</span>'.format(box_css,
+                                                             fval,
+                                                             name)
+
+    @param.depends('tract_count', 'patch_count', 'visit_count',
+                   'filter_count', 'unique_object_count', watch=True)
     def _update_info(self):
         """
         Updates the _info HTML pane with info loaded
         from the current repository.
         """
-        html = """
-        <b>Tracts:</b> {} |
-        <b>Patches:</b> {} |
-        <b>Visits:</b> {} |
-        <b>Unique Objects:</b> {} |
-        <b>Filters (visits):</b> HSC-G (25), HSG-R (24), HSC-I (22),
-        HSC-Y (30), HSC-Z (28)
-        """.format(self.tract_count, self.patch_count,
-                   self.visit_count, self.unique_object_count)
+        html = ''
+        html += self.create_info_element('Tracts', self.tract_count)
+        html += self.create_info_element('Patches', self.patch_count)
+        html += self.create_info_element('Visits', self.visit_count)
+        html += self.create_info_element('Unique Objects',
+                                         self.unique_object_count)
         self._info.object = html
+
+    def update_info_counts(self):
+        self.tract_count = get_tract_count()
+        self.patch_count = get_patch_count()
+        self.visit_count = get_visit_count()
+        self.unique_object_count = get_unique_object_count()
 
     def _load_metrics(self):
         """
@@ -158,6 +200,7 @@ class QuickLookComponent(Component):
 
         return pn.Column(
             pn.Row(self.logo_png, self._title,
+                   pn.Spacer(sizing_mode='stretch_width'),
                    pn.Spacer(width=40), row1,
                    pn.Spacer(width=40), row2),
             pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
@@ -178,7 +221,8 @@ class QuickLookComponent(Component):
 
 class MetricPanel(param.Parameterized):
     """
-    A MetricPanel displays clickable heatmaps for a particular metric,
+    A MetricPanel displays checkboxs grouped by
+    filter type group for a particular metric,
     broken down into separate tabs for each filter.
     """
 
@@ -196,9 +240,6 @@ class MetricPanel(param.Parameterized):
                                for filt in self.filters]
 
     def _create_metric_checkbox_group(self, filt):
-        """
-        Access repository from parent and populate heatmap
-        """
         metrics = get_available_metrics()
         chkbox_group = MetricCheckboxGroup(metrics)
 
@@ -209,17 +250,9 @@ class MetricPanel(param.Parameterized):
                         show_name=False)
 
     def _checkbox_callback(self, filt, event):
-        logger.info('._checkbox_callback')
         self.parent.selected = (filt, event.new, filt, event.new)
         self.parent.update_selected_by_filter(filt, event.new)
-
-    def _tapped(self, filt, *args):
-        """
-        This method is called with information
-        about the metric that was clicked.
-        """
-        self.parent.selected = (self.metric, filt, args[0].obj.x,
-                                args[0].obj.y)
+        self.parent.update_info_counts()
 
     def panel(self):
         return pn.Column(
