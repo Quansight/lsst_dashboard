@@ -5,17 +5,15 @@ import pandas as pd
 try:
     from lsst.daf.persistence import Butler
     from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
+    funcs = CompositeFunctor({'label': StarGalaxyLabeller(), 
+                          'psfMag': Magnitude('base_PsfFlux_instFlux'),
+                          'ra': RAColumn(),
+                          'dec': DecColumn()})
 except ImportError:
     Butler = None
     StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor = [None, None, None, None, None]
 
 METADATA_FILENAME = 'metadata.yaml'
-
-funcs = CompositeFunctor({'label': StarGalaxyLabeller(), 
-                          'psfMag': Magnitude('base_PsfFlux_instFlux'),
-                          'ra': RAColumn(),
-                          'dec': DecColumn()})
-
 
 def _default_metrics():
     return [
@@ -132,12 +130,38 @@ class Dataset():
         for tract in self.visits[filt].keys():
             self.visits[filt][tract].to_hdf(h5_file, f'visits_{tract}')
 
+    def load_from_hdf(self):
+        tables = {}
+        visits = {}
+        for f in self.path.glob('*.h5'):
+            filt = f.name.split('.')[0]
+            tables[filt] = {}
+            visits[filt] = {}
+            with pd.HDFStore(f) as hdf:
+                for k in hdf.keys():
+                    if k.endswith('meta'):
+                        continue
+                    table, tract = k.split('/')[-1].rsplit('_', 1)
+                    if table=='visits':
+                        visits[filt][tract] = hdf.select(k)
+                    if table not in tables[filt]:
+                        tables[filt][table] = {}                
+                        tables[filt][table][tract] = hdf.select(k)
+
+        self.tables = tables
+        self.visits = visits
 
 
-#def open_dataset(path):
-#    
-#    p = Path(path)
-#    if p.exists():
-#        dataset = Dataset(path)
-#        dataset.connect()
+#def open_dataset(path, filt, coadd_type=None, sample=None):
+#    d = Dataset(path)
+#    d.connect()
+#    if coadd_type is None:
+#        coadd_type = 'unforced'
+#
+#    tables = ['']
+#    if Butler:
+#        d.fetch_tables(tables='', tracts=tracts, filters=filters, sample=sample)
+#        d.fetch_visits(tracts=tracts, filters=filters, sample=1000)
+#    else:
+#        d.load_from_hdf(path)
         
