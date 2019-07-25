@@ -127,7 +127,7 @@ class Dataset():
                 df = self.tables[filt][table][tract]
                 if sample:
                     df = df.sample(sample)
-                df.to_hdf(h5_file, f'{table}_{tract}')
+                df.to_hdf(h5_file, key=f'{table}_{tract}', format='t')
 
         for tract in self.visits[filt].keys():
             self.visits[filt][tract].to_hdf(h5_file, f'visits_{tract}')
