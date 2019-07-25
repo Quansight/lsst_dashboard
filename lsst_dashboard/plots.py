@@ -463,7 +463,8 @@ def create_top_metric_line_plot(title, filters_to_metrics):
         for m in metrics:
             xs, ys = mock_line_data()
             color = Spectral6[np.random.randint(len(Spectral6))]
-            p.line(xs, ys, line_width=2, color=color)
+            legend_text = "{} - {}".format(filt, m)
+            p.line(xs, ys, line_width=2, color=color, legend=legend_text)
 
     return p
 

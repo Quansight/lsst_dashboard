@@ -210,7 +210,8 @@ class QuickLookComponent(Component):
 
 class MetricPanel(param.Parameterized):
     """
-    A MetricPanel displays checkboxs grouped by filter type group for a particular metric,
+    A MetricPanel displays checkboxs grouped by
+    filter type group for a particular metric,
     broken down into separate tabs for each filter.
     """
 
