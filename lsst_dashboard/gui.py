@@ -130,6 +130,22 @@ class QuickLookComponent(Component):
         self._update_info()
         self._load_metrics()
 
+    def create_info_element(self, name, value):
+
+        box_css = """
+        background-color: #EEEEEE;
+        border: 1px solid #777777;
+        display: inline-block;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-left:7px;
+        """
+
+        fval = format(value, ',')
+        return '<span style="{}"><b>{}</b> {}</span>'.format(box_css,
+                                                             fval,
+                                                             name)
+
     @param.depends('tract_count', 'patch_count', 'visit_count',
                    'filter_count', 'unique_object_count', watch=True)
     def _update_info(self):
@@ -137,17 +153,12 @@ class QuickLookComponent(Component):
         Updates the _info HTML pane with info loaded
         from the current repository.
         """
-        html = """
-        <b>Tracts:</b> {} |
-        <b>Patches:</b> {} |
-        <b>Visits:</b> {} |
-        <b>Unique Objects:</b> {} |
-        <b>Filters (visits):</b> HSC-G (25), HSG-R (24), HSC-I (22),
-        HSC-Y (30), HSC-Z (28)
-        """.format(format(self.tract_count, ','),
-                   format(self.patch_count, ','),
-                   format(self.visit_count, ','),
-                   format(self.unique_object_count, ','))
+        html = ''
+        html += self.create_info_element('Tracts', self.tract_count)
+        html += self.create_info_element('Patches', self.patch_count)
+        html += self.create_info_element('Visits', self.visit_count)
+        html += self.create_info_element('Unique Objects',
+                                         self.unique_object_count)
         self._info.object = html
 
     def update_info_counts(self):
