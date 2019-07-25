@@ -457,7 +457,7 @@ def mock_plot(title):
 
 def create_top_metric_line_plot(title, filters_to_metrics):
 
-    p = figure(plot_height=200)
+    p = figure(plot_height=200, sizing_mode='stretch_width')
 
     for filt, metrics in filters_to_metrics.items():
         for m in metrics:

@@ -7,7 +7,6 @@ import holoviews as hv
 
 from .base import Application
 from .base import Component
-from .base import TabComponent
 
 from .plots import create_top_metric_line_plot
 from .plots import create_metric_star_plot
@@ -47,7 +46,20 @@ def get_metric_categories():
 
 class QuickLookComponent(Component):
 
+    logo = param.String('https://www.lsst.org/sites/default/files/logos/LSST_web_white.png', doc="""
+        The logo to display in the header.""")
+
     data_repository = param.String()
+
+    tract_count = param.Number(default=0)
+
+    patch_count = param.Number(default=0)
+
+    visit_count = param.Number(default=0)
+
+    filter_counts = param.Number(default=0)
+
+    unique_object_count = param.Number(default=0)
 
     comparison = param.String()
 
@@ -63,20 +75,31 @@ class QuickLookComponent(Component):
 
     def __init__(self, **param):
         super().__init__(**param)
+
+        self.logo_png = pn.pane.PNG(self.logo,
+                                    width=400 // 3,
+                                    height=150 // 3)
+
+        text = '<h3><i>Data Processing Explorer</i></h3>'
+
+        self._title = pn.pane.HTML(text,
+                                   margin=(0, 0),
+                                   height=50)
+
         self._submit_repository = pn.widgets.Button(
             name='Submit', width=50, align='end')
         self._submit_comparison = pn.widgets.Button(
             name='Submit', width=50, align='end')
         self._submit_repository.on_click(self._update)
         self._submit_comparison.on_click(self._update)
-        self._info = pn.pane.HTML(sizing_mode='stretch_width')
+        self._info = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._metric_panels = []
         self._metric_layout = pn.Column()
         self._plot_layout = pn.Column(sizing_mode='stretch_width')
         self._update(None)
 
     def title(self):
-        return 'LSST Data Processing Explorer'
+        return 'Data Processing Explorer'
 
     def update_selected_by_filter(self, filter_type, selected_values):
         self.selected_metrics_by_filter.update({filter_type: selected_values})
@@ -92,14 +115,14 @@ class QuickLookComponent(Component):
         from the current repository.
         """
         html = """
-        <code>
-        Tracts: 8, patches = 648<br>
-        Visits: 129<br>
-        Filters (visits): HSC-G (25), HSG-R (24), HSC-I (22),
-        HSC-Y (30), HSC-Z (28)<br>
-        Unique Objects: 8,250,442
-        </code>
-        """
+        <b>Tracts:</b> {} |
+        <b>Patches:</b> {} |
+        <b>Visits:</b> {} |
+        <b>Unique Objects:</b> {} |
+        <b>Filters (visits):</b> HSC-G (25), HSG-R (24), HSC-I (22),
+        HSC-Y (30), HSC-Z (28)
+        """.format(self.tract_count, self.patch_count,
+                   self.visit_count, self.unique_object_count)
         self._info.object = html
 
     def _load_metrics(self):
@@ -109,18 +132,17 @@ class QuickLookComponent(Component):
         # Load filters from repository
         filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
 
-        # Load metrics from repository
-
-        # TODO: Here there was a performance issue with rendering too many checkboxes
+        # TODO: Here there was a performance issue
+        # with rendering too many checkboxes
         panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
-        #panels = [MetricPanel(metric=metric, filters=filters, parent=self) for metric in metrics]
         self._metric_panels = panels
         self._metric_layout.objects = [p.panel() for p in panels]
 
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
 
-        top_plot = create_top_metric_line_plot('', self.selected_metrics_by_filter)
+        top_plot = create_top_metric_line_plot('',
+                                               self.selected_metrics_by_filter)
 
         self._plot_layout.clear()
         self._plot_layout.append(top_plot)
@@ -133,13 +155,16 @@ class QuickLookComponent(Component):
     def panel(self):
         row1 = pn.Row(self.param.data_repository, self._submit_repository)
         row2 = pn.Row(self.param.comparison, self._submit_comparison)
+
         return pn.Column(
-            pn.Row(
-                pn.Column(row1, row2),
-                pn.layout.HSpacer(),
-                self._info
-            ),
-            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width'),
+            pn.Row(self.logo_png, self._title,
+                   pn.Spacer(width=40), row1,
+                   pn.Spacer(width=40), row2),
+            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
+                         max_height=5),
+            pn.Row(self._info),
+            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
+                         max_height=10),
             pn.Row(
                 self._metric_layout,
                 pn.Column(
@@ -167,7 +192,8 @@ class MetricPanel(param.Parameterized):
         super().__init__(**params)
 
         self._streams = []
-        self._chkbox_groups = [(filt, self._create_metric_checkbox_group(filt)) for filt in self.filters]
+        self._chkbox_groups = [(filt, self._create_metric_checkbox_group(filt))
+                               for filt in self.filters]
 
     def _create_metric_checkbox_group(self, filt):
         """
@@ -176,22 +202,24 @@ class MetricPanel(param.Parameterized):
         metrics = get_available_metrics()
         chkbox_group = MetricCheckboxGroup(metrics)
 
-        chkbox_group.param.watch(partial(self._checkbox_callback, filt), 'metrics')
+        chkbox_group.param.watch(partial(self._checkbox_callback, filt),
+                                 'metrics')
         widget_kwargs = dict(metrics=pn.widgets.CheckBoxGroup)
-        return pn.panel(chkbox_group.param, widgets=widget_kwargs, show_name=False)
-        # pn.pane.Param
+        return pn.panel(chkbox_group.param, widgets=widget_kwargs,
+                        show_name=False)
 
     def _checkbox_callback(self, filt, event):
         logger.info('._checkbox_callback')
         self.parent.selected = (filt, event.new, filt, event.new)
         self.parent.update_selected_by_filter(filt, event.new)
 
-
     def _tapped(self, filt, *args):
         """
-        This method is called with information about the metric that was clicked.
+        This method is called with information
+        about the metric that was clicked.
         """
-        self.parent.selected = (self.metric, filt, args[0].obj.x, args[0].obj.y)
+        self.parent.selected = (self.metric, filt, args[0].obj.x,
+                                args[0].obj.y)
 
     def panel(self):
         return pn.Column(
@@ -213,4 +241,4 @@ class MetricCheckboxGroup(param.Parameterized):
 
 hv.extension('bokeh')
 pn.extension()
-dashboard = Application(body=TabComponent(QuickLookComponent()))
+dashboard = Application(body=QuickLookComponent())

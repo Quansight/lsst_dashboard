@@ -27,21 +27,20 @@ class Application(param.Parameterized):
             'white-space': 'nowrap',
         }
 
-        text = '<h1>%s</h1>' % self.title
+        text = '<h3><i>%s</i></h3>' % self.title
 
         self._title = pn.pane.HTML(text, margin=(0, 0),
-                                   height=100, sizing_mode='stretch_width',
+                                   height=50, sizing_mode='stretch_width',
                                    style=styles)
 
         logo = pn.pane.PNG(self.logo, width=400 // 3, height=150 // 3)
 
-        self.header = pn.Row(self._title, pn.layout.HSpacer(max_height=0),
-                             logo, margin=0, max_height=100, )
+        self.header = pn.Row(logo, self._title, max_height=50,)
 
     @param.depends('title', watch=True)
     def _update_title(self):
         "Upddates the title "
-        self._title.object = '<h1>%s</h1>' % self.title
+        self._title.object = '<h3><i>%s</i></h3>' % self.title
 
     @param.depends('body')
     def get_body(self):
@@ -51,7 +50,7 @@ class Application(param.Parameterized):
     def render(self):
         "Renders the application as a single panel layout."
         self.body.application = self
-        return pn.Column(self.header, self.get_body(),
+        return pn.Column(self.get_body(),
                          width_policy='max', height_policy='max')
 
 
