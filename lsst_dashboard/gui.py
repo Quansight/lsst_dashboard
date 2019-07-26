@@ -116,7 +116,8 @@ class QuickLookComponent(Component):
         self._info = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._metric_panels = []
         self._metric_layout = pn.Column()
-        self._plot_layout = pn.Column(sizing_mode='stretch_width')
+        self._plot_top = pn.Row(sizing_mode='stretch_width', margin=(10,10,10,10))
+        self._plot_layout = pn.Column(sizing_mode='stretch_width', margin=(10,20,10,20))
         self._update(None)
 
     def title(self):
@@ -186,11 +187,13 @@ class QuickLookComponent(Component):
         top_plot = create_top_metric_line_plot('',
                                                self.selected_metrics_by_filter)
 
-        self._plot_layout.clear()
-        self._plot_layout.append(top_plot)
+        self._plot_top.clear()
+        self._plot_top.append(top_plot)
 
+        self._plot_layout.clear()
         for filt, plots in self.selected_metrics_by_filter.items():
             for p in plots:
+                self._plot_layout.append(pn.pane.HTML('<hr width=80%/>'))
                 plot = create_metric_star_plot('{} - {}'.format(filt, p))
                 self._plot_layout.append(plot)
 
@@ -211,62 +214,18 @@ class QuickLookComponent(Component):
             pn.Row(
                 self._metric_layout,
                 pn.Column(
-                    self._plot_layout,
-                    sizing_mode='stretch_both',
-                    # sizing_mode='stretch_width',
+                    self._plot_top,
+                    pn.Column(
+                        self._plot_layout,
+                        sizing_mode='stretch_width',
+                        max_height=500,
+                        css_classes=['scrolling_list'],
+                    ),
+                    sizing_mode='stretch_width',
                 ),
-                css_classes=['scrolling_list']
             ),
-            sizing_mode='stretch_both'
+            sizing_mode='stretch_both',
         )
-
-    def _plot_layout_html_template(self):
-        # template = """
-        #     {% block contents %}
-        #     <div class="container">
-        #       <div class="row">
-        #         <div class="col-sm">
-        #           {{ embed(roots.A) }}
-        #         </div>
-        #       </div>
-        #     </div>
-        #     {% endblock %}
-        # """
-        # tmpl = pn.Template(template)
-        # tmpl.add_panel('A', hv.Curve([1,2,3]))
-        # return tmpl
-        template = """
-        {% extends base %}
-
-        <!-- goes in body -->
-        {% block postamble %}
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-        {% endblock %}
-
-        <!-- goes in body -->
-        {% block contents %}
-        <h1>Custom Template App</h1>
-        <p>This is a Panel app with a custom template allowing us to compose multiple Panel objects into a single HTML document.</p>
-        <br>
-        <div class="container">
-          <div class="row">
-            <div class="col-sm">
-              {{ embed(roots.A) }}
-            </div>
-            <div class="col-sm">
-              {{ embed(roots.B) }}
-            </div>
-          </div>
-        </div>
-        {% endblock %}
-        """
-        tmpl = pn.Template(template)
-        tmpl.add_panel('A', hv.Curve([1, 2, 3]))
-        tmpl.add_panel('B', hv.Curve([1, 2, 3]))
-        return tmpl
-
-    def panel_html_template(self):
-        return self._plot_layout_html_template()
 
 class MetricPanel(param.Parameterized):
     """
@@ -324,10 +283,8 @@ class MetricCheckboxGroup(param.Parameterized):
 hv.extension('bokeh')
 _css = '''
 .scrolling_list {
-    height: 600px;
     background: #f0f0f0;
-    overflow: auto;
-    border-radius: 50px;
+    overflow-y: auto;
 }
 '''
 pn.extension(raw_css=[_css])
