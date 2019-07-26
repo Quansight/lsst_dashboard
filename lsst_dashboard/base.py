@@ -46,12 +46,14 @@ class Application(param.Parameterized):
     def get_body(self):
         self.body.application = self
         return self.body.panel()
+        # return self.body.panel_html_template()
 
     def render(self):
         "Renders the application as a single panel layout."
         self.body.application = self
         return pn.Column(self.get_body(),
                          width_policy='max', height_policy='max')
+        # return self.get_body()
 
 
 class Component(param.Parameterized):
