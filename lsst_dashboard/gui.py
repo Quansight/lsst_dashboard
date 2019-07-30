@@ -92,8 +92,9 @@ class QuickLookComponent(Component):
                                                      'HSC-Y': [],
                                                      'HSC-Z': []})
 
-    # view_mode = param.Dict(default={'Skyplot':0, 'Detailed':1})
     view_mode = ['Skyplot','Detailed']
+
+    plots_list = []
 
     label = param.String(default='Quick Look')
 
@@ -121,7 +122,7 @@ class QuickLookComponent(Component):
         self._metric_layout = pn.Column()
         self._switch_view = self._create_switch_view_buttons()
         self._plot_top = pn.Row(sizing_mode='stretch_width', margin=(10,10,10,10))
-        self._plot_layout = pn.Column(sizing_mode='stretch_width', margin=(10,20,10,20))
+        self._plot_layout = pn.Column(sizing_mode='stretch_width', margin=(10,20,10,20), max_height=500)
         self._update(None)
 
     def _create_switch_view_buttons(self):
@@ -131,13 +132,6 @@ class QuickLookComponent(Component):
                                                 inline=True)
         radio_group.param.watch(self._switch_view_mode, ['value'])
         return radio_group
-
-    @param.depends('view_mode', watch=True)
-    def _switch_view_mode(self, *events):
-        logging.info(self._switch_view.value)
-        if events:
-            logging.info('{!r}'.format(events))
-
 
     def title(self):
         return 'Data Processing Explorer'
@@ -209,24 +203,33 @@ class QuickLookComponent(Component):
         self._plot_top.clear()
         self._plot_top.append(top_plot)
 
-        self._plot_layout.clear()
+        plots_list = []
         for filt, plots in self.selected_metrics_by_filter.items():
-            for p in plots:
+            for i,p in enumerate(plots):
                 # self._plot_layout.append(pn.pane.HTML('<hr width=80%/>'))
                 plot = create_metric_star_plot('{} - {}'.format(filt, p))
-                self._plot_layout.append(plot)
+                plots_list.append(plot)
+        self.plots_list = plots_list
+        self._switch_view_mode()
 
-    def _layout_metrics_plots(self, view_mode):
-        assert view_mode in self._switch_view.options
-        if True:
-            _metrics_container = pn.Column(
-                self._plot_layout,
-                sizing_mode='stretch_width',
-                max_height=500,
-                css_classes=['scrolling_list'],
-            )
-        else:
-            return pn.Tabs('bla')
+    def _switch_view_mode(self, *events):
+        view_mode = self._switch_view.value
+        logging.info(view_mode)
+        if len(self.plots_list):
+            if view_mode == 'Skyplot':
+                tab_layout = pn.Tabs(sizing_mode='stretch_width')
+                for i,p in enumerate(self.plots_list):
+                    tab_layout.append((str(i),p))
+                self._plot_layout.clear()
+                self._plot_layout.css_classes = []
+                self._plot_layout.append(tab_layout)
+            else:
+                list_layout = pn.Column(sizing_mode='stretch_width')
+                for i,p in enumerate(self.plots_list):
+                    list_layout.append(p)
+                self._plot_layout.clear()
+                self._plot_layout.css_classes = ['scrolling_list']
+                self._plot_layout.append(list_layout)
 
     def panel(self):
         row1 = pn.Row(self.param.data_repository, self._submit_repository)
@@ -247,7 +250,8 @@ class QuickLookComponent(Component):
                 pn.Column(
                     self._switch_view,
                     self._plot_top,
-                    self._layout_metrics_plots(self._switch_view.value),
+                    self._plot_layout,
+                    # self._layout_metrics_plots(self._switch_view.value),
                     sizing_mode='stretch_width',
                 ),
             ),
