@@ -39,19 +39,26 @@ class Application(param.Parameterized):
 
     @param.depends('title', watch=True)
     def _update_title(self):
-        "Upddates the title "
+        "Updates the title "
         self._title.object = '<h3><i>%s</i></h3>' % self.title
+
+    def get_body_template(self):
+        self.body.application = self
+        return self.body.jinja()
 
     @param.depends('body')
     def get_body(self):
         self.body.application = self
         return self.body.panel()
 
-    def render(self):
+    def render(self, use_jinja=True):
         "Renders the application as a single panel layout."
         self.body.application = self
-        return pn.Column(self.get_body(),
-                         width_policy='max', height_policy='max')
+        if use_jinja:
+            return self.get_body_template()
+        else:
+            return pn.Column(self.get_body(),
+                             width_policy='max', height_policy='max')
 
 
 class Component(param.Parameterized):

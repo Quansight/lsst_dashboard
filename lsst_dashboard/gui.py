@@ -231,6 +231,24 @@ class QuickLookComponent(Component):
                 self._plot_layout.css_classes = ['scrolling_list']
                 self._plot_layout.append(list_layout)
 
+    def jinja(self):
+        from ._jinja2_templates import quicklook
+        import holoviews as hv
+        tmpl = pn.Template(quicklook)
+        components = [
+            ('brand',pn.Row(self.logo_png, self._title)),
+            ('row1',pn.Row(self.param.data_repository, self._submit_repository)),
+            ('row2',pn.Row(self.param.comparison, self._submit_comparison)),
+            ('info',self._info),
+            ('metrics_selectors',self._metric_layout),
+            ('view_switchers',self._switch_view),
+            ('plot_top',self._plot_top),
+            ('metrics_plots',self._plot_layout)
+        ]
+        for l,c in components:
+            tmpl.add_panel(l,c)
+        return tmpl
+
     def panel(self):
         row1 = pn.Row(self.param.data_repository, self._submit_repository)
         row2 = pn.Row(self.param.comparison, self._submit_comparison)
