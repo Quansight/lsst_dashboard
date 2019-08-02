@@ -17,22 +17,31 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
 
+_filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G', 'HSC-Y']
+
 def init_dataset():
     from .dataset import Dataset
     from .qa_dataset import QADataset
     tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
     tracts = ['9697', '9813', '9615']
-    filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G'] #, 'HSC-Y']
     d = Dataset('examples/sample_data')
     d.connect()
     d.load_from_hdf()
-    df = d.tables['HSC-I']['analysisCoaddTable_unforced']['9615']
-    return QADataset(df)
+    datasets = {}
+    for filt in _filters:
+        try:
+            dtf = d.tables[filt]
+            df = dtf['analysisCoaddTable_forced']['9615']
+            dataset = QADataset(df)
+        except:
+            dataset = None
+        datasets[filt] = dataset
+    return datasets
 
-dataset = init_dataset()
+datasets = init_dataset()
 
 
-def get_available_metrics():
+def get_available_metrics(filt):
     # metrics = ['base_Footprint_nPix',
     #            'Gaussian-PSF_magDiff_mmag',
     #            'CircAper12pix-PSF_magDiff_mmag',
@@ -48,7 +57,10 @@ def get_available_metrics():
     #            'compareUnforced_CircAper12pix_magDiff_mmag',
     #            'compareUnforced_Kron_magDiff_mmag',
     #            'compareUnforced_CModel_magDiff_mmag']
-    metrics = dataset.vdims
+    try:
+        metrics = datasets[filt].vdims
+    except:
+        metrics = None
     return metrics
 
 
@@ -100,11 +112,7 @@ class QuickLookComponent(Component):
 
     selected = param.Tuple(default=(None, None, None, None), length=4)
 
-    selected_metrics_by_filter = param.Dict(default={'HSC-G': [],
-                                                     'HSC-R': [],
-                                                     'HSC-I': [],
-                                                     'HSC-Y': [],
-                                                     'HSC-Z': []})
+    selected_metrics_by_filter = param.Dict(default={f:[] for f in _filters})
 
     view_mode = ['Skyplot','Detailed']
 
@@ -200,7 +208,8 @@ class QuickLookComponent(Component):
         Populates the _metrics Row with metrics loaded from the repository
         """
         # Load filters from repository
-        filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
+        # filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
+        filters = list(self.selected_metrics_by_filter.keys())
 
         panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
         self._metric_panels = panels
@@ -309,7 +318,9 @@ class MetricPanel(param.Parameterized):
                                for filt in self.filters]
 
     def _create_metric_checkbox_group(self, filt):
-        metrics = get_available_metrics()
+        metrics = get_available_metrics(filt)
+        if not metrics:
+            return pn.pane.Markdown("_No metrics available_")
         chkbox_group = MetricCheckboxGroup(metrics)
 
         chkbox_group.param.watch(partial(self._checkbox_callback, filt),
