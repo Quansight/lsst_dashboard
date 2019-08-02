@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import holoviews as hv
 
-from lsst.qa.explorer.match import match_lists
-from lsst.qa.explorer.plots import filter_dset, FilterStream
-
+# from lsst.qa.explorer.match import match_lists
+# from lsst.qa.explorer.plots import filter_dset, FilterStream
+from .plots import filter_dset, FilterStream
 
 class QADataset(object):
     """Convenience wrapper of holoviews Dataset for catalog-type data
