@@ -17,24 +17,38 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
 
+def init_dataset():
+    from .dataset import Dataset
+    from .qa_dataset import QADataset
+    tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
+    tracts = ['9697', '9813', '9615']
+    filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G'] #, 'HSC-Y']
+    d = Dataset('examples/sample_data')
+    d.connect()
+    d.load_from_hdf()
+    df = d.tables['HSC-I']['analysisCoaddTable_unforced']['9615']
+    return QADataset(df)
+
+dataset = init_dataset()
+
+
 def get_available_metrics():
-
-    metrics = ['base_Footprint_nPix',
-               'Gaussian-PSF_magDiff_mmag',
-               'CircAper12pix-PSF_magDiff_mmag',
-               'Kron-PSF_magDiff_mmag',
-               'CModel-PSF_magDiff_mmag',
-               'traceSdss_pixel',
-               'traceSdss_fwhm_pixel',
-               'psfTraceSdssDiff_percent',
-               'e1ResidsSdss_milli',
-               'e2ResidsSdss_milli',
-               'deconvMoments',
-               'compareUnforced_Gaussian_magDiff_mmag',
-               'compareUnforced_CircAper12pix_magDiff_mmag',
-               'compareUnforced_Kron_magDiff_mmag',
-               'compareUnforced_CModel_magDiff_mmag']
-
+    # metrics = ['base_Footprint_nPix',
+    #            'Gaussian-PSF_magDiff_mmag',
+    #            'CircAper12pix-PSF_magDiff_mmag',
+    #            'Kron-PSF_magDiff_mmag',
+    #            'CModel-PSF_magDiff_mmag',
+    #            'traceSdss_pixel',
+    #            'traceSdss_fwhm_pixel',
+    #            'psfTraceSdssDiff_percent',
+    #            'e1ResidsSdss_milli',
+    #            'e2ResidsSdss_milli',
+    #            'deconvMoments',
+    #            'compareUnforced_Gaussian_magDiff_mmag',
+    #            'compareUnforced_CircAper12pix_magDiff_mmag',
+    #            'compareUnforced_Kron_magDiff_mmag',
+    #            'compareUnforced_CModel_magDiff_mmag']
+    metrics = dataset.vdims
     return metrics
 
 
@@ -188,8 +202,6 @@ class QuickLookComponent(Component):
         # Load filters from repository
         filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
 
-        # TODO: Here there was a performance issue
-        # with rendering too many checkboxes
         panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
         self._metric_panels = panels
         self._metric_layout.objects = [p.panel() for p in panels]
