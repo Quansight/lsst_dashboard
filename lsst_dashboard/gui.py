@@ -11,6 +11,7 @@ from .base import Component
 
 from .plots import create_top_metric_line_plot
 from .plots import create_metric_star_plot
+from .plots import scattersky
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,7 +115,7 @@ class QuickLookComponent(Component):
 
     selected_metrics_by_filter = param.Dict(default={f:[] for f in _filters})
 
-    view_mode = ['Skyplot','Detailed']
+    view_mode = ['Tabbed','List']
 
     plots_list = []
 
@@ -226,10 +227,15 @@ class QuickLookComponent(Component):
 
         plots_list = []
         for filt, plots in self.selected_metrics_by_filter.items():
+            dset = datasets[filt]
             for i,p in enumerate(plots):
-                # self._plot_layout.append(pn.pane.HTML('<hr width=80%/>'))
-                plot = create_metric_star_plot('{} - {}'.format(filt, p))
-                plots_list.append(plot)
+                # plot = create_metric_star_plot('{} - {}'.format(filt, p))
+                plots_ss = scattersky(dset.ds.groupby('label'),
+                                      xdim='psfMag',
+                                      ydim=p)
+                plot = plots_ss[1]
+                # p_sky = plots_ss[2]
+                plots_list.append((str(i),plot))
         self.plots_list = plots_list
         self._switch_view_mode()
 
@@ -237,18 +243,27 @@ class QuickLookComponent(Component):
         view_mode = self._switch_view.value
         logging.info(view_mode)
         if len(self.plots_list):
-            if view_mode == 'Skyplot':
-                tab_layout = pn.Tabs(sizing_mode='stretch_width')
-                for i,p in enumerate(self.plots_list):
-                    tab_layout.append((str(i),p))
-                self._plot_layout.clear()
+            if view_mode == 'Tabbed':
+                # tab_layout = pn.Tabs(sizing_mode='stretch_width')
+                # for i,p in enumerate(self.plots_list):
+                #     tab_layout.append((str(i),p))
+                tab_layout = pn.Tabs(*self.plots_list, sizing_mode='stretch_width')
+                # self._plot_layout.clear()
+                try:
+                    _ = self._plot_layout.pop(0)
+                except:
+                    pass
                 self._plot_layout.css_classes = []
                 self._plot_layout.append(tab_layout)
             else:
                 list_layout = pn.Column(sizing_mode='stretch_width')
-                for i,p in enumerate(self.plots_list):
+                for i,p in self.plots_list:
                     list_layout.append(p)
-                self._plot_layout.clear()
+                # self._plot_layout.clear()
+                try:
+                    _ = self._plot_layout.pop(0)
+                except:
+                    pass
                 self._plot_layout.css_classes = ['scrolling_list']
                 self._plot_layout.append(list_layout)
 
