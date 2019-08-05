@@ -123,6 +123,7 @@ class QuickLookComponent(Component):
 
     view_mode = ['Skyplot View','Detail View']
 
+    plot_top = None
     plots_list = []
     skyplot_list = []
 
@@ -215,8 +216,6 @@ class QuickLookComponent(Component):
         """
         Populates the _metrics Row with metrics loaded from the repository
         """
-        # Load filters from repository
-        # filters = ['HSC-G', 'HSG-R', 'HSC-I', 'HSC-Y', 'HSC-Z']
         filters = list(self.selected_metrics_by_filter.keys())
 
         panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
@@ -230,9 +229,10 @@ class QuickLookComponent(Component):
         top_plot = create_top_metric_line_plot('',
                                                self.selected_metrics_by_filter)
         # top_plot = visits_plot(datavisits, self.selected_metrics_by_filter)
-        plots_list.append(('a',top_plot))
+        # plots_list.append(('a',top_plot))
         # self._plot_top.clear()
         # self._plot_top.append(top_plot)
+        self.plot_top = top_plot
 
         skyplot_list = []
         for filt, plots in self.selected_metrics_by_filter.items():
@@ -245,12 +245,10 @@ class QuickLookComponent(Component):
                                     vdim=p)
                 skyplot_list.append((p,plot_sky))
 
-                # plot = create_metric_star_plot('{} - {}'.format(filt, p))
                 plots_ss = scattersky(dset.ds,#.groupby('label'),
                                       xdim='psfMag',
                                       ydim=p)
                 plot = plots_ss
-                # p_sky = plots_ss[2]
                 plots_list.append((p,plot))
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
@@ -261,11 +259,8 @@ class QuickLookComponent(Component):
         logging.info(view_mode)
         if len(self.plots_list):
             if view_mode == 'Skyplot View':
-                # tab_layout = pn.Tabs(sizing_mode='stretch_width')
-                # for i,p in enumerate(self.plots_list):
-                #     tab_layout.append((str(i),p))
+                self._plot_top.clear();
                 tab_layout = pn.Tabs(*self.skyplot_list, sizing_mode='stretch_width')
-                # self._plot_layout.clear()
                 try:
                     _ = self._plot_layout.pop(0)
                 except:
@@ -273,10 +268,11 @@ class QuickLookComponent(Component):
                 self._plot_layout.css_classes = []
                 self._plot_layout.append(tab_layout)
             else:
+                self._plot_top.clear();
+                self._plot_top.append(self.plot_top)
                 list_layout = pn.Column(sizing_mode='stretch_width')
                 for i,p in self.plots_list:
                     list_layout.append(p)
-                # self._plot_layout.clear()
                 try:
                     _ = self._plot_layout.pop(0)
                 except:
