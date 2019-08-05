@@ -21,6 +21,7 @@ logger.addHandler(logging.FileHandler('dashboard.log'))
 
 _filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']#, 'HSC-Y']
 
+
 def init_dataset():
     from .dataset import Dataset
     from .qa_dataset import QADataset
@@ -158,9 +159,9 @@ class QuickLookComponent(Component):
 
     def _create_switch_view_buttons(self):
         radio_group = pn.widgets.RadioBoxGroup(name='SwitchView',
-                                                options=self.view_mode,
-                                                value=self.view_mode[0],
-                                                inline=True)
+                                               options=self.view_mode,
+                                               value=self.view_mode[0],
+                                               inline=True)
         radio_group.param.watch(self._switch_view_mode, ['value'])
         return radio_group
 
@@ -238,12 +239,12 @@ class QuickLookComponent(Component):
         for filt, plots in self.selected_metrics_by_filter.items():
             filter_stream = FilterStream()
             dset = datasets[filt]
-            for i,p in enumerate(plots):
+            for i, p in enumerate(plots):
                 # skyplots
                 plot_sky = skyplot(dset.ds,
-                                    filter_stream=filter_stream,
-                                    vdim=p)
-                skyplot_list.append((p,plot_sky))
+                                   filter_stream=filter_stream,
+                                   vdim=p)
+                skyplot_list.append((filt + ' - ' + p, plot_sky))
 
                 plots_ss = scattersky(dset.ds,#.groupby('label'),
                                       xdim='psfMag',
@@ -285,16 +286,16 @@ class QuickLookComponent(Component):
         import holoviews as hv
         tmpl = pn.Template(quicklook)
         components = [
-            ('brand',pn.Row(self.logo_png, self._title)),
-            ('row1',pn.Row(self.param.data_repository, self._submit_repository)),
-            ('row2',pn.Row(self.param.comparison, self._submit_comparison)),
-            ('info',self._info),
-            ('metrics_selectors',self._metric_layout),
-            ('view_switchers',self._switch_view),
-            ('plot_top',self._plot_top),
-            ('metrics_plots',self._plot_layout)
+            ('brand', pn.Row(self.logo_png, self._title)),
+            ('row1', pn.Row(self.param.data_repository, self._submit_repository)),
+            ('row2', pn.Row(self.param.comparison, self._submit_comparison)),
+            ('info', self._info),
+            ('metrics_selectors', self._metric_layout),
+            ('view_switchers', self._switch_view),
+            ('plot_top', self._plot_top),
+            ('metrics_plots', self._plot_layout)
         ]
-        for l,c in components:
+        for l, c in components:
             tmpl.add_panel(l,c)
         return tmpl
 
@@ -324,6 +325,7 @@ class QuickLookComponent(Component):
             ),
             sizing_mode='stretch_both',
         )
+
 
 class MetricPanel(param.Parameterized):
     """

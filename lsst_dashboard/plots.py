@@ -21,6 +21,10 @@ from bokeh.transform import factor_cmap
 
 decimate.max_samples = 5000
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Define Stream class that stores filters for various Dimensions
 class FilterStream(Stream):
@@ -63,6 +67,7 @@ class FlagSetter(Stream):
         Flags to ignore""")
 
     def __init__(self, filter_stream, **kwargs):
+        logger.info('.FlagSetter()')
         super(FlagSetter, self).__init__(**kwargs)
         self.filter_stream = filter_stream
 
@@ -82,6 +87,7 @@ class ResetCallback(Callback):
 
 class Reset(LinkedStream):
     def __init__(self, *args, **params):
+        logger.info('.Reset()')
         super(Reset, self).__init__(self, *args, **dict(params, transient=True))
 
 
@@ -104,6 +110,7 @@ class filter_dset(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
+        logger.info('.filter_dset._process')
         filter_dict = {} if self.p.filter_range is None else self.p.filter_range.copy()
         filter_dict.update({f: True for f in self.p.flags})
         filter_dict.update({f: False for f in self.p.bad_flags})
@@ -130,6 +137,7 @@ class filterpoints(Operation):
     set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):
+        logger.info('.filterpoints._process')
         dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags,
                            filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
@@ -154,6 +162,9 @@ class summary_table(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
+
+        logger.info('.summary_table._process')
+
         ds = filter_dset(dset, filter_range=self.p.filter_range,
                          flags=self.p.flags, bad_flags=self.p.bad_flags)
         if self.p.ydim is None:
@@ -168,6 +179,7 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
     """
     Function to attach to bounds stream as subscriber to notify FilterStream.
     """
+    logger.info('.notify_stream')
     l, b, r, t = bounds
     filter_range = dict(filter_stream.filter_range)
     for dim, (low, high) in [(xdim, (l, r)), (ydim, (b, t))]:
@@ -182,6 +194,7 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
 
 
 def reset_stream(filter_stream):
+    logger.info('.reset_stream')
     filter_stream.event(filter_range={}, flags=[], bad_flags=[])
 
 
@@ -204,7 +217,7 @@ class scattersky(ParameterizedFunction):
         Colormap to use for the sky plot""")
     height = param.Number(default=300, doc="""
         Height in pixels of the combined layout""")
-    width = param.Number(default=900, doc="""
+    width = param.Number(default=625, doc="""
         Width in pixels of the combined layout""")
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream,
                                         doc="Stream to which selection ranges get added.")
@@ -214,6 +227,7 @@ class scattersky(ParameterizedFunction):
         Whether to show the table next to the plots.""")
 
     def __call__(self, dset, **params):
+        logger.info('.scattersky')
         self.p = ParamOverrides(self, params)
         if self.p.xdim not in dset.dimensions():
             raise ValueError('{} not in Dataset.'.format(self.p.xdim))
@@ -295,6 +309,7 @@ class multi_scattersky(ParameterizedFunction):
         return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].vdims]
 
     def __call__(self, dset, **params):
+        logger.info('.multi_scattersky')
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                      xdim=self.p.xdim, ydim=ydim,
@@ -313,10 +328,15 @@ class skypoints(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
+
+        logger.info('.skypoints')
         dset = filter_dset(dset, filter_range=self.p.filter_range,
                            flags=self.p.flags, bad_flags=self.p.bad_flags)
 
-        return hv.Points(dset, kdims=['ra', 'dec'], vdims=dset.vdims + ['label'])
+        # TODO: what is the api to scale to full size of parent? sizing_mode?
+        return hv.Points(dset,
+                         kdims=['ra', 'dec'],
+                         vdims=dset.vdims + ['label']).opts(width=600, height=400)
 
 
 class skyplot(ParameterizedFunction):
@@ -340,6 +360,9 @@ class skyplot(ParameterizedFunction):
         Flags to ignore""")
 
     def __call__(self, dset, **params):
+
+        logger.info('.skyplot')
+
         self.p = ParamOverrides(self, params)
 
         if self.p.vdim is None:
@@ -379,13 +402,14 @@ class skyplot_layout(ParameterizedFunction):
     crosshair = param.Boolean(default=True)
 
     def __call__(self, skyplots, **params):
+
+        logger.info('.skyplot_layout')
         self.p = param.ParamOverrides(self, params)
 
         pointer = hv.streams.PointerXY(x=0, y=0)
         cross_opts = dict(style={'line_width': 1, 'color': 'black'})
         cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) *
                                                  hv.HLine(y).opts(**cross_opts)), streams=[pointer])
-
         plots = []
         for s in skyplots:
             if self.p.crosshair:
@@ -400,6 +424,7 @@ class skyplot_layout(ParameterizedFunction):
 class skyshade(Operation):
     """Experimental
     """
+    logger.info('.skyshape')
     cmap = param.String(default='coolwarm')
     aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
     width = param.Number(default=None)
