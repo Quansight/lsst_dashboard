@@ -11,7 +11,7 @@ from .base import Component
 
 from .plots import create_top_metric_line_plot
 from .plots import create_metric_star_plot
-from .plots import scattersky
+from .plots import scattersky, FilterStream, skyplot
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -118,6 +118,7 @@ class QuickLookComponent(Component):
     view_mode = ['Skyplot View','Detail View']
 
     plots_list = []
+    skyplot_list = []
 
     label = param.String(default='Quick Look')
 
@@ -219,16 +220,24 @@ class QuickLookComponent(Component):
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
 
+        plots_list = []
         top_plot = create_top_metric_line_plot('',
                                                self.selected_metrics_by_filter)
+        plots_list.append(('a',top_plot))
+        # self._plot_top.clear()
+        # self._plot_top.append(top_plot)
 
-        self._plot_top.clear()
-        self._plot_top.append(top_plot)
-
-        plots_list = []
+        skyplot_list = []
+        filter_stream = FilterStream()
         for filt, plots in self.selected_metrics_by_filter.items():
             dset = datasets[filt]
             for i,p in enumerate(plots):
+                # skyplots
+                plot_sky = skyplot(dset.ds,
+                                    filter_stream=filter_stream,
+                                    vdim=p)
+                skyplot_list.append((p,plot_sky))
+
                 # plot = create_metric_star_plot('{} - {}'.format(filt, p))
                 plots_ss = scattersky(dset.ds.groupby('label'),
                                       xdim='psfMag',
@@ -236,6 +245,7 @@ class QuickLookComponent(Component):
                 plot = plots_ss[1]
                 # p_sky = plots_ss[2]
                 plots_list.append((str(i),plot))
+        self.skyplot_list = skyplot_list
         self.plots_list = plots_list
         self._switch_view_mode()
 
@@ -247,7 +257,7 @@ class QuickLookComponent(Component):
                 # tab_layout = pn.Tabs(sizing_mode='stretch_width')
                 # for i,p in enumerate(self.plots_list):
                 #     tab_layout.append((str(i),p))
-                tab_layout = pn.Tabs(*self.plots_list, sizing_mode='stretch_width')
+                tab_layout = pn.Tabs(*self.skyplot_list, sizing_mode='stretch_width')
                 # self._plot_layout.clear()
                 try:
                     _ = self._plot_layout.pop(0)
@@ -278,7 +288,7 @@ class QuickLookComponent(Component):
             ('info',self._info),
             ('metrics_selectors',self._metric_layout),
             ('view_switchers',self._switch_view),
-            ('plot_top',self._plot_top),
+            # ('plot_top',self._plot_top),
             ('metrics_plots',self._plot_layout)
         ]
         for l,c in components:
