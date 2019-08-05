@@ -115,7 +115,7 @@ class QuickLookComponent(Component):
 
     selected_metrics_by_filter = param.Dict(default={f:[] for f in _filters})
 
-    view_mode = ['Tabbed','List']
+    view_mode = ['Skyplot View','Detail View']
 
     plots_list = []
 
@@ -243,7 +243,7 @@ class QuickLookComponent(Component):
         view_mode = self._switch_view.value
         logging.info(view_mode)
         if len(self.plots_list):
-            if view_mode == 'Tabbed':
+            if view_mode == 'Skyplot View':
                 # tab_layout = pn.Tabs(sizing_mode='stretch_width')
                 # for i,p in enumerate(self.plots_list):
                 #     tab_layout.append((str(i),p))
