@@ -33,9 +33,6 @@ quicklook = '''
             {{ embed(roots.view_switchers) }}
         </div>
         <div class="row">
-            {{ embed(roots.plot_top) }}
-        </div>
-        <div class="row">
             {{ embed(roots.metrics_plots) }}
         </div>
     </div>
