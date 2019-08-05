@@ -239,12 +239,12 @@ class QuickLookComponent(Component):
                 skyplot_list.append((p,plot_sky))
 
                 # plot = create_metric_star_plot('{} - {}'.format(filt, p))
-                plots_ss = scattersky(dset.ds.groupby('label'),
+                plots_ss = scattersky(dset.ds,#.groupby('label'),
                                       xdim='psfMag',
                                       ydim=p)
-                plot = plots_ss[1]
+                plot = plots_ss
                 # p_sky = plots_ss[2]
-                plots_list.append((str(i),plot))
+                plots_list.append((p,plot))
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
         self._switch_view_mode()

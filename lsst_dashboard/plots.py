@@ -210,6 +210,8 @@ class scattersky(ParameterizedFunction):
                                         doc="Stream to which selection ranges get added.")
     show_rawsky = param.Boolean(default=False, doc="""
         Whether to show the "unselected" sky points in greyscale when there is a selection.""")
+    show_table = param.Boolean(default=False, doc="""
+        Whether to show the table next to the plots.""")
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
@@ -264,12 +266,17 @@ class scattersky(ParameterizedFunction):
 
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
 
+        scatter_p = raw_scatter*scatter
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-            return (table + raw_scatter*scatter + raw_sky*sky)
-
+            sky_p = raw_sky*sky
         else:
-            return (table + raw_scatter*scatter + sky)
+            sky_p = sky
+
+        if self.p.show_table:
+            return (table + scatter_p + sky_p)
+        else:
+            return (scatter_p + sky_p)
 
 
 class multi_scattersky(ParameterizedFunction):
