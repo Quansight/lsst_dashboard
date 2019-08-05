@@ -11,6 +11,7 @@ from .base import Component
 
 from .plots import create_top_metric_line_plot
 from .plots import create_metric_star_plot
+# from .plots import visits_plot
 from .plots import scattersky, FilterStream, skyplot
 
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
 
-_filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G', 'HSC-Y']
+_filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']#, 'HSC-Y']
 
 def init_dataset():
     from .dataset import Dataset
@@ -37,9 +38,14 @@ def init_dataset():
         except:
             dataset = None
         datasets[filt] = dataset
-    return datasets
+    datavisits = {}
+    for filt in _filters:
+        dvf = d.visits[filt]
+        dataset_v = dvf['9615']
+        datavisits[filt] = dataset_v
+    return datasets,datavisits
 
-datasets = init_dataset()
+datasets,datavisits = init_dataset()
 
 
 def get_available_metrics(filt):
@@ -223,13 +229,14 @@ class QuickLookComponent(Component):
         plots_list = []
         top_plot = create_top_metric_line_plot('',
                                                self.selected_metrics_by_filter)
+        # top_plot = visits_plot(datavisits, self.selected_metrics_by_filter)
         plots_list.append(('a',top_plot))
         # self._plot_top.clear()
         # self._plot_top.append(top_plot)
 
         skyplot_list = []
-        filter_stream = FilterStream()
         for filt, plots in self.selected_metrics_by_filter.items():
+            filter_stream = FilterStream()
             dset = datasets[filt]
             for i,p in enumerate(plots):
                 # skyplots
@@ -288,7 +295,7 @@ class QuickLookComponent(Component):
             ('info',self._info),
             ('metrics_selectors',self._metric_layout),
             ('view_switchers',self._switch_view),
-            # ('plot_top',self._plot_top),
+            ('plot_top',self._plot_top),
             ('metrics_plots',self._plot_layout)
         ]
         for l,c in components:

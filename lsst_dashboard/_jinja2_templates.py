@@ -32,6 +32,11 @@ quicklook = '''
         <div class="row d-flex justify-content-end">
             {{ embed(roots.view_switchers) }}
         </div>
+        {% if roots.plot_top %}
+        <div class="row">
+            {{ embed(roots.plot_top) }}
+        </div>
+        {% endif %}
         <div class="row">
             {{ embed(roots.metrics_plots) }}
         </div>

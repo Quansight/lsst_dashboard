@@ -483,3 +483,18 @@ def mock_line_data(size=5):
 
 def create_metric_star_plot(title):
     return mock_plot(title)
+
+def visits_plot(dsets_visits, filters_to_metrics):
+    for filt, metrics in filters_to_metrics.items():
+        f = filt
+        m = metrics
+    df = dsets_visits[filt][metrics].dropna()
+    df.index.names = ['ax','id']
+    mean_df = df.groupby('ax').mean()
+    std_df = df.groupby('ax').std()
+    all_visits = df.index.levels[0]
+
+    mean_points = [(str(v), mean_df.loc[v]) for v in all_visits]
+    std_points = [(str(v), std_df.loc[v]) for v in all_visits]
+
+    return hv.Curve(mean_points, label='mean (gauss-psf)') * hv.Curve(std_points, label='std (gauss-psf)')
