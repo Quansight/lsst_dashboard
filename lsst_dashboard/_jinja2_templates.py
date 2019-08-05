@@ -4,6 +4,13 @@ quicklook = '''
 <!-- goes in body -->
 {% block postamble %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+<style>
+   body {
+     overflow: hidden;
+   }
+</style>
+
 {% endblock %}
 
 <!-- goes in body -->
