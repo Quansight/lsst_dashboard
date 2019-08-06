@@ -487,16 +487,28 @@ def mock_plot(title):
     return p
 
 
-def create_top_metric_line_plot(title, filters_to_metrics):
+def create_top_metric_line_plot(title, filters_to_metrics, visits_dict):
 
     p = figure(plot_height=200, sizing_mode='stretch_width')
 
+    valid_metrics = ['base_Footprint_nPix',
+                     'Gaussian-PSF_magDiff_mmag',
+                     'CircAper12pix-PSF_magDiff_mmag',
+                     'Kron-PSF_magDiff_mmag',
+                     'traceSdss_pixel',
+                     'traceSdss_fwhm_pixel',
+                     'psfTraceSdssDiff_percent',
+                     'e1ResidsSdss_milli',
+                     'e2ResidsSdss_milli',
+                     'deconvMoments']
+
     for filt, metrics in filters_to_metrics.items():
         for m in metrics:
-            xs, ys = mock_line_data()
-            color = Spectral6[np.random.randint(len(Spectral6))]
-            legend_text = "{} - {}".format(filt, m)
-            p.line(xs, ys, line_width=2, color=color, legend=legend_text)
+            if m in valid_metrics:
+                xs, ys = mock_line_data()
+                color = Spectral6[np.random.randint(len(Spectral6))]
+                legend_text = "{} - {}".format(filt, m)
+                p.line(xs, ys, line_width=2, color=color, legend=legend_text)
 
     return p
 
@@ -509,12 +521,25 @@ def mock_line_data(size=5):
 def create_metric_star_plot(title):
     return mock_plot(title)
 
+
 def visits_plot(dsets_visits, filters_to_metrics):
-    for filt, metrics in filters_to_metrics.items():
-        f = filt
-        m = metrics
-    df = dsets_visits[filt][metrics].dropna()
+    valid_metrics = ['base_Footprint_nPix',
+                     'Gaussian-PSF_magDiff_mmag',
+                     'CircAper12pix-PSF_magDiff_mmag',
+                     'Kron-PSF_magDiff_mmag',
+                     'traceSdss_pixel',
+                     'traceSdss_fwhm_pixel',
+                     'psfTraceSdssDiff_percent',
+                     'e1ResidsSdss_milli',
+                     'e2ResidsSdss_milli',
+                     'deconvMoments']
+
+    filt = 'HSC-G'
+
+    df = dsets_visits[filt][valid_metrics].dropna()
+
     df.index.names = ['ax','id']
+    logger.info(df.info())
     mean_df = df.groupby('ax').mean()
     std_df = df.groupby('ax').std()
     all_visits = df.index.levels[0]
@@ -522,4 +547,6 @@ def visits_plot(dsets_visits, filters_to_metrics):
     mean_points = [(str(v), mean_df.loc[v]) for v in all_visits]
     std_points = [(str(v), std_df.loc[v]) for v in all_visits]
 
-    return hv.Curve(mean_points, label='mean (gauss-psf)') * hv.Curve(std_points, label='std (gauss-psf)')
+    plot = hv.Curve(mean_points, label='mean (gauss-psf)', datatype=['dictionary']) * hv.Curve(std_points, label='std (gauss-psf)', datatype=['dictionary'])
+    logger.info(plot)
+    return plot
