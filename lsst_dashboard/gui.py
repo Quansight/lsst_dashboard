@@ -13,6 +13,9 @@ from .base import Component
 from .plots import visits_plot, visit_plot2
 from .plots import scattersky, FilterStream, skyplot
 
+from .dataset import Dataset
+from .qa_dataset import QADataset
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
@@ -22,8 +25,6 @@ _filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']#, 'HSC-Y']
 
 
 def init_dataset():
-    from .dataset import Dataset
-    from .qa_dataset import QADataset
 
     #tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
     #tracts = ['9697', '9813', '9615']
@@ -308,15 +309,15 @@ class QuickLookComponent(Component):
                     query_filter = ' & '.join(flags_query)
                     logger.info("Filering df with '{}'".format(query_filter))
                     # datasets[filt].df = datasets[filt].df.query(self.query_filter)
-                    datasets[filt].df = datasets[filt].df.query('calib_psf_used==True')
-                    logger.info("df size: {:d}".format(len(datasets[filt].df)))
+                    filtered_datasets[filt] = QADataset(datasets[filt].df.query('calib_psf_used==True'))
+                    logger.info("df size: {:d}".format(len(filtered_datasets[filt].df)))
             except Exception as e:
                 logger.error(str(e))
+        self._update_selected_metrics_by_filter()
 
     def get_dataset_by_filter(self, filter_type):
         global datasets
-
-        if self.query_filter == '':
+        if self.query_filter == '' and len(self.selected_flag_filters) == 0:
             return datasets[filter_type]
         else:
             return filtered_datasets[filter_type]
