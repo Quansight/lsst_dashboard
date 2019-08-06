@@ -11,7 +11,6 @@ quicklook = '''
 <style>
 
 body {
-  overflow: hidden;
   position: absolute;
   bottom: 0px;
   top: 0px;
@@ -25,13 +24,24 @@ body {
 }
 
 .metricsRow {
-    position: absolute;
+    position:relative;
+    top: 20px;
+    bottom: 100px;
+    left: 0;
     right: 0;
-    bottom: 0;
-    top: 300px;
-    height: 100%;
-    width: 100%;
     overflow-y: auto;
+}
+
+.container-fluid {
+  position: absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  right:0;
+}
+
+.main-body-row {
+  height:100%;
 }
 
 
@@ -75,12 +85,12 @@ body {
 </div>
 <hr />
 
-  <div class="row">
-    <div class="col col-sm-3">
+  <div class="row main-body-row">
+    <div class="col col-sm-4">
         {{ embed(roots.metrics_selectors) }}
     </div>
 
-    <div class="col col-sm-8 offset-sm-1">
+    <div class="col col-sm-offset-1 col-sm-7">
 
         <div class="row d-flex justify-content-end">
             {{ embed(roots.view_switchers) }}

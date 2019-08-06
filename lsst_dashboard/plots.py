@@ -2,16 +2,26 @@ from functools import partial
 
 import param
 import numpy as np
+import pandas as pd
 import holoviews as hv
 import datashader as ds
 import colorcet as cc
+import sklearn.preprocessing
 
-from param import ParameterizedFunction, ParamOverrides
+from param import ParameterizedFunction
+from param import ParamOverrides
+
 from bokeh.palettes import Greys9
+
 from holoviews.core.operation import Operation
-from holoviews.streams import Stream, BoundsXY, LinkedStream
+from holoviews.streams import Stream
+from holoviews.streams import BoundsXY
+from holoviews.streams import LinkedStream
 from holoviews.plotting.bokeh.callbacks import Callback
-from holoviews.operation.datashader import datashade, dynspread, rasterize
+
+from holoviews.operation.datashader import datashade
+from holoviews.operation.datashader import dynspread
+from holoviews.operation.datashader import rasterize
 from holoviews.operation import decimate
 
 from bokeh.models import ColumnDataSource
@@ -25,6 +35,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Define Stream class that stores filters for various Dimensions
 class FilterStream(Stream):
@@ -240,7 +251,7 @@ class scattersky(ParameterizedFunction):
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
                                       streams=[self.p.filter_stream])
-        scatter_opts = dict(plot={'height': self.p.height, 'width': self.p.width - self.p.height},
+        scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
                             norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts, cmap=cc.palette[self.p.scatter_cmap])
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
@@ -249,11 +260,11 @@ class scattersky(ParameterizedFunction):
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height': self.p.height, 'width': self.p.height + 100},  # cmap width?
+        sky_opts = dict(plot={'height': self.p.height, 'responsive': True},  # cmap width?
                         norm=dict(axiswise=True))
         sky_shaded = rasterize(sky_pts,
-                               aggregator=ds.mean(self.p.ydim), height=self.p.height,
-                               width=self.p.width).options(colorbar=True,
+                               aggregator=ds.mean(self.p.ydim)).options(colorbar=True,
+                                                           responsive=True,
                                                            cmap=cc.palette[self.p.sky_cmap])
         sky = sky_shaded.opts(**sky_opts)
         # sky = dynspread(sky_shaded).opts(**sky_opts)
@@ -290,7 +301,7 @@ class scattersky(ParameterizedFunction):
         if self.p.show_table:
             return (table + scatter_p + sky_p)
         else:
-            return (scatter_p + sky_p)
+            return (scatter_p + sky_p).options(sizing_mode='stretch_width')
 
 
 class multi_scattersky(ParameterizedFunction):
@@ -336,7 +347,7 @@ class skypoints(Operation):
         # TODO: what is the api to scale to full size of parent? sizing_mode?
         return hv.Points(dset,
                          kdims=['ra', 'dec'],
-                         vdims=dset.vdims + ['label']).opts(width=600, height=400)
+                         vdims=dset.vdims + ['label']).opts(responsive=True)
 
 
 class skyplot(ParameterizedFunction):
@@ -382,9 +393,6 @@ class skyplot(ParameterizedFunction):
 
         kwargs = dict(cmap=cc.palette[self.p.cmap],
                       aggregator=aggregator)
-        if self.p.width is not None:
-            kwargs.update(width=self.p.width, height=self.p.height)
-#                          streams=[hv.streams.RangeXY])
 
         decimate_opts = dict(plot={'tools': ['hover', 'box_select']},
                              style={'alpha': 0, 'size': self.p.decimate_size,
@@ -393,7 +401,7 @@ class skyplot(ParameterizedFunction):
         decimated = decimate(pts).opts(**decimate_opts)
         sky_shaded = datashade(pts, **kwargs)
 
-        return dynspread(sky_shaded) * decimated
+        return (dynspread(sky_shaded) * decimated).options(responsive=True)
 
 
 class skyplot_layout(ParameterizedFunction):
@@ -445,9 +453,6 @@ class skyshade(Operation):
 
         kwargs = dict(cmap=cc.palette[self.p.cmap],
                       aggregator=aggregator)
-        if self.p.width is not None:
-            kwargs.update(width=self.p.width, height=self.p.height,
-                          streams=[hv.streams.RangeXY])
 
         datashaded = dynspread(datashade(element, **kwargs))
 
@@ -457,41 +462,12 @@ class skyshade(Operation):
 
         # decimated = decimate(element, max_samples=self.p.max_samples).opts(**decimate_opts)
 
-        return datashaded  # * decimated
+        return datashaded.options(responsive=True, height=300)  # * decimated
 
 
-def mock_plot(title):
+def visit_plot2(dsets_visits, filt, metrics):
 
-
-    fruits = ['Aples', 'Pears', 'Nectarines',
-              'Plums', 'Grapes', 'Strawberries']
-    counts = [5, 3, 4, 2, 4, 6]
-
-    source = ColumnDataSource(data=dict(fruits=fruits, counts=counts))
-
-    p = figure(x_range=fruits, plot_height=350, sizing_mode='stretch_width',
-               toolbar_location=None,
-               title=str(title))
-
-    cmap = factor_cmap('fruits', palette=Spectral6, factors=fruits)
-    p.vbar(x='fruits', top='counts', width=0.9,
-           source=source, legend="fruits",
-           line_color='white', fill_color=cmap)
-
-    p.xgrid.grid_line_color = None
-    p.y_range.start = 0
-    p.y_range.end = 9
-    p.legend.orientation = "horizontal"
-    p.legend.location = "top_center"
-
-    return p
-
-
-def create_top_metric_line_plot(title, filters_to_metrics, visits_dict):
-
-    p = figure(plot_height=200, sizing_mode='stretch_width')
-
-    valid_metrics = ['base_Footprint_nPix',
+    metrics = ['base_Footprint_nPix',
                      'Gaussian-PSF_magDiff_mmag',
                      'CircAper12pix-PSF_magDiff_mmag',
                      'Kron-PSF_magDiff_mmag',
@@ -502,24 +478,23 @@ def create_top_metric_line_plot(title, filters_to_metrics, visits_dict):
                      'e2ResidsSdss_milli',
                      'deconvMoments']
 
-    for filt, metrics in filters_to_metrics.items():
-        for m in metrics:
-            if m in valid_metrics:
-                xs, ys = mock_line_data()
-                color = Spectral6[np.random.randint(len(Spectral6))]
-                legend_text = "{} - {}".format(filt, m)
-                p.line(xs, ys, line_width=2, color=color, legend=legend_text)
+    filt = 'HSC-G'
 
-    return p
+    xx = dsets_visits[filt][metrics].reset_index(-1)
+    xx = pd.DataFrame(getattr(sklearn.preprocessing,
+                              'minmax_scale',
+                              lambda x: x)(xx),
+                      index=xx.index,
+                      columns=xx.columns).groupby(xx.index)
 
+    plot = None
+    for metric in metrics:
+        if not plot:
+            plot = hv.Curve(xx[metric].mean())
+        else:
+            plot *= hv.Curve(xx[metric].mean())
 
-def mock_line_data(size=5):
-    return (np.random.randint(10, size=(size)),
-            np.random.randint(10, size=(size)))
-
-
-def create_metric_star_plot(title):
-    return mock_plot(title)
+    return plot.options(responsive=True, height=200, show_grid=True)
 
 
 def visits_plot(dsets_visits, filters_to_metrics):

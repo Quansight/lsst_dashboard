@@ -10,9 +10,7 @@ import numpy as np
 from .base import Application
 from .base import Component
 
-from .plots import create_top_metric_line_plot
-from .plots import create_metric_star_plot
-from .plots import visits_plot
+from .plots import visits_plot, visit_plot2
 from .plots import scattersky, FilterStream, skyplot
 
 logging.basicConfig(level=logging.INFO)
@@ -291,7 +289,8 @@ class QuickLookComponent(Component):
     def _update_selected_metrics_by_filter(self):
 
         plots_list = []
-        top_plot = create_top_metric_line_plot('', self.selected_metrics_by_filter, None)
+        #top_plot = create_top_metric_line_plot('', self.selected_metrics_by_filter, None)
+        top_plot = visit_plot2(datavisits,None, None)
         #top_plot = visits_plot(datavisits,
         #                       self.selected_metrics_by_filter)
         # plots_list.append(('a',top_plot))
@@ -326,7 +325,7 @@ class QuickLookComponent(Component):
         if len(self.plots_list):
             if view_mode == 'Skyplot View':
                 self._plot_top.clear()
-                tab_layout = pn.Tabs(*self.skyplot_list, sizing_mode='stretch_width')
+                tab_layout = pn.Tabs(*self.skyplot_list, sizing_mode='stretch_both')
                 try:
                     _ = self._plot_layout.pop(0)
                 except:
