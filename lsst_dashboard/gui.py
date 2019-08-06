@@ -285,6 +285,13 @@ class QuickLookComponent(Component):
     @param.depends('query_filter', watch=True)
     def _update_query_filter(self):
         logger.info(self.query_filter)
+        logger.info(dir(self.query_filter_submit))
+        # query_filter = self.query_filter.strip()
+        # if query_filter:
+        #     try:
+        #         datasets[_filters[0]].df.head().query(query_filter)
+        #     except:
+
         self.filter_main_dataframe()
 
     @param.depends('selected_flag_filters', watch=True)
@@ -296,10 +303,6 @@ class QuickLookComponent(Component):
         self.filter_main_dataframe()
 
     def filter_main_dataframe(self):
-        # apply flag filters
-        #for flagname, flag_state
-        # apply query filter
-        # trigger refresh of ui
         for filt, qa_dataset in datasets.items():
             try:
                 query_expr = ''
@@ -312,7 +315,10 @@ class QuickLookComponent(Component):
 
                 query_filter = self.query_filter.strip()
                 if query_filter:
-                    query_expr += ' & {!s}'.format(query_filter)
+                    if query_expr:
+                        query_expr += ' & {!s}'.format(query_filter)
+                    else:
+                        query_expr = '{!s}'.format(query_filter)
 
                 if query_expr:
                     logger.info("Filtering df with '{}'".format(query_expr))
@@ -333,6 +339,7 @@ class QuickLookComponent(Component):
     def _update_selected_metrics_by_filter(self):
 
         plots_list = []
+        skyplot_list = []
         #top_plot = create_top_metric_line_plot('', self.selected_metrics_by_filter, None)
         top_plot = visit_plot2(datavisits,None, None)
         #top_plot = visits_plot(datavisits,
@@ -342,7 +349,6 @@ class QuickLookComponent(Component):
         # self._plot_top.append(top_plot)
         self.plot_top = top_plot
 
-        skyplot_list = []
         for filt, plots in self.selected_metrics_by_filter.items():
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
@@ -387,8 +393,11 @@ class QuickLookComponent(Component):
                     _ = self._plot_layout.pop(0)
                 except:
                     pass
-
                 self._plot_layout.append(list_layout)
+        else:
+            self._plot_top.clear()
+            self._plot_layout.css_classes = []
+            self._plot_layout.clear()
 
     def jinja(self):
         from ._jinja2_templates import quicklook
@@ -403,7 +412,6 @@ class QuickLookComponent(Component):
                                self.flag_state_select,
                                self.flag_submit),
                         pn.Row(self.flag_filter_selected,
-                               # self.flag_state_selected,
                                self.flag_remove)
                         )),
             ('query_filter', pn.Row(self.param.query_filter,
