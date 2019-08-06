@@ -302,14 +302,21 @@ class QuickLookComponent(Component):
         # trigger refresh of ui
         for filt, qa_dataset in datasets.items():
             try:
+                query_expr = ''
+
                 flags_query = []
                 for flag,state in self.selected_flag_filters.items():
                     flags_query.append('{}=={}'.format(flag,state))
                 if flags_query:
-                    query_filter = ' & '.join(flags_query)
-                    logger.info("Filering df with '{}'".format(query_filter))
-                    # datasets[filt].df = datasets[filt].df.query(self.query_filter)
-                    filtered_datasets[filt] = QADataset(datasets[filt].df.query('calib_psf_used==True'))
+                    query_expr += ' & '.join(flags_query)
+
+                query_filter = self.query_filter.strip()
+                if query_filter:
+                    query_expr += ' & {!s}'.format(query_filter)
+
+                if query_expr:
+                    logger.info("Filtering df with '{}'".format(query_expr))
+                    filtered_datasets[filt] = QADataset(datasets[filt].df.query(query_expr))
                     logger.info("df size: {:d}".format(len(filtered_datasets[filt].df)))
             except Exception as e:
                 logger.error(str(e))
