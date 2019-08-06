@@ -168,6 +168,13 @@ class QuickLookComponent(Component):
             name='+', width=10, height=30, align='end')
         self.flag_submit.on_click(self.on_flag_submit_click)
 
+        self.flag_filter_selected = pn.widgets.Select(
+            name='Selected Flag Filters', width=295)
+
+        self.flag_remove = pn.widgets.Button(
+            name='-', width=10, height=30, align='end')
+        self.flag_remove.on_click(self.on_flag_remove_click)
+
         self.query_filter_submit = pn.widgets.Button(
             name='Run Query Filter', width=100, align='end')
         self.query_filter_submit.on_click(self.on_run_query_filter_click)
@@ -192,6 +199,12 @@ class QuickLookComponent(Component):
         flag_name = self.flag_filter_select.value
         flag_state = self.flag_state_select.value == 'True'
         self.selected_flag_filters.update({flag_name: flag_state})
+        self.param.trigger('selected_flag_filters')
+
+    def on_flag_remove_click(self, event):
+        logger.info('.on_flag_remove_click')
+        flag_name = self.flag_filter_selected.value.split()[0]
+        del self.selected_flag_filters[flag_name]
         self.param.trigger('selected_flag_filters')
 
     def on_run_query_filter_click(self, event):
@@ -273,20 +286,32 @@ class QuickLookComponent(Component):
         logger.info(self.query_filter)
         self.filter_main_dataframe()
 
+    @param.depends('selected_flag_filters', watch=True)
+    def _update_selected_flags(self):
+        logger.info(self.selected_flag_filters)
+        selected_flags = ['{} : {}'.format(f,v)
+                            for f,v in self.selected_flag_filters.items()]
+        self.flag_filter_selected.options = selected_flags
+        self.filter_main_dataframe()
 
     def filter_main_dataframe(self):
-
         # apply flag filters
         #for flagname, flag_state
         # apply query filter
         # trigger refresh of ui
-
         for filt, qa_dataset in datasets.items():
             try:
-                datasets[filt].df = datasets[filt].df.query(self.query_filter)
+                flags_query = []
+                for flag,state in self.selected_flag_filters.items():
+                    flags_query.append('{}=={}'.format(flag,state))
+                if flags_query:
+                    query_filter = ' & '.join(flags_query)
+                    logger.info("Filering df with '{}'".format(query_filter))
+                    # datasets[filt].df = datasets[filt].df.query(self.query_filter)
+                    datasets[filt].df = datasets[filt].df.query('calib_psf_used==True')
+                    logger.info("df size: {:d}".format(len(datasets[filt].df)))
             except Exception as e:
                 logger.error(str(e))
-        pass
 
     def get_dataset_by_filter(self, filter_type):
         global datasets
@@ -365,9 +390,14 @@ class QuickLookComponent(Component):
             ('row1', pn.Row(self.param.data_repository, self._submit_repository)),
             ('row2', pn.Row(self.param.comparison, self._submit_comparison)),
             ('info', self._info),
-            ('flags', pn.Row(self.flag_filter_select,
-                             self.flag_state_select,
-                             self.flag_submit)),
+            ('flags', pn.Column(
+                        pn.Row(self.flag_filter_select,
+                               self.flag_state_select,
+                               self.flag_submit),
+                        pn.Row(self.flag_filter_selected,
+                               # self.flag_state_selected,
+                               self.flag_remove)
+                        )),
             ('query_filter', pn.Row(self.param.query_filter,
                                     self.query_filter_submit,
                                     self.query_filter_clear)),
