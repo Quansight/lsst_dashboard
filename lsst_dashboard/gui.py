@@ -30,7 +30,9 @@ def init_dataset():
 
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.path.join(root_directory, 'examples', 'sample_data')
+    sample_data_directory = os.path.join(root_directory,
+                                         'examples',
+                                         'sample_data')
 
     d = Dataset(sample_data_directory)
     d.connect()
@@ -191,7 +193,6 @@ class QuickLookComponent(Component):
         flag_state = self.flag_state_select.value == 'True'
         self.selected_flag_filters.update({flag_name: flag_state})
         self.param.trigger('selected_flag_filters')
-        pass
 
     def on_run_query_filter_click(self, event):
         logger.info('.on_run_query_filter_click')
@@ -270,12 +271,22 @@ class QuickLookComponent(Component):
     @param.depends('query_filter', watch=True)
     def _update_query_filter(self):
         logger.info(self.query_filter)
+        self.filter_main_dataframe()
+
+
+    def filter_main_dataframe(self):
+
+        # apply flag filters
+        #for flagname, flag_state
+        # apply query filter
+        # trigger refresh of ui
 
         for filt, qa_dataset in datasets.items():
             try:
                 datasets[filt].df = datasets[filt].df.query(self.query_filter)
             except Exception as e:
                 logger.error(str(e))
+        pass
 
     def get_dataset_by_filter(self, filter_type):
         global datasets
