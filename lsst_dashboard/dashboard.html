@@ -11,13 +11,24 @@
 
 <style>
 
+.navbar {
+  background-color: #272b30 !important;
+}
+
 
 .logo {
-   width: 125px;
+   width: 88px;
    height: auto;
 }
 
 .controls-area {
+}
+
+.data-repo-input  p {
+  color:white;
+  margin: 0;
+  position: relative;
+  top: -5px;
 }
 
 </style>
@@ -26,10 +37,16 @@
 
 {% block contents %}
     <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
-      <a class="navbar-brand col-sm-4 col-md-2 mr-0" href="https://www.lsst.org">
-    <img class="logo"
-         src="https://www.lsst.org/sites/default/files/logos/LSST_web_black.png" />
+      <a class="navbar-brand col-sm-4 col-md-2 mr-0" href="https://www.lsst.org" style="background-color: #272b30;">
+        <span>
+          <img class="logo"
+               src="https://www.lsst.org/sites/default/files/logos/LSST_web_black.png" />
+    <span style="color:white;background-color:rbga(0,0,0,0);font-size:14pt;">
+        <i>Data Processing Explorer</i>
+      </span>
+      </span>
 </a>
+  
       <ul class="navbar-nav px-3">
           <li class="nav-item">{{ embed(roots.data_repo_path) }}</li>
       </ul>
@@ -90,8 +107,6 @@
 
             {{ embed(roots.metrics_plots) }}
             {{ embed(roots.status_message_queue) }}
-        </main>
-      </div>
     </div>
 
 {% endblock %}
