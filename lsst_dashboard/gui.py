@@ -121,11 +121,13 @@ def get_unique_object_count():
 
 class QuickLookComponent(Component):
 
-    data_repository = param.String(label=None)
+    data_repository = param.String(label=None, allow_None=True)
 
     query_filter = param.String()
 
     tract_count = param.Number(default=0)
+
+    status_message_queue = param.List(default=[])
 
     patch_count = param.Number(default=0)
 
@@ -157,7 +159,7 @@ class QuickLookComponent(Component):
 
         self._submit_repository = pn.widgets.Button(
             name='Load Data', width=50, align='end')
-        self._submit_repository.on_click(self._update)
+        self._submit_repository.on_click(self._on_load_data_repository)
 
         self._submit_comparison = pn.widgets.Button(
             name='Submit', width=50, align='end')
@@ -188,6 +190,7 @@ class QuickLookComponent(Component):
             name='Clear', width=50, align='end')
         self.query_filter_clear.on_click(self.on_query_filter_clear)
 
+        self.status_message = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._info = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._flags = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._metric_panels = []
@@ -198,6 +201,19 @@ class QuickLookComponent(Component):
         self._plot_layout = pn.Column(sizing_mode='stretch_width',
                                       margin=(10, 10, 10, 10))
         self._update(None)
+
+    def _on_load_data_repository(self, event):
+        logger.info('._on_load_data_repository')
+        data_repo_path = self.data_repository
+        self.add_status_message('Loading Data...', data_repo_path,
+                                level='info')
+
+    def add_status_message(self, title, body, level='info', duration=5):
+        msg = {'title': title, 'body': body}
+        msg_args = dict(msg=msg, level=level, duration=duration)
+        self.status_message_queue.append(msg_args)
+        self.param.trigger('status_message_queue')
+
 
     def on_flag_submit_click(self, event):
         logger.info('.on_flag_submit_click')
@@ -269,6 +285,62 @@ class QuickLookComponent(Component):
         html += self.create_info_element('Unique Objects',
                                          self.unique_object_count)
         self._info.object = '<ul>{}</ul>'.format(html)
+
+
+    def create_status_message(self, msg, level='info', duration=5):
+        import uuid
+
+        msg_id = str(uuid.uuid1())
+
+        color_levels = dict(info='rgba(0,191,255, .8)',
+                            error='rgba(249, 180, 45, .8)',
+                            warning='rgba(240, 255, 0, .8)',
+                            success='rgba(3, 201, 169, .8)')
+
+        box_css = """
+        width: 17rem;
+        height: 7rem;
+        background-color: {};
+        border: 1px solid #777777;
+        display: inline-block;
+        color: white;
+        padding: 5px;
+        """.format(color_levels.get(level, 'rgba(0,0,0,0)'))
+
+        remove_msg_func = ('<script>(function() { '
+                           'setTimeout(function(){ document.getElementById("'+ msg_id +'").outerHTML = ""; }, ' + str(duration * 1000) +')})()'
+                           '</script>')
+
+        text = '<span style="{}"><h4>{}</h4><p>{}</p></span></li>'.format(box_css, msg.get('title'), msg.get('body') )
+
+        return ('<li id="{}" class="status-message nav-item">'
+                '{}'
+                '{}'
+                '</lil>').format(msg_id,  remove_msg_func, text)
+
+    @param.depends('status_message_queue', watch=True)
+    def _update_status_message(self):
+
+        queue_css = """
+        list-style-type: none;
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background-color: rgba(0,0,0,0);
+        border: none;
+        display: inline-block;
+        margin-left:7px;
+        """
+
+
+        html = ''
+
+        while len(self.status_message_queue):
+            msg = self.status_message_queue.pop()
+            html += self.create_status_message(**msg)
+
+        self.status_message.object = '<ul style="{}">{}</ul>'.format(queue_css, html)
+        pass
 
     def update_info_counts(self):
         self.tract_count = get_tract_count()
@@ -412,6 +484,7 @@ class QuickLookComponent(Component):
         components2 = [
             ('data_repo_path', pn.Row(self.param.data_repository,
                                       self._submit_repository)),
+            ('status_message_queue', self.status_message),
             ('view_switcher', pn.Row(self._switch_view)),
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
