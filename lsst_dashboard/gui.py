@@ -164,17 +164,17 @@ class QuickLookComponent(Component):
         self._submit_comparison.on_click(self._update)
 
         self.flag_filter_select = pn.widgets.Select(
-            name='Flag Filters', width=180, options=flags)
+            name='Add Flag Filter', width=180, options=flags)
 
         self.flag_state_select = pn.widgets.Select(
             name='Flag State', width=75, options=['True', 'False'])
 
         self.flag_submit = pn.widgets.Button(
-            name='Add Flag Filter', width=10, height=30, align='end')
+            name='Add Selecterd Filter', width=10, height=30, align='end')
         self.flag_submit.on_click(self.on_flag_submit_click)
 
         self.flag_filter_selected = pn.widgets.Select(
-            name='Selected Flag Filters', width=250)
+            name='Remove Flag Filter', width=250)
 
         self.flag_remove = pn.widgets.Button(
             name='Remove Selected Filter', width=50, height=30, align='end')
