@@ -480,14 +480,14 @@ class QuickLookComponent(Component):
         else:
             return filtered_datasets[filter_type]
 
-    def add_message_from_error(self, title, info, exception_obj):
+    def add_message_from_error(self, title, info, exception_obj, level='error'):
 
         tb = traceback.format_exception_only(type(exception_obj),
                                              exception_obj)[0]
         msg_body = '<b>Path:</b> ' + info + '<br />'
         msg_body += '<b>Cause:</b> ' + tb
         self.add_status_message(title,
-                                msg_body, level='error', duration=10)
+                                msg_body, level=level, duration=10)
 
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
@@ -499,6 +499,11 @@ class QuickLookComponent(Component):
         try:
             # dsets_visits, filt, metrics
             top_plot = visit_plot2(datavisits,None, None)
+
+        except ValueError as e:
+            self.add_message_from_error('Visit Plot Warning', 
+                                        '', e, level='warning')
+
         except Exception as e:
             self.add_message_from_error('Error creating Top Plot', '', e)
 
