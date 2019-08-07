@@ -1,3 +1,4 @@
+import traceback
 import logging
 from functools import partial
 import os
@@ -28,18 +29,19 @@ with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
 
 
-def init_dataset():
+datasets = None
+filtered_datasets = None
+datavisits = None
+flags = None
+
+
+def init_dataset(data_repo_path):
 
     #tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
     #tracts = ['9697', '9813', '9615']
 
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.path.join(root_directory,
-                                         'examples',
-                                         'sample_data')
 
-    d = Dataset(sample_data_directory)
+    d = Dataset(data_repo_path)
     d.connect()
     d.load_from_hdf()
     datasets = {}
@@ -66,7 +68,29 @@ def init_dataset():
 
     return datasets, filtered_datasets, datavisits, d.metadata['flags']
 
-datasets, filtered_datasets, datavisits, flags = init_dataset()
+
+def load_data(data_repo_path=None):
+
+    global datasets
+    global filtered_datasets
+    global datavisits
+    global flags
+
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    root_directory = os.path.split(current_directory)[0]
+    sample_data_directory = os.path.join(root_directory,
+                                         'examples',
+                                         'sample_data')
+    if not data_repo_path:
+        data_repo_path = sample_data_directory
+
+    if not os.path.exists(data_repo_path):
+        raise ValueError('Data Repo Path does not exist.')
+
+    datasets_tuple = init_dataset(data_repo_path)
+    datasets, filtered_datasets, datavisits, flags = datasets_tuple
+
+load_data()
 
 
 def get_available_metrics(filt):
@@ -205,8 +229,20 @@ class QuickLookComponent(Component):
     def _on_load_data_repository(self, event):
         logger.info('._on_load_data_repository')
         data_repo_path = self.data_repository
-        self.add_status_message('Loading Data...', data_repo_path,
+        self.add_status_message('Load Data Start...', data_repo_path,
                                 level='info')
+
+        try:
+            load_data(data_repo_path)
+        except Exception as e:
+            msg_body = '<b>Path:</b>' + data_repo_path + '<br />'
+            msg_body += '<b>Cause:</b>' + traceback.format_exception_only(type(e), e)[0]
+            self.add_status_message('Error While Loading Data:',
+                                    msg_body, level='error', duration=10)
+            return
+
+        self.add_status_message('Data Ready', data_repo_path,
+                                level='success', duration=3)
 
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
@@ -400,8 +436,10 @@ class QuickLookComponent(Component):
                     logger.info("Filtering df with '{}'".format(query_expr))
                     filtered_datasets[filt] = QADataset(datasets[filt].df.query(query_expr))
                     logger.info("df size: {:d}".format(len(filtered_datasets[filt].df)))
+
             except Exception as e:
-                logger.error(str(e))
+                self.add_status_message('Filtering Error:', str(e), level='error', duration=10)
+
         self._update_selected_metrics_by_filter()
 
     def get_dataset_by_filter(self, filter_type):
@@ -599,5 +637,29 @@ _css = '''
     overflow-y: auto;
 }
 '''
+
 pn.extension(raw_css=[_css])
+
+from collections import defaultdict
+from bokeh.plotting import Figure
+
+
+def link_axes(root_view, root_model):
+    range_map = defaultdict(list)
+    for fig in root_model.select({'type': Figure}):
+        if fig.x_range.tags:
+            range_map[fig.x_range.tags[0]].append((fig, fig.x_range))
+        if fig.y_range.tags:
+            range_map[fig.y_range.tags[0]].append((fig, fig.y_range))
+
+    for tag, axes in range_map.items():
+        fig, axis = axes[0]
+        for fig, _ in axes[1:]:
+            if tag in fig.x_range.tags:
+                fig.x_range = axis
+            if tag in fig.y_range.tags:
+                fig.y_range = axis
+
+pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
+
 dashboard = Application(body=QuickLookComponent())
