@@ -28,6 +28,32 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
 
+pn.extension()
+
+from collections import defaultdict
+from bokeh.plotting import Figure
+
+
+def link_axes(root_view, root_model):
+    range_map = defaultdict(list)
+    for fig in root_model.select({'type': Figure}):
+        if fig.x_range.tags:
+            range_map[fig.x_range.tags[0]].append((fig, fig.x_range))
+        if fig.y_range.tags:
+            range_map[fig.y_range.tags[0]].append((fig, fig.y_range))
+
+    for tag, axes in range_map.items():
+        fig, axis = axes[0]
+        for fig, _ in axes[1:]:
+            if tag in fig.x_range.tags:
+                fig.x_range = axis
+                logger.info('FIG XRANGE UPDATED!!!')
+            if tag in fig.y_range.tags:
+                fig.y_range = axis
+                logger.info('FIG YRANGE UPDATED!!!')
+    logger.info(range_map)
+
+pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
 datasets = None
 filtered_datasets = None
@@ -489,7 +515,8 @@ class QuickLookComponent(Component):
         if len(self.plots_list):
             if view_mode == 'Skyplot View':
                 self._plot_top.clear()
-                tab_layout = pn.Tabs(*self.skyplot_list, sizing_mode='stretch_both')
+                tab_layout = pn.Tabs(*self.skyplot_list,
+                                     sizing_mode='stretch_both')
                 try:
                     _ = self._plot_layout.pop(0)
                 except:
@@ -638,28 +665,5 @@ _css = '''
 }
 '''
 
-pn.extension(raw_css=[_css])
-
-from collections import defaultdict
-from bokeh.plotting import Figure
-
-
-def link_axes(root_view, root_model):
-    range_map = defaultdict(list)
-    for fig in root_model.select({'type': Figure}):
-        if fig.x_range.tags:
-            range_map[fig.x_range.tags[0]].append((fig, fig.x_range))
-        if fig.y_range.tags:
-            range_map[fig.y_range.tags[0]].append((fig, fig.y_range))
-
-    for tag, axes in range_map.items():
-        fig, axis = axes[0]
-        for fig, _ in axes[1:]:
-            if tag in fig.x_range.tags:
-                fig.x_range = axis
-            if tag in fig.y_range.tags:
-                fig.y_range = axis
-
-pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
 dashboard = Application(body=QuickLookComponent())
