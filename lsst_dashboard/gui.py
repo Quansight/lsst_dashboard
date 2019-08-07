@@ -11,7 +11,7 @@ import numpy as np
 from .base import Application
 from .base import Component
 
-from .plots import visits_plot, visit_plot2
+from .plots import visits_plot
 from .plots import scattersky, FilterStream, skyplot
 
 from .dataset import Dataset
@@ -47,11 +47,8 @@ def link_axes(root_view, root_model):
         for fig, _ in axes[1:]:
             if tag in fig.x_range.tags:
                 fig.x_range = axis
-                logger.info('FIG XRANGE UPDATED!!!')
             if tag in fig.y_range.tags:
                 fig.y_range = axis
-                logger.info('FIG YRANGE UPDATED!!!')
-    logger.info(range_map)
 
 pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
@@ -478,17 +475,17 @@ class QuickLookComponent(Component):
 
         plots_list = []
         skyplot_list = []
+
         top_plot = None
+        try:
+            top_plot = visits_plot(datavisits, self.selected_metrics_by_filter)
+        except Exception as e:
+            self.add_message_from_error('Visits Plot Error',
+                                        '', e)
+
+        self.plot_top = top_plot
 
         for filt, plots in self.selected_metrics_by_filter.items():
-            # Top plot
-            try:
-                top_plot = visit_plot2(datavisits, filt, plots, top_plot)
-            except Exception as e:
-                logger.error('VISIT-PLOT2 ERROR')
-                logger.error(e)
-                self.add_message_from_error('Visit Plot Warning', '', e)
-
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
             for i, p in enumerate(plots):
@@ -504,7 +501,6 @@ class QuickLookComponent(Component):
                 plot = plots_ss
                 plots_list.append((p,plot))
 
-        self.plot_top = top_plot
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
 

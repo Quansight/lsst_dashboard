@@ -1,5 +1,5 @@
 {% extends base %}
-    
+
 {% block postamble %}
 
     <!-- Custom styles for this template -->
@@ -46,7 +46,7 @@
       </span>
       </span>
 </a>
-  
+
       <ul class="navbar-nav px-3">
           <li class="nav-item">{{ embed(roots.data_repo_path) }}</li>
       </ul>
@@ -107,6 +107,7 @@
 
             {{ embed(roots.metrics_plots) }}
             {{ embed(roots.status_message_queue) }}
+        </main>
     </div>
 
 {% endblock %}
