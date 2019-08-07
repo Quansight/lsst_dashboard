@@ -546,9 +546,16 @@ class QuickLookComponent(Component):
         tmpl = pn.Template(dashboard_html_template)
 
         # How do I fix width of param string input
+
+        data_repo_widget = pn.panel(self.param.data_repository,
+                                    show_labels=False)
+        data_repo_widget.width = 200
+        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'), data_repo_widget, self._submit_repository)
+        data_repo_row.css_classes = ['data-repo-input']
+
+
         components2 = [
-            ('data_repo_path', pn.Row(self.param.data_repository,
-                                      self._submit_repository)),
+            ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
             ('view_switcher', pn.Row(self._switch_view)),
             ('metrics_selectors', self._metric_layout),
