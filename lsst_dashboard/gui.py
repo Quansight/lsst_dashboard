@@ -20,8 +20,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
-
 _filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']#, 'HSC-Y']
+
+current_directory = os.path.dirname(os.path.abspath(__file__))
+
+with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
+    dashboard_html_template = template_file.read()
 
 
 def init_dataset():
@@ -117,7 +121,7 @@ def get_unique_object_count():
 
 class QuickLookComponent(Component):
 
-    data_repository = param.String()
+    data_repository = param.String(label=None)
 
     query_filter = param.String()
 
@@ -152,7 +156,7 @@ class QuickLookComponent(Component):
         super().__init__(**param)
 
         self._submit_repository = pn.widgets.Button(
-            name='Submit', width=50, align='end')
+            name='Load Data', width=50, align='end')
         self._submit_repository.on_click(self._update)
 
         self._submit_comparison = pn.widgets.Button(
@@ -160,20 +164,20 @@ class QuickLookComponent(Component):
         self._submit_comparison.on_click(self._update)
 
         self.flag_filter_select = pn.widgets.Select(
-            name='Flag Filters', width=200, options=flags)
+            name='Flag Filters', width=180, options=flags)
 
         self.flag_state_select = pn.widgets.Select(
             name='Flag State', width=75, options=['True', 'False'])
 
         self.flag_submit = pn.widgets.Button(
-            name='+', width=10, height=30, align='end')
+            name='Add Flag Filter', width=10, height=30, align='end')
         self.flag_submit.on_click(self.on_flag_submit_click)
 
         self.flag_filter_selected = pn.widgets.Select(
-            name='Selected Flag Filters', width=295)
+            name='Selected Flag Filters', width=250)
 
         self.flag_remove = pn.widgets.Button(
-            name='-', width=10, height=30, align='end')
+            name='Remove Selected Filter', width=50, height=30, align='end')
         self.flag_remove.on_click(self.on_flag_remove_click)
 
         self.query_filter_submit = pn.widgets.Button(
@@ -247,9 +251,9 @@ class QuickLookComponent(Component):
         """
 
         fval = format(value, ',')
-        return '<span style="{}"><b>{}</b> {}</span>'.format(box_css,
-                                                             fval,
-                                                             name)
+        return '<li class="nav-item"><span style="{}"><b>{}</b> {}</span></li>'.format(box_css,
+                                                                      fval,
+                                                                      name)
 
     @param.depends('tract_count', 'patch_count', 'visit_count',
                    'filter_count', 'unique_object_count', watch=True)
@@ -264,7 +268,7 @@ class QuickLookComponent(Component):
         html += self.create_info_element('Visits', self.visit_count)
         html += self.create_info_element('Unique Objects',
                                          self.unique_object_count)
-        self._info.object = html
+        self._info.object = '<ul>{}</ul>'.format(html)
 
     def update_info_counts(self):
         self.tract_count = get_tract_count()
@@ -402,27 +406,30 @@ class QuickLookComponent(Component):
     def jinja(self):
         from ._jinja2_templates import quicklook
         import holoviews as hv
-        tmpl = pn.Template(quicklook)
-        components = [
-            ('row1', pn.Row(self.param.data_repository, self._submit_repository)),
-            ('row2', pn.Row(self.param.comparison, self._submit_comparison)),
-            ('info', self._info),
+        tmpl = pn.Template(dashboard_html_template)
+
+        # How do I fix width of param string input
+        components2 = [
+            ('data_repo_path', pn.Row(self.param.data_repository,
+                                      self._submit_repository)),
+            ('view_switcher', pn.Row(self._switch_view)),
+            ('metrics_selectors', self._metric_layout),
+            ('metrics_plots', self._plot_layout),
+            ('plot_top', self._plot_top),
+
             ('flags', pn.Column(
                         pn.Row(self.flag_filter_select,
-                               self.flag_state_select,
-                               self.flag_submit),
-                        pn.Row(self.flag_filter_selected,
-                               self.flag_remove)
+                               self.flag_state_select),
+                        pn.Row(self.flag_submit),
+                        pn.Row(self.flag_filter_selected),
+                        pn.Row(self.flag_remove),
                         )),
-            ('query_filter', pn.Row(self.param.query_filter,
-                                    self.query_filter_submit,
-                                    self.query_filter_clear)),
-            ('metrics_selectors', self._metric_layout),
-            ('view_switchers', self._switch_view),
-            ('plot_top', self._plot_top),
-            ('metrics_plots', self._plot_layout),
+            ('query_filter', pn.Column(self.param.query_filter,
+                                       pn.Row(self.query_filter_submit,
+                                              self.query_filter_clear)),
+            ),
         ]
-        for l, c in components:
+        for l, c in components2:
             tmpl.add_panel(l, c)
         return tmpl
 
@@ -488,7 +495,6 @@ class MetricPanel(param.Parameterized):
 
     def panel(self):
         return pn.Column(
-            pn.pane.Markdown('##### %s Metrics' % self.metric, margin=0),
             pn.Tabs(*self._chkbox_groups, sizing_mode='stretch_width',
                     margin=0),
             sizing_mode='stretch_width'
