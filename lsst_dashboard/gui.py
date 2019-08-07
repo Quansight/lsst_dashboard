@@ -253,7 +253,6 @@ class QuickLookComponent(Component):
         self._update(None)
 
     def _on_load_data_repository(self, event):
-        logger.info('._on_load_data_repository')
         data_repo_path = self.data_repository
         self.add_status_message('Load Data Start...', data_repo_path,
                                 level='info')
@@ -276,7 +275,6 @@ class QuickLookComponent(Component):
 
 
     def on_flag_submit_click(self, event):
-        logger.info('.on_flag_submit_click')
         flag_name = self.flag_filter_select.value
         flag_state = self.flag_state_select.value == 'True'
         self.selected_flag_filters.update({flag_name: flag_state})
@@ -286,7 +284,6 @@ class QuickLookComponent(Component):
                                 level='info')
 
     def on_flag_remove_click(self, event):
-        logger.info('.on_flag_remove_click')
         flag_name = self.flag_filter_selected.value.split()[0]
         del self.selected_flag_filters[flag_name]
 
@@ -296,11 +293,9 @@ class QuickLookComponent(Component):
         self.param.trigger('selected_flag_filters')
 
     def on_run_query_filter_click(self, event):
-        logger.info('.on_run_query_filter_click')
         pass
 
     def on_query_filter_clear(self, event):
-        logger.info('.on_query_filter_clear')
         self.query_filter = ''
         pass
 
@@ -426,19 +421,10 @@ class QuickLookComponent(Component):
 
     @param.depends('query_filter', watch=True)
     def _update_query_filter(self):
-        logger.info(self.query_filter)
-        logger.info(dir(self.query_filter_submit))
-        # query_filter = self.query_filter.strip()
-        # if query_filter:
-        #     try:
-        #         datasets[_filters[0]].df.head().query(query_filter)
-        #     except:
-
         self.filter_main_dataframe()
 
     @param.depends('selected_flag_filters', watch=True)
     def _update_selected_flags(self):
-        logger.info(self.selected_flag_filters)
         selected_flags = ['{} : {}'.format(f,v)
                             for f,v in self.selected_flag_filters.items()]
         self.flag_filter_selected.options = selected_flags
@@ -463,9 +449,7 @@ class QuickLookComponent(Component):
                         query_expr = '{!s}'.format(query_filter)
 
                 if query_expr:
-                    logger.info("Filtering df with '{}'".format(query_expr))
                     filtered_datasets[filt] = QADataset(datasets[filt].df.query(query_expr))
-                    logger.info("df size: {:d}".format(len(filtered_datasets[filt].df)))
 
             except Exception as e:
                 self.add_message_from_error('Filtering Error', '', e)
@@ -496,20 +480,15 @@ class QuickLookComponent(Component):
         skyplot_list = []
         top_plot = None
 
-        try:
-            # dsets_visits, filt, metrics
-            top_plot = visit_plot2(datavisits,None, None)
-
-        except ValueError as e:
-            self.add_message_from_error('Visit Plot Warning', 
-                                        '', e, level='warning')
-
-        except Exception as e:
-            self.add_message_from_error('Error creating Top Plot', '', e)
-
-        self.plot_top = top_plot
-
         for filt, plots in self.selected_metrics_by_filter.items():
+            # Top plot
+            try:
+                top_plot = visit_plot2(datavisits, filt, plots, top_plot)
+            except Exception as e:
+                logger.error('VISIT-PLOT2 ERROR')
+                logger.error(e)
+                self.add_message_from_error('Visit Plot Warning', '', e)
+
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
             for i, p in enumerate(plots):
@@ -524,14 +503,15 @@ class QuickLookComponent(Component):
                                       ydim=p)
                 plot = plots_ss
                 plots_list.append((p,plot))
+
+        self.plot_top = top_plot
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
+
         self._switch_view_mode()
 
     def _switch_view_mode(self, *events):
         view_mode = self._switch_view.value
-        logging.info(view_mode)
-        logger.info(self.plots_list)
         if len(self.plots_list):
             if view_mode == 'Skyplot View':
                 self._plot_top.clear()

@@ -465,41 +465,43 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
-def visit_plot2(dsets_visits, filt, metrics):
+def visit_plot2(dsets_visits, filt, metric, plot=None):
     # Actually use metrics raise:
-    # Support more than 1 filter on the 
+    # Support more than 1 filter on the
     # Add legend to indicate filter - metric combos
     # Raise exception for metrics that don't exists
     # Throw
 
-    metrics = ['base_Footprint_nPix',
-                     'Gaussian-PSF_magDiff_mmag',
-                     'CircAper12pix-PSF_magDiff_mmag',
-                     'Kron-PSF_magDiff_mmag',
-                     'traceSdss_pixel',
-                     'traceSdss_fwhm_pixel',
-                     'psfTraceSdssDiff_percent',
-                     'e1ResidsSdss_milli',
-                     'e2ResidsSdss_milli',
-                     'deconvMoments']
+    # metrics = ['base_Footprint_nPix',
+    #                  'Gaussian-PSF_magDiff_mmag',
+    #                  'CircAper12pix-PSF_magDiff_mmag',
+    #                  'Kron-PSF_magDiff_mmag',
+    #                  'traceSdss_pixel',
+    #                  'traceSdss_fwhm_pixel',
+    #                  'psfTraceSdssDiff_percent',
+    #                  'e1ResidsSdss_milli',
+    #                  'e2ResidsSdss_milli',
+    #                  'deconvMoments']
 
-    filt = 'HSC-G'
-
-    xx = dsets_visits[filt][metrics].reset_index(-1)
-    xx = pd.DataFrame(getattr(sklearn.preprocessing,
-                              'minmax_scale',
-                              lambda x: x)(xx),
-                      index=xx.index,
-                      columns=xx.columns).groupby(xx.index)
-
-    plot = None
-    for metric in metrics:
+    try:
+        xx = dsets_visits[filt][metric].reset_index(-1)
+        xx = pd.DataFrame(getattr(sklearn.preprocessing,
+                                  'minmax_scale',
+                                  lambda x: x)(xx),
+                          index=xx.index,
+                          columns=xx.columns).groupby(xx.index)
+        label = '{} - {}'.format(filt,metric)
         if not plot:
-            plot = hv.Curve(xx[metric].mean())
+            plot = hv.Curve(xx[metric].mean(), label=label)
         else:
-            plot *= hv.Curve(xx[metric].mean())
+            plot *= hv.Curve(xx[metric].mean(), label=label)
 
-    return plot.options(responsive=True, height=200, show_grid=True)
+        return plot.options(responsive=True, height=200, show_grid=True)
+
+    except Exception as e:
+        logger.error("VISIT PLOT")
+        logger.error(e)
+        raise e
 
 
 def visits_plot(dsets_visits, filters_to_metrics):
