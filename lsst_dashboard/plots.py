@@ -466,6 +466,11 @@ class skyshade(Operation):
 
 
 def visit_plot2(dsets_visits, filt, metrics):
+    # Actually use metrics raise:
+    # Support more than 1 filter on the 
+    # Add legend to indicate filter - metric combos
+    # Raise exception for metrics that don't exists
+    # Throw
 
     metrics = ['base_Footprint_nPix',
                      'Gaussian-PSF_magDiff_mmag',
