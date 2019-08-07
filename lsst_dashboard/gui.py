@@ -261,10 +261,8 @@ class QuickLookComponent(Component):
         try:
             load_data(data_repo_path)
         except Exception as e:
-            msg_body = '<b>Path:</b>' + data_repo_path + '<br />'
-            msg_body += '<b>Cause:</b>' + traceback.format_exception_only(type(e), e)[0]
-            self.add_status_message('Error While Loading Data:',
-                                    msg_body, level='error', duration=10)
+            self.add_message_from_error('Data Loading Error',
+                                        data_repo_path, e)
             return
 
         self.add_status_message('Data Ready', data_repo_path,
@@ -283,11 +281,18 @@ class QuickLookComponent(Component):
         flag_state = self.flag_state_select.value == 'True'
         self.selected_flag_filters.update({flag_name: flag_state})
         self.param.trigger('selected_flag_filters')
+        self.add_status_message('Added Flag Filter',
+                                '{} : {}'.format(flag_name, flag_state),
+                                level='info')
 
     def on_flag_remove_click(self, event):
         logger.info('.on_flag_remove_click')
         flag_name = self.flag_filter_selected.value.split()[0]
         del self.selected_flag_filters[flag_name]
+
+        self.add_status_message('Removed Flag Filter',
+                                flag_name, level='info')
+
         self.param.trigger('selected_flag_filters')
 
     def on_run_query_filter_click(self, event):
@@ -360,8 +365,7 @@ class QuickLookComponent(Component):
                             success='rgba(3, 201, 169, .8)')
 
         box_css = """
-        width: 17rem;
-        height: 7rem;
+        width: 15rem;
         background-color: {};
         border: 1px solid #777777;
         display: inline-block;
@@ -373,7 +377,7 @@ class QuickLookComponent(Component):
                            'setTimeout(function(){ document.getElementById("'+ msg_id +'").outerHTML = ""; }, ' + str(duration * 1000) +')})()'
                            '</script>')
 
-        text = '<span style="{}"><h4>{}</h4><p>{}</p></span></li>'.format(box_css, msg.get('title'), msg.get('body') )
+        text = '<span style="{}"><h5>{}</h5><hr/><p>{}</p></span></li>'.format(box_css, msg.get('title'), msg.get('body') )
 
         return ('<li id="{}" class="status-message nav-item">'
                 '{}'
@@ -464,7 +468,8 @@ class QuickLookComponent(Component):
                     logger.info("df size: {:d}".format(len(filtered_datasets[filt].df)))
 
             except Exception as e:
-                self.add_status_message('Filtering Error:', str(e), level='error', duration=10)
+                self.add_message_from_error('Filtering Error', '', e)
+                return
 
         self._update_selected_metrics_by_filter()
 
@@ -475,18 +480,28 @@ class QuickLookComponent(Component):
         else:
             return filtered_datasets[filter_type]
 
+    def add_message_from_error(self, title, info, exception_obj):
+
+        tb = traceback.format_exception_only(type(exception_obj),
+                                             exception_obj)[0]
+        msg_body = '<b>Path:</b> ' + info + '<br />'
+        msg_body += '<b>Cause:</b> ' + tb
+        self.add_status_message(title,
+                                msg_body, level='error', duration=10)
+
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
 
         plots_list = []
         skyplot_list = []
-        #top_plot = create_top_metric_line_plot('', self.selected_metrics_by_filter, None)
-        top_plot = visit_plot2(datavisits,None, None)
-        #top_plot = visits_plot(datavisits,
-        #                       self.selected_metrics_by_filter)
-        # plots_list.append(('a',top_plot))
-        # self._plot_top.clear()
-        # self._plot_top.append(top_plot)
+        top_plot = None
+
+        try:
+            # dsets_visits, filt, metrics
+            top_plot = visit_plot2(datavisits,None, None)
+        except Exception as e:
+            self.add_message_from_error('Error creating Top Plot', '', e)
+
         self.plot_top = top_plot
 
         for filt, plots in self.selected_metrics_by_filter.items():
