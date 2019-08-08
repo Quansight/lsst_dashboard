@@ -24,8 +24,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
-_filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']#, 'HSC-Y']
-
 current_directory = os.path.dirname(os.path.abspath(__file__))
 
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
@@ -37,31 +35,37 @@ from collections import defaultdict
 from bokeh.plotting import Figure
 
 
-def link_axes(root_view, root_model):
-    range_map = defaultdict(list)
-    for fig in root_model.select({'type': Figure}):
-        if fig.x_range.tags:
-            range_map[fig.x_range.tags[0]].append((fig, fig.x_range))
-        if fig.y_range.tags:
-            range_map[fig.y_range.tags[0]].append((fig, fig.y_range))
+#def link_axes(root_view, root_model):
+#    range_map = defaultdict(list)
+#    for fig in root_model.select({'type': Figure}):
+#        if fig.x_range.tags:
+#            range_map[fig.x_range.tags[0]].append((fig, fig.x_range))
+#        if fig.y_range.tags:
+#            range_map[fig.y_range.tags[0]].append((fig, fig.y_range))
+#
+#    for tag, axes in range_map.items():
+#        fig, axis = axes[0]
+#        for fig, _ in axes[1:]:
+#            if tag in fig.x_range.tags:
+#                fig.x_range = axis
+#            if tag in fig.y_range.tags:
+#                fig.y_range = axis
 
-    for tag, axes in range_map.items():
-        fig, axis = axes[0]
-        for fig, _ in axes[1:]:
-            if tag in fig.x_range.tags:
-                fig.x_range = axis
-            if tag in fig.y_range.tags:
-                fig.y_range = axis
-
-pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
+#pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
 datasets = None
 filtered_datasets = None
 datavisits = None
 flags = None
-
+_filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']
 
 def init_dataset(data_repo_path):
+
+    global datasets
+    global filtered_datasets
+    global datavisits
+    global flags
+    global filters
 
     #tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
     #tracts = ['9697', '9813', '9615']
@@ -70,6 +74,11 @@ def init_dataset(data_repo_path):
     d = Dataset(data_repo_path)
     d.connect()
     d.load_from_hdf()
+    '''
+    d = Dataset(path)
+    d.connect()
+    d.init_data()
+    '''
     datasets = {}
     filtered_datasets = {}
     for filt in _filters:
@@ -92,16 +101,11 @@ def init_dataset(data_repo_path):
         dataset_v = dvf['9615']
         datavisits[filt] = dataset_v
 
-    return datasets, filtered_datasets, datavisits, d.metadata['flags']
+    flags = d.metadata['flags']
+    # _filters = d.metadata['filters']
 
 
 def load_data(data_repo_path=None):
-
-    global datasets
-    global filtered_datasets
-    global datavisits
-    global flags
-
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
     sample_data_directory = os.path.join(root_directory,
@@ -113,29 +117,15 @@ def load_data(data_repo_path=None):
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    datasets_tuple = init_dataset(data_repo_path)
-    datasets, filtered_datasets, datavisits, flags = datasets_tuple
+    init_dataset(data_repo_path)
+    return datasets, flags, _filters
+
 
 #  Initial .load_data()
 load_data()
 
 
 def get_available_metrics(filt):
-    # metrics = ['base_Footprint_nPix',
-    #            'Gaussian-PSF_magDiff_mmag',
-    #            'CircAper12pix-PSF_magDiff_mmag',
-    #            'Kron-PSF_magDiff_mmag',
-    #            'CModel-PSF_magDiff_mmag',
-    #            'traceSdss_pixel',
-    #            'traceSdss_fwhm_pixel',
-    #            'psfTraceSdssDiff_percent',
-    #            'e1ResidsSdss_milli',
-    #            'e2ResidsSdss_milli',
-    #            'deconvMoments',
-    #            'compareUnforced_Gaussian_magDiff_mmag',
-    #            'compareUnforced_CircAper12pix_magDiff_mmag',
-    #            'compareUnforced_Kron_magDiff_mmag',
-    #            'compareUnforced_CModel_magDiff_mmag']
     try:
         metrics = datasets[filt].vdims
     except:
@@ -525,6 +515,7 @@ class QuickLookComponent(Component):
                 plot_sky = skyplot(dset.ds,
                                    filter_stream=filter_stream,
                                    vdim=p)
+
                 skyplot_list.append((filt + ' - ' + p, plot_sky))
 
                 plots_ss = scattersky(dset.ds,#.groupby('label'),
@@ -539,13 +530,28 @@ class QuickLookComponent(Component):
         self.update_display()
         self._switch_view_mode()
 
+    def linked_tab_plots(self):
+
+        linked = None
+        tabs = []
+        for name, plot in self.skyplot_list:
+            if not linked:
+                linked = pn.panel(plot)
+                tabs.append((name, linked))
+            else:
+                plot_panel = pn.panel(plot)
+                linked.jslink(plot_panel, x_range='x_range')
+                tabs.append((name, plot_panel))
+
+        return pn.Tabs(*tabs, sizing_mode='stretch_both')
+
     def _switch_view_mode(self, *events):
         view_mode = self._switch_view.value
         if len(self.plots_list):
             if view_mode == 'Skyplot View':
                 self._plot_top.clear()
-                tab_layout = pn.Tabs(*self.skyplot_list,
-                                     sizing_mode='stretch_both')
+
+                tab_layout = self.linked_tab_plots()
                 try:
                     _ = self._plot_layout.pop(0)
                 except:
