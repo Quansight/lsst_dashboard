@@ -446,7 +446,6 @@ class skyshade(Operation):
         # decimate_opts = dict(plot={'tools':['hover', 'box_select']},
         #                     style={'alpha':0, 'size':self.p.decimate_size,
         #                            'nonselection_alpha':0})
-
         # decimated = decimate(element, max_samples=self.p.max_samples).opts(**decimate_opts)
 
         return datashaded.options(responsive=True, height=300)  # * decimated
@@ -454,7 +453,6 @@ class skyshade(Operation):
 
 def visits_plot(dsets_visits, filters_to_metrics):
     plot = None
-    ydim = hv.Dimension('y_dim', range=(-1.5, 1.5))
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
             df = dsets_visits[filt][metric].reset_index(-1)
@@ -465,10 +463,22 @@ def visits_plot(dsets_visits, filters_to_metrics):
                               columns=df.columns).groupby(df.index)
             label = '{} - {}'.format(filt,metric)
             if not plot:
-                plot = hv.Curve(df[metric].median(), label=label, ydim=ydim)
+                # Use df.values to avoid automatic naming of axis (use 'x','y')
+                plot = hv.Curve(df[metric].median().values, label=label)
             else:
-                plot *= hv.Curve(df[metric].median(), label=label, ydim=ydim)
+                plot *= hv.Curve(df[metric].median().values, label=label)
+
+    # Using 'soft_range' until data/plots are finished defining
+    plot = plot.redim(y=hv.Dimension('y', soft_range=(-1,1)))
+    xlim = plot.range('x')
+    xdlt = (xlim[1] - xlim[0]) * 0.01
+    xlim = (xlim[0] - xdlt, xlim[1] + xdlt)
+    plot = plot.redim(x=hv.Dimension('x', soft_range=(xlim[0],xlim[1])))
+
+    # Now we rename the axis
+    xlabel = 'visit'
+    ylabel = 'normalized median'
 
     return plot.options(responsive=True, height=200, show_grid=True,
-                        xlabel='visit', ylabel='normalized median',
+                        xlabel=xlabel, ylabel=ylabel,
                         xrotation=45)
