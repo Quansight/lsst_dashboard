@@ -57,6 +57,7 @@ datasets = None
 filtered_datasets = None
 datavisits = None
 flags = None
+
 _filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']
 
 def init_dataset(data_repo_path):
@@ -65,7 +66,7 @@ def init_dataset(data_repo_path):
     global filtered_datasets
     global datavisits
     global flags
-    global filters
+    global _filters
 
     #tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
     #tracts = ['9697', '9813', '9615']
@@ -73,7 +74,11 @@ def init_dataset(data_repo_path):
 
     d = Dataset(data_repo_path)
     d.connect()
-    d.load_from_hdf()
+    d.init_data()
+
+    flags = d.flags
+    _filters = d.filters
+
     '''
     d = Dataset(path)
     d.connect()
@@ -82,35 +87,28 @@ def init_dataset(data_repo_path):
     datasets = {}
     filtered_datasets = {}
     for filt in _filters:
+        dtf = d.tables_df['analysisCoaddTable_forced']
+        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[0])]
+        df = dtf.compute()
 
-        try:
-            dtf = d.tables[filt]
-            df = dtf['analysisCoaddTable_forced']['9615']
-            dataset = QADataset(df)
-            filtered_dataset = QADataset(df.copy())
-        except:
-            dataset = None
-            filtered_dataset = None
+        dataset = QADataset(df)
+        # TODO: defer to later when a filter is set
+        filtered_dataset = QADataset(df.copy())
 
         datasets[filt] = dataset
         filtered_datasets[filt] = filtered_dataset
 
     datavisits = {}
     for filt in _filters:
-        dvf = d.visits[filt]
-        dataset_v = dvf['9615']
-        datavisits[filt] = dataset_v
-
-    flags = d.metadata['flags']
-    # _filters = d.metadata['filters']
+        if filt in datavisits:
+            datavisits[filt] = d.visits[filt]
 
 
 def load_data(data_repo_path=None):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
     sample_data_directory = os.path.join(root_directory,
-                                         'examples',
-                                         'sample_data')
+                                         'examples')
     if not data_repo_path:
         data_repo_path = sample_data_directory
 
@@ -126,10 +124,12 @@ load_data()
 
 
 def get_available_metrics(filt):
-    try:
-        metrics = datasets[filt].vdims
-    except:
-        metrics = None
+    global datasets
+
+    if filt not in datasets.keys():
+        raise ValueError('Filter {} doesnt exist'.format(filt))
+
+    metrics = datasets[filt].vdims
     return metrics
 
 
@@ -430,9 +430,9 @@ class QuickLookComponent(Component):
         """
         Populates the _metrics Row with metrics loaded from the repository
         """
-        filters = list(self.selected_metrics_by_filter.keys())
+        global _filters
 
-        panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
+        panels = [MetricPanel(metric='LSST', filters=_filters, parent=self)]
         self._metric_panels = panels
 
         self._metric_layout.objects = [p.panel() for p in panels]
