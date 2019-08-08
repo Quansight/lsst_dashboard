@@ -29,6 +29,23 @@
   margin: 0;
   position: relative;
   top: -5px;
+  margin-left: -50px !important;
+}
+
+.data-repo-input input {
+  border-radius: 0 !important;
+}
+
+.data-repo-input button {
+  margin-left: -50px !important;
+  background-color: #336699 !important;
+  color: white !important;
+}
+
+button  {
+  border-radius: 0 !important;
+  -webkit-appearance: none;
+  -webkit-border-radius: 0px;
 }
 
 </style>
@@ -47,7 +64,7 @@
       </span>
 </a>
 
-      <ul class="navbar-nav px-3">
+      <ul class="navbar-nav px-3" style="padding: 0 !important;">
           <li class="nav-item">{{ embed(roots.data_repo_path) }}</li>
       </ul>
 

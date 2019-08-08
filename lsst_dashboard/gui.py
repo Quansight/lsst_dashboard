@@ -419,7 +419,7 @@ class QuickLookComponent(Component):
 
         html = ''
 
-        for msg in reversed(self.status_message_queue):
+        for msg in self.status_message_queue:
             html += self.create_status_message(**msg)
             set_timeout(msg.get('duration', 5), self.gen_clear_func(msg))
 
@@ -496,7 +496,7 @@ class QuickLookComponent(Component):
 
         tb = traceback.format_exception_only(type(exception_obj),
                                              exception_obj)[0]
-        msg_body = '<b>Path:</b> ' + info + '<br />'
+        msg_body = '<b>Info:</b> ' + info + '<br />'
         msg_body += '<b>Cause:</b> ' + tb
         self.add_status_message(title,
                                 msg_body, level=level, duration=10)
