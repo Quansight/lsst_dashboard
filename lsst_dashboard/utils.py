@@ -1,6 +1,22 @@
 "collection of utilities"
 from pathlib import Path
 
+import asyncio
+
+
+def set_timeout(seconds, callback):
+
+    async def schedule():
+
+        await asyncio.sleep(seconds)
+
+        if asyncio.iscoroutinefunction(callback):
+            await callback()
+        else:
+            callback()
+
+    asyncio.ensure_future(schedule())
+
 
 def scan_folder(path):
     """Given a folder return available tracts and filters
