@@ -19,3 +19,4 @@ dependencies:
     - jupyterlab
     - fastparquet
     - pytables
+    - pyarrow
