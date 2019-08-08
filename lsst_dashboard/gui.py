@@ -113,6 +113,7 @@ def load_data(data_repo_path=None):
     datasets_tuple = init_dataset(data_repo_path)
     datasets, filtered_datasets, datavisits, flags = datasets_tuple
 
+#  Initial .load_data()
 load_data()
 
 
@@ -283,11 +284,9 @@ class QuickLookComponent(Component):
     def on_flag_remove_click(self, event):
         flag_name = self.flag_filter_selected.value.split()[0]
         del self.selected_flag_filters[flag_name]
-
+        self.param.trigger('selected_flag_filters')
         self.add_status_message('Removed Flag Filter',
                                 flag_name, level='info')
-
-        self.param.trigger('selected_flag_filters')
 
     def on_run_query_filter_click(self, event):
         pass
@@ -545,12 +544,11 @@ class QuickLookComponent(Component):
 
         data_repo_widget = pn.panel(self.param.data_repository,
                                     show_labels=False)
-        data_repo_widget.width = 200
+        data_repo_widget.width = 400
         data_repo_row = pn.Row(pn.panel('Data Repository', align='end'), data_repo_widget, self._submit_repository)
         data_repo_row.css_classes = ['data-repo-input']
 
-
-        components2 = [
+        components = [
             ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
             ('view_switcher', pn.Row(self._switch_view)),
@@ -570,7 +568,7 @@ class QuickLookComponent(Component):
                                               self.query_filter_clear)),
             ),
         ]
-        for l, c in components2:
+        for l, c in components:
             tmpl.add_panel(l, c)
         return tmpl
 
