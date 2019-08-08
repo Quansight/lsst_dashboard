@@ -2,7 +2,6 @@ filters:
   - HSC-R
   - HSC-Z
   - HSC-I
-  - HSC-G
 
 metrics:
     - base_Footprint_nPix
@@ -57,5 +56,4 @@ flags:
 tracts:
   - 9697
   - 9813
-  - 9615
 
