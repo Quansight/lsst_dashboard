@@ -28,6 +28,7 @@ class Dataset():
         d.init_data()
     """
     def __init__(self, path):
+        self.conn = None
         self.path = Path(path)
         self.tables = {}
         self.visits = {}
@@ -51,15 +52,13 @@ class Dataset():
         if Butler: # 
             self.conn = Butler(str(self.path))
 
-    def get_table(self, table, tract, filt):
-        if self.conn:
-            df = self.conn.get(table, tract=int(tract), filter=filt)
-        else: 
-            raise NotImplementedError
-
-        return df
-
     def init_data(self):
+        
+        if self.conn is None:
+            print('Butler not found, loading data from parquet')
+            self.read_parquet()
+            return
+            
         print('loading coadd_forced table')
         self.fetch_coadd_table('forced')
         print('loading coadd_unforced table')
@@ -80,13 +79,13 @@ class Dataset():
     def fetch_visits(self, filt):
         visits = []
         for tract in self.tracts:
-            df = self.get_table('visitMatchTable', tract, filt).toDataFrame()
+            df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
             visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
-                    
+                            
         self.visits[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def _load_coadd_table(self, table, filt, tract):
-        df = self.get_table(table, tract, filt)
+        df = self.conn.get(table, tract=int(tract), filter=filt)
         new_cols = transforms(df)
         cols = self.metrics + self.flags + ['patchId', 'id']
         df = pd.concat([df.toDataFrame(columns=cols), new_cols], axis=1)
@@ -102,40 +101,20 @@ class Dataset():
         df['filt'] = filt
         return df
 
-    def write_tables(self, path, filt, sample=None):
+    def read_parquet(self):
+        p = self.path
+        for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
+            self.tables[table] = dd.read_parquet(p.joinpath(table), engine='pyarrow')
+        
+        for filt in self.filters:
+            self.visits[filt] = dd.read_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow')
+
+    def to_parquet(self, path):
         p = Path(path)
-        p.mkdir(parents=True, exist_ok=True)
-        h5_file = p.joinpath(f'{filt}.h5')
-
-        for table, v1 in self.tables[filt].items():
-            for tract in v1.keys():
-                df = self.tables[filt][table][tract]
-                if sample:
-                    df = df.sample(sample)
-                df.to_hdf(h5_file, key=f'{table}_{tract}', format='t')
-
-        for tract in self.visits[filt].keys():
-            self.visits[filt][tract].to_hdf(h5_file, f'visits_{tract}')
-
-    def load_from_hdf(self):
-        tables = {}
-        visits = {}
-        for f in self.path.glob('*.h5'):
-            filt = f.name.split('.')[0]
-            tables[filt] = {}
-            visits[filt] = {}
-            with pd.HDFStore(f) as hdf:
-                for k in hdf.keys():
-                    if k.endswith('meta'):
-                        continue
-                    table, tract = k.split('/')[-1].rsplit('_', 1)
-                    if table=='visits':
-                        visits[filt][tract] = hdf.select(k)
-                    if table not in tables[filt]:
-                        tables[filt][table] = {}                
-                        tables[filt][table][tract] = hdf.select(k)
-
-        self.tables = tables
-        self.visits = visits
+        for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
+            self.tables[table].to_parquet(p.joinpath(table), engine='pyarrow', compression='snappy')
+        
+        for filt in self.filters:
+            self.visits[filt].to_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow', compression='snappy')
 
         
