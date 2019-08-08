@@ -78,7 +78,6 @@ class FlagSetter(Stream):
         Flags to ignore""")
 
     def __init__(self, filter_stream, **kwargs):
-        logger.info('.FlagSetter()')
         super(FlagSetter, self).__init__(**kwargs)
         self.filter_stream = filter_stream
 
@@ -98,7 +97,6 @@ class ResetCallback(Callback):
 
 class Reset(LinkedStream):
     def __init__(self, *args, **params):
-        logger.info('.Reset()')
         super(Reset, self).__init__(self, *args, **dict(params, transient=True))
 
 
@@ -121,7 +119,6 @@ class filter_dset(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
-        logger.info('.filter_dset._process')
         filter_dict = {} if self.p.filter_range is None else self.p.filter_range.copy()
         filter_dict.update({f: True for f in self.p.flags})
         filter_dict.update({f: False for f in self.p.bad_flags})
@@ -148,7 +145,6 @@ class filterpoints(Operation):
     set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):
-        logger.info('.filterpoints._process')
         dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags,
                            filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
@@ -173,8 +169,6 @@ class summary_table(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
-
-        logger.info('.summary_table._process')
 
         ds = filter_dset(dset, filter_range=self.p.filter_range,
                          flags=self.p.flags, bad_flags=self.p.bad_flags)
@@ -205,7 +199,6 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
 
 
 def reset_stream(filter_stream):
-    logger.info('.reset_stream')
     filter_stream.event(filter_range={}, flags=[], bad_flags=[])
 
 
@@ -238,7 +231,6 @@ class scattersky(ParameterizedFunction):
         Whether to show the table next to the plots.""")
 
     def __call__(self, dset, **params):
-        logger.info('.scattersky')
         self.p = ParamOverrides(self, params)
         if self.p.xdim not in dset.dimensions():
             raise ValueError('{} not in Dataset.'.format(self.p.xdim))
@@ -320,7 +312,6 @@ class multi_scattersky(ParameterizedFunction):
         return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].vdims]
 
     def __call__(self, dset, **params):
-        logger.info('.multi_scattersky')
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                      xdim=self.p.xdim, ydim=ydim,
@@ -340,7 +331,6 @@ class skypoints(Operation):
 
     def _process(self, dset, key=None):
 
-        logger.info('.skypoints')
         dset = filter_dset(dset, filter_range=self.p.filter_range,
                            flags=self.p.flags, bad_flags=self.p.bad_flags)
 
@@ -372,7 +362,6 @@ class skyplot(ParameterizedFunction):
 
     def __call__(self, dset, **params):
 
-        logger.info('.skyplot')
 
         self.p = ParamOverrides(self, params)
 
@@ -411,7 +400,6 @@ class skyplot_layout(ParameterizedFunction):
 
     def __call__(self, skyplots, **params):
 
-        logger.info('.skyplot_layout')
         self.p = param.ParamOverrides(self, params)
 
         pointer = hv.streams.PointerXY(x=0, y=0)
@@ -432,7 +420,6 @@ class skyplot_layout(ParameterizedFunction):
 class skyshade(Operation):
     """Experimental
     """
-    logger.info('.skyshape')
     cmap = param.String(default='coolwarm')
     aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
     width = param.Number(default=None)
@@ -465,70 +452,23 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
-def visit_plot2(dsets_visits, filt, metric, plot=None):
-    # Actually use metrics raise:
-    # Support more than 1 filter on the
-    # Add legend to indicate filter - metric combos
-    # Raise exception for metrics that don't exists
-    # Throw
-
-    # metrics = ['base_Footprint_nPix',
-    #                  'Gaussian-PSF_magDiff_mmag',
-    #                  'CircAper12pix-PSF_magDiff_mmag',
-    #                  'Kron-PSF_magDiff_mmag',
-    #                  'traceSdss_pixel',
-    #                  'traceSdss_fwhm_pixel',
-    #                  'psfTraceSdssDiff_percent',
-    #                  'e1ResidsSdss_milli',
-    #                  'e2ResidsSdss_milli',
-    #                  'deconvMoments']
-
-    try:
-        xx = dsets_visits[filt][metric].reset_index(-1)
-        xx = pd.DataFrame(getattr(sklearn.preprocessing,
-                                  'minmax_scale',
-                                  lambda x: x)(xx),
-                          index=xx.index,
-                          columns=xx.columns).groupby(xx.index)
-        label = '{} - {}'.format(filt,metric)
-        if not plot:
-            plot = hv.Curve(xx[metric].mean(), label=label)
-        else:
-            plot *= hv.Curve(xx[metric].mean(), label=label)
-
-        return plot.options(responsive=True, height=200, show_grid=True)
-
-    except Exception as e:
-        logger.error("VISIT PLOT")
-        logger.error(e)
-        raise e
-
-
 def visits_plot(dsets_visits, filters_to_metrics):
-    valid_metrics = ['base_Footprint_nPix',
-                     'Gaussian-PSF_magDiff_mmag',
-                     'CircAper12pix-PSF_magDiff_mmag',
-                     'Kron-PSF_magDiff_mmag',
-                     'traceSdss_pixel',
-                     'traceSdss_fwhm_pixel',
-                     'psfTraceSdssDiff_percent',
-                     'e1ResidsSdss_milli',
-                     'e2ResidsSdss_milli',
-                     'deconvMoments']
+    plot = None
+    ydim = hv.Dimension('y_dim', range=(-1.5, 1.5))
+    for filt, metrics in filters_to_metrics.items():
+        for metric in metrics:
+            df = dsets_visits[filt][metric].reset_index(-1)
+            df = pd.DataFrame(getattr(sklearn.preprocessing,
+                                      'minmax_scale',
+                                      lambda x: x)(df),
+                              index=df.index,
+                              columns=df.columns).groupby(df.index)
+            label = '{} - {}'.format(filt,metric)
+            if not plot:
+                plot = hv.Curve(df[metric].median(), label=label, ydim=ydim)
+            else:
+                plot *= hv.Curve(df[metric].median(), label=label, ydim=ydim)
 
-    filt = 'HSC-G'
-
-    df = dsets_visits[filt][valid_metrics].dropna()
-
-    df.index.names = ['ax','id']
-    logger.info(df.info())
-    mean_df = df.groupby('ax').mean()
-    std_df = df.groupby('ax').std()
-    all_visits = df.index.levels[0]
-
-    mean_points = [(str(v), mean_df.loc[v]) for v in all_visits]
-    std_points = [(str(v), std_df.loc[v]) for v in all_visits]
-
-    plot = hv.Curve(mean_points, label='mean (gauss-psf)', datatype=['dictionary']) * hv.Curve(std_points, label='std (gauss-psf)', datatype=['dictionary'])
-    logger.info(plot)
-    return plot
+    return plot.options(responsive=True, height=200, show_grid=True,
+                        xlabel='visit', ylabel='normalized median',
+                        xrotation=45)

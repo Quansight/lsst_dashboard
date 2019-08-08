@@ -1,4 +1,5 @@
 import traceback
+import json
 import logging
 from functools import partial
 import os
@@ -11,11 +12,13 @@ import numpy as np
 from .base import Application
 from .base import Component
 
-from .plots import visits_plot, visit_plot2
+from .plots import visits_plot
 from .plots import scattersky, FilterStream, skyplot
 
 from .dataset import Dataset
 from .qa_dataset import QADataset
+
+from .utils import set_timeout
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,11 +50,8 @@ def link_axes(root_view, root_model):
         for fig, _ in axes[1:]:
             if tag in fig.x_range.tags:
                 fig.x_range = axis
-                logger.info('FIG XRANGE UPDATED!!!')
             if tag in fig.y_range.tags:
                 fig.y_range = axis
-                logger.info('FIG YRANGE UPDATED!!!')
-    logger.info(range_map)
 
 pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
@@ -116,6 +116,7 @@ def load_data(data_repo_path=None):
     datasets_tuple = init_dataset(data_repo_path)
     datasets, filtered_datasets, datavisits, flags = datasets_tuple
 
+#  Initial .load_data()
 load_data()
 
 
@@ -241,6 +242,7 @@ class QuickLookComponent(Component):
         self.query_filter_clear.on_click(self.on_query_filter_clear)
 
         self.status_message = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
+        self.adhoc_js = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._info = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._flags = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self._metric_panels = []
@@ -260,19 +262,33 @@ class QuickLookComponent(Component):
         try:
             load_data(data_repo_path)
         except Exception as e:
+            self.update_display()
             self.add_message_from_error('Data Loading Error',
                                         data_repo_path, e)
             return
 
         self.add_status_message('Data Ready', data_repo_path,
                                 level='success', duration=3)
+        self.update_display()
+
+    def update_display(self):
+        self.set_checkbox_style()
+
+    def set_checkbox_style(self):
+        success_metrics = json.dumps(['Gaussian-PSF_magDiff_mmag', 'CircAper12pix-PSF_magDiff_mmag'])
+        error_metrics = json.dumps(['base_Footprint_nPix', 'CModel-PSF_magDiff_mmag'])
+
+        code = '''$("input[type='checkbox']").addClass("metric-checkbox");'''
+        self.execute_js_script(code)
+        code = '$(".metric-checkbox").siblings().filter(function () { return' + error_metrics + '.indexOf($(this).text()) > -1;}).css("color", "orange");'
+        code += '$(".metric-checkbox").siblings().filter(function () { return' + success_metrics + '.indexOf($(this).text()) > -1;}).css("color", "teal");'
+        self.execute_js_script(code)
 
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
         self.status_message_queue.append(msg_args)
         self.param.trigger('status_message_queue')
-
 
     def on_flag_submit_click(self, event):
         flag_name = self.flag_filter_select.value
@@ -286,11 +302,9 @@ class QuickLookComponent(Component):
     def on_flag_remove_click(self, event):
         flag_name = self.flag_filter_selected.value.split()[0]
         del self.selected_flag_filters[flag_name]
-
+        self.param.trigger('selected_flag_filters')
         self.add_status_message('Removed Flag Filter',
                                 flag_name, level='info')
-
-        self.param.trigger('selected_flag_filters')
 
     def on_run_query_filter_click(self, event):
         pass
@@ -299,10 +313,10 @@ class QuickLookComponent(Component):
         self.query_filter = ''
         pass
 
-
     def _create_switch_view_buttons(self):
         radio_group = pn.widgets.RadioBoxGroup(name='SwitchView',
                                                options=self.view_mode,
+                                               align='center',
                                                value=self.view_mode[0],
                                                inline=True)
         radio_group.param.watch(self._switch_view_mode, ['value'])
@@ -311,7 +325,6 @@ class QuickLookComponent(Component):
     def update_selected_by_filter(self, filter_type, selected_values):
         self.selected_metrics_by_filter.update({filter_type: selected_values})
         self.param.trigger('selected_metrics_by_filter')
-
 
     def _update(self, event):
         self._update_info()
@@ -350,10 +363,9 @@ class QuickLookComponent(Component):
 
 
     def create_status_message(self, msg, level='info', duration=5):
+
         import uuid
-
         msg_id = str(uuid.uuid1())
-
         color_levels = dict(info='rgba(0,191,255, .8)',
                             error='rgba(249, 180, 45, .8)',
                             warning='rgba(240, 255, 0, .8)',
@@ -362,10 +374,11 @@ class QuickLookComponent(Component):
         box_css = """
         width: 15rem;
         background-color: {};
-        border: 1px solid #777777;
+        border: 1px solid #CCCCCC;
         display: inline-block;
         color: white;
         padding: 5px;
+        margin-top: 1rem;
         """.format(color_levels.get(level, 'rgba(0,0,0,0)'))
 
         remove_msg_func = ('<script>(function() { '
@@ -377,7 +390,19 @@ class QuickLookComponent(Component):
         return ('<li id="{}" class="status-message nav-item">'
                 '{}'
                 '{}'
-                '</lil>').format(msg_id,  remove_msg_func, text)
+                '</lil>').format(msg_id, remove_msg_func, text)
+
+    def gen_clear_func(self, msg):
+
+        async def clear_message():
+
+            try:
+                if msg in self.status_message_queue:
+                    self.status_message_queue.remove(msg)
+            except ValueError:
+                pass
+
+        return clear_message
 
     @param.depends('status_message_queue', watch=True)
     def _update_status_message(self):
@@ -390,18 +415,20 @@ class QuickLookComponent(Component):
         background-color: rgba(0,0,0,0);
         border: none;
         display: inline-block;
-        margin-left:7px;
+        margin-left: 7px;
         """
-
 
         html = ''
 
-        while len(self.status_message_queue):
-            msg = self.status_message_queue.pop()
+        for msg in self.status_message_queue:
             html += self.create_status_message(**msg)
+            set_timeout(msg.get('duration', 5), self.gen_clear_func(msg))
 
         self.status_message.object = '<ul style="{}">{}</ul>'.format(queue_css, html)
-        pass
+
+    def execute_js_script(self, js_body):
+        script = '<script>(function() { ' + js_body +  '})()</script>'
+        self.adhoc_js.object = script
 
     def update_info_counts(self):
         self.tract_count = get_tract_count()
@@ -417,7 +444,9 @@ class QuickLookComponent(Component):
 
         panels = [MetricPanel(metric='LSST', filters=filters, parent=self)]
         self._metric_panels = panels
+
         self._metric_layout.objects = [p.panel() for p in panels]
+        self.set_checkbox_style()
 
     @param.depends('query_filter', watch=True)
     def _update_query_filter(self):
@@ -468,7 +497,7 @@ class QuickLookComponent(Component):
 
         tb = traceback.format_exception_only(type(exception_obj),
                                              exception_obj)[0]
-        msg_body = '<b>Path:</b> ' + info + '<br />'
+        msg_body = '<b>Info:</b> ' + info + '<br />'
         msg_body += '<b>Cause:</b> ' + tb
         self.add_status_message(title,
                                 msg_body, level=level, duration=10)
@@ -478,17 +507,17 @@ class QuickLookComponent(Component):
 
         plots_list = []
         skyplot_list = []
+
         top_plot = None
+        try:
+            top_plot = visits_plot(datavisits, self.selected_metrics_by_filter)
+        except Exception as e:
+            self.add_message_from_error('Visits Plot Error',
+                                        '', e)
+
+        self.plot_top = top_plot
 
         for filt, plots in self.selected_metrics_by_filter.items():
-            # Top plot
-            try:
-                top_plot = visit_plot2(datavisits, filt, plots, top_plot)
-            except Exception as e:
-                logger.error('VISIT-PLOT2 ERROR')
-                logger.error(e)
-                self.add_message_from_error('Visit Plot Warning', '', e)
-
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
             for i, p in enumerate(plots):
@@ -504,10 +533,10 @@ class QuickLookComponent(Component):
                 plot = plots_ss
                 plots_list.append((p,plot))
 
-        self.plot_top = top_plot
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
 
+        self.update_display()
         self._switch_view_mode()
 
     def _switch_view_mode(self, *events):
@@ -541,41 +570,44 @@ class QuickLookComponent(Component):
             self._plot_layout.clear()
 
     def jinja(self):
+
         from ._jinja2_templates import quicklook
         import holoviews as hv
         tmpl = pn.Template(dashboard_html_template)
 
-        # How do I fix width of param string input
-
         data_repo_widget = pn.panel(self.param.data_repository,
                                     show_labels=False)
-        data_repo_widget.width = 200
-        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'), data_repo_widget, self._submit_repository)
+        data_repo_widget.width = 400
+        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'),
+                               data_repo_widget, self._submit_repository)
         data_repo_row.css_classes = ['data-repo-input']
 
+        query_filter_widget = pn.panel(self.param.query_filter)
+        query_filter_widget.width = 260
 
-        components2 = [
+        components = [
             ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
+            ('adhoc_js', self.adhoc_js),
+
             ('view_switcher', pn.Row(self._switch_view)),
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
             ('plot_top', self._plot_top),
-
-            ('flags', pn.Column(
-                        pn.Row(self.flag_filter_select,
-                               self.flag_state_select),
-                        pn.Row(self.flag_submit),
-                        pn.Row(self.flag_filter_selected),
-                        pn.Row(self.flag_remove),
-                        )),
-            ('query_filter', pn.Column(self.param.query_filter,
+            ('flags', pn.Column(pn.Row(self.flag_filter_select,
+                                       self.flag_state_select),
+                                pn.Row(self.flag_submit),
+                                pn.Row(self.flag_filter_selected),
+                                pn.Row(self.flag_remove))),
+            ('query_filter', pn.Column(query_filter_widget,
                                        pn.Row(self.query_filter_submit,
                                               self.query_filter_clear)),
             ),
         ]
-        for l, c in components2:
+
+        for l, c in components:
             tmpl.add_panel(l, c)
+
         return tmpl
 
     def panel(self):
@@ -626,7 +658,6 @@ class MetricPanel(param.Parameterized):
         if not metrics:
             return pn.pane.Markdown("_No metrics available_")
         chkbox_group = MetricCheckboxGroup(metrics)
-
         chkbox_group.param.watch(partial(self._checkbox_callback, filt),
                                  'metrics')
         widget_kwargs = dict(metrics=pn.widgets.CheckBoxGroup)

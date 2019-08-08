@@ -1,5 +1,5 @@
 {% extends base %}
-    
+
 {% block postamble %}
 
     <!-- Custom styles for this template -->
@@ -22,6 +22,13 @@
 }
 
 .controls-area {
+
+}
+
+.navbar {
+    -webkit-box-shadow: 0 8px 6px -6px #999;
+    -moz-box-shadow: 0 8px 6px -6px #999;
+    box-shadow: 0 8px 6px -6px #999;
 }
 
 .data-repo-input  p {
@@ -29,6 +36,23 @@
   margin: 0;
   position: relative;
   top: -5px;
+  margin-left: -50px !important;
+}
+
+.data-repo-input input {
+  border-radius: 0 !important;
+}
+
+.data-repo-input button {
+  margin-left: -50px !important;
+  background-color: #336699 !important;
+  color: white !important;
+}
+
+button  {
+  border-radius: 0 !important;
+  -webkit-appearance: none;
+  -webkit-border-radius: 0px;
 }
 
 </style>
@@ -46,8 +70,8 @@
       </span>
       </span>
 </a>
-  
-      <ul class="navbar-nav px-3">
+
+      <ul class="navbar-nav px-3" style="padding: 0 !important;">
           <li class="nav-item">{{ embed(roots.data_repo_path) }}</li>
       </ul>
 
@@ -107,6 +131,9 @@
 
             {{ embed(roots.metrics_plots) }}
             {{ embed(roots.status_message_queue) }}
+            {{ embed(roots.adhoc_js) }}
+
+        </main>
     </div>
 
 {% endblock %}
