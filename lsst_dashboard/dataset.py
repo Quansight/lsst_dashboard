@@ -32,6 +32,8 @@ class Dataset():
         self.path = Path(path)
         self.tables = {}
         self.visits = {}
+        self.tables_df = {}
+        self.visits_df = {}
     
     def connect(self):
         # search for metadata file
@@ -53,7 +55,6 @@ class Dataset():
             self.conn = Butler(str(self.path))
 
     def init_data(self):
-        
         if self.conn is None:
             print('Butler not found, loading data from parquet')
             self.read_parquet()
@@ -74,7 +75,7 @@ class Dataset():
             for tract in self.tracts:
                 dfs.append(delayed(self._load_coadd_table)(table, filt, tract))
         
-        self.tables[table] = dd.from_delayed(dfs)
+        self.tables_df[table] = dd.from_delayed(dfs)
 
     def fetch_visits(self, filt):
         visits = []
@@ -82,7 +83,7 @@ class Dataset():
             df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
             visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
                             
-        self.visits[filt] = dd.from_delayed(list(itertools.chain(*visits)))
+        self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def _load_coadd_table(self, table, filt, tract):
         df = self.conn.get(table, tract=int(tract), filter=filt)
@@ -104,10 +105,10 @@ class Dataset():
     def read_parquet(self):
         p = self.path
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables[table] = dd.read_parquet(p.joinpath(table), engine='pyarrow')
+            self.tables_df[table] = dd.read_parquet(p.joinpath(table), engine='pyarrow')
         
         for filt in self.filters:
-            self.visits[filt] = dd.read_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow')
+            self.visits_df[filt] = dd.read_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow')
 
     def to_parquet(self, path):
         p = Path(path)
@@ -117,4 +118,23 @@ class Dataset():
         for filt in self.filters:
             self.visits[filt].to_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow', compression='snappy')
 
-        
+    def load_from_hdf(self):
+        tables = {}
+        visits = {}
+        for f in self.path.glob('*.h5'):
+            filt = f.name.split('.')[0]
+            tables[filt] = {}
+            visits[filt] = {}
+            with pd.HDFStore(f) as hdf:
+                for k in hdf.keys():
+                    if k.endswith('meta'):
+                        continue
+                    table, tract = k.split('/')[-1].rsplit('_', 1)
+                    if table=='visits':
+                        visits[filt][tract] = hdf.select(k)
+                    if table not in tables[filt]:
+                        tables[filt][table] = {}                
+                        tables[filt][table][tract] = hdf.select(k)
+
+        self.tables = tables
+        self.visits = visits
