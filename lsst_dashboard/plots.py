@@ -454,6 +454,7 @@ class skyshade(Operation):
 
 def visits_plot(dsets_visits, filters_to_metrics):
     plot = None
+    ydim = hv.Dimension('y_dim', range=(-1.5, 1.5))
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
             df = dsets_visits[filt][metric].reset_index(-1)
@@ -464,7 +465,10 @@ def visits_plot(dsets_visits, filters_to_metrics):
                               columns=df.columns).groupby(df.index)
             label = '{} - {}'.format(filt,metric)
             if not plot:
-                plot = hv.Curve(df[metric].median(), label=label)
+                plot = hv.Curve(df[metric].median(), label=label, ydim=ydim)
             else:
-                plot *= hv.Curve(df[metric].median(), label=label)
-    return plot.options(responsive=True, height=200, show_grid=True)
+                plot *= hv.Curve(df[metric].median(), label=label, ydim=ydim)
+
+    return plot.options(responsive=True, height=200, show_grid=True,
+                        xlabel='visit', ylabel='normalized median',
+                        xrotation=45)

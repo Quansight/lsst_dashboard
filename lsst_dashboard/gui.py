@@ -316,6 +316,7 @@ class QuickLookComponent(Component):
     def _create_switch_view_buttons(self):
         radio_group = pn.widgets.RadioBoxGroup(name='SwitchView',
                                                options=self.view_mode,
+                                               align='center',
                                                value=self.view_mode[0],
                                                inline=True)
         radio_group.param.watch(self._switch_view_mode, ['value'])
