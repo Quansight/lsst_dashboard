@@ -1,16 +1,19 @@
 import traceback
 import json
 import logging
-from functools import partial
-from collections import defaultdict
 import os
-import sklearn.preprocessing
+
+from collections import defaultdict
+from functools import partial
 
 import param
 import panel as pn
 import holoviews as hv
 import numpy as np
 import pandas as pd
+import sklearn.preprocessing
+
+from holoviews.plotting.bokeh.element import ElementPlot
 
 from .base import Application
 from .base import Component
@@ -34,27 +37,30 @@ with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
 
 pn.extension()
 
-from collections import defaultdict
-from bokeh.plotting import Figure
+
+def link_axes(root_view, root_model):
+    ref = root_model.ref['id']
+    range_map = defaultdict(list)
+    for pane in root_view.select(pn.pane.HoloViews):
+        for p in pane._plots[ref][0].traverse(specs=[ElementPlot]):
+            fig = p.state
+            if fig.x_range.tags:
+                range_map[fig.x_range.tags[0]].append((fig, p, fig.x_range))
+            if fig.y_range.tags:
+                range_map[fig.y_range.tags[0]].append((fig, p, fig.y_range))
 
 
-#def link_axes(root_view, root_model):
-#    range_map = defaultdict(list)
-#    for fig in root_model.select({'type': Figure}):
-#        if fig.x_range.tags:
-#            range_map[fig.x_range.tags[0]].append((fig, fig.x_range))
-#        if fig.y_range.tags:
-#            range_map[fig.y_range.tags[0]].append((fig, fig.y_range))
-#
-#    for tag, axes in range_map.items():
-#        fig, axis = axes[0]
-#        for fig, _ in axes[1:]:
-#            if tag in fig.x_range.tags:
-#                fig.x_range = axis
-#            if tag in fig.y_range.tags:
-#                fig.y_range = axis
+    for tag, axes in range_map.items():
+        fig, p, axis = axes[0]
+        for fig, p, _ in axes[1:]:
+            if tag in fig.x_range.tags and not axis is fig.x_range:
+                fig.x_range = axis
+                p.handles['x_range'] = axis
+            if tag in fig.y_range.tags and not axis is fig.y_range:
+                fig.y_range = axis
+                p.handles['y_range'] = axis
 
-#pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
+pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
 datasets = None
 filtered_datasets = None
@@ -94,8 +100,8 @@ def init_dataset(data_repo_path):
     filtered_datasets = {}
     for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
-        dtf = dtf[(dtf.filter == filt)]
-        df = dtf.head(1000)
+        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
+        df = dtf.compute()
 
         # TODO: defer to later when a filter is set
         datasets[filt] = QADataset(df)
