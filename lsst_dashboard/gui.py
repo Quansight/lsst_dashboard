@@ -101,7 +101,7 @@ def init_dataset(data_repo_path):
     for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
         dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
-        df = dtf.compute()
+        df = dtf.compute().head(10000)
 
         # TODO: defer to later when a filter is set
         datasets[filt] = QADataset(df)
@@ -206,6 +206,8 @@ class QuickLookComponent(Component):
 
     query_filter = param.String(label="Query Expression")
 
+    new_column_expr = param.String(label="Data Column Expression")
+
     tract_count = param.Number(default=0)
 
     status_message_queue = param.List(default=[])
@@ -270,6 +272,10 @@ class QuickLookComponent(Component):
         self.query_filter_clear = pn.widgets.Button(
             name='Clear', width=50, align='end')
         self.query_filter_clear.on_click(self.on_query_filter_clear)
+
+        self.new_column_submit = pn.widgets.Button(
+            name='Define New Column', width=100, align='end')
+        self.new_column_submit.on_click(self.on_define_new_column_click)
 
         self.status_message = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
         self.adhoc_js = pn.pane.HTML(sizing_mode='stretch_width', max_height=10)
@@ -342,6 +348,10 @@ class QuickLookComponent(Component):
     def on_query_filter_clear(self, event):
         self.query_filter = ''
         pass
+
+    def on_define_new_column_click(self, event):
+        new_column_expr = self.new_column_expr
+        logger.info("NEW COLUMN EXPRESSION: '{!s}'".format(new_column_expr))
 
     def _create_switch_view_buttons(self):
         radio_group = pn.widgets.RadioBoxGroup(name='SwitchView',
@@ -669,6 +679,9 @@ class QuickLookComponent(Component):
         query_filter_widget = pn.panel(self.param.query_filter)
         query_filter_widget.width = 260
 
+        new_column_widget = pn.panel(self.param.new_column_expr)
+        new_column_widget.width = 260
+
         switcher_row = pn.Row(self._switch_view)
         switcher_row.css_classes = ['view-switcher']
 
@@ -689,6 +702,9 @@ class QuickLookComponent(Component):
             ('query_filter', pn.Column(query_filter_widget,
                                        pn.Row(self.query_filter_submit,
                                               self.query_filter_clear)),
+            ),
+            ('new_column', pn.Column(new_column_widget,
+                                       pn.Row(self.new_column_submit)),
             ),
         ]
 

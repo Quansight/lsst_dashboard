@@ -92,7 +92,7 @@ button  {
           <li class="nav-item">{{ embed(roots.view_switcher) }}</li>
       </ul>
 
-                
+
       <ul class="navbar-nav px-3" style="padding: 0 !important;">
           <li class="nav-item">{{ embed(roots.data_repo_path) }}</li>
       </ul>
@@ -128,6 +128,7 @@ button  {
                 {{ embed(roots.query_filter) }}
               </li>
               <li class="nav-item">
+                {{ embed(roots.new_column) }}
               </li>
               <li class="nav-item">
               </li>
@@ -144,7 +145,6 @@ button  {
             {{ embed(roots.metrics_plots) }}
             {{ embed(roots.status_message_queue) }}
             {{ embed(roots.adhoc_js) }}
-
         </main>
     </div>
 
