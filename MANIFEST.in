@@ -1,1 +1,2 @@
 recursive-include examples *.ipynb
+recursive-include lsst_dashboard *.html
