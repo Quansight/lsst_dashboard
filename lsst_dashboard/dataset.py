@@ -9,7 +9,7 @@ import itertools
 try:
     from lsst.daf.persistence import Butler
     from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
-    transforms = CompositeFunctor({'label': StarGalaxyLabeller(), 
+    transforms = CompositeFunctor({'label': StarGalaxyLabeller(),
                           'psfMag': Magnitude('base_PsfFlux_instFlux'),
                           'ra': RAColumn(),
                           'dec': DecColumn()})
@@ -34,16 +34,16 @@ class Dataset():
         self.visits = {}
         self.tables_df = {}
         self.visits_df = {}
-    
+
     def connect(self):
         # search for metadata.yaml file
         # 1. Look in path directory i.e. '/project/tmorton/tickets/DM-20015/RC2_w18/metadata.yaml'
         # 2. Look for datafolder in current directory i.e. './RC2_w18/metadata.yaml'
         # 3. Look for datafolder in dir specified in LSST_META env variable i.e. /user/name/lsst_meta/RC2_w18/metadata.yaml'
-        #    when LSST_META='/user/name/lsst_meta'       
+        #    when LSST_META='/user/name/lsst_meta'
         if self.path.joinpath(METADATA_FILENAME).exists():
             self.metadata_path = self.path.joinpath(METADATA_FILENAME)
-        else: 
+        else:
             self.metadata_path = Path(os.environ.get('LSST_META', os.curdir)).joinpath(self.path.name, METADATA_FILENAME)
 
         with self.metadata_path.open('r') as f:
@@ -55,7 +55,7 @@ class Dataset():
             self.tracts = self.metadata.get('tracts')
 
         # if Butler is available use it to connect. If not available we are reading from disk
-        if Butler: # 
+        if Butler: #
             self.conn = Butler(str(self.path))
 
     def init_data(self):
@@ -63,7 +63,7 @@ class Dataset():
             print('Butler not found, loading data from parquet')
             self.read_parquet()
             return
-            
+
         print('loading coadd_forced table')
         self.fetch_coadd_table('forced')
         print('loading coadd_unforced table')
@@ -78,7 +78,7 @@ class Dataset():
         for filt in self.filters:
             for tract in self.tracts:
                 dfs.append(delayed(self._load_coadd_table)(table, filt, tract))
-        
+
         self.tables_df[table] = dd.from_delayed(dfs)
 
     def fetch_visits(self, filt):
@@ -86,7 +86,7 @@ class Dataset():
         for tract in self.tracts:
             df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
             visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
-                            
+
         self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def _load_coadd_table(self, table, filt, tract):
@@ -110,7 +110,7 @@ class Dataset():
         p = self.path
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
             self.tables_df[table] = dd.read_parquet(p.joinpath(table), engine='pyarrow')
-        
+
         for filt in self.filters:
             self.visits_df[filt] = dd.read_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow')
 
@@ -118,7 +118,7 @@ class Dataset():
         p = Path(path)
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
             self.tables[table].to_parquet(p.joinpath(table), engine='pyarrow', compression='snappy')
-        
+
         for filt in self.filters:
             self.visits[filt].to_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow', compression='snappy')
 
@@ -137,7 +137,7 @@ class Dataset():
                     if table=='visits':
                         visits[filt][tract] = hdf.select(k)
                     if table not in tables[filt]:
-                        tables[filt][table] = {}                
+                        tables[filt][table] = {}
                         tables[filt][table][tract] = hdf.select(k)
 
         self.tables = tables
