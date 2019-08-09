@@ -42,7 +42,7 @@ class Dataset():
         else: 
             self.metadata_path = Path(os.environ.get('LSST_META', os.curdir)).joinpath(self.path.name + f'_{METADATA_FILENAME}')
 
-        #self.metadata_path = Path('/Users/bcollins/projects/lsst_dashboard/examples/sample_data/metadata.yaml')
+        self.metadata_path = Path('/Users/bcollins/projects/lsst_dashboard/examples/sample_data/metadata.yaml')
 
         with self.metadata_path.open('r') as f:
             self.metadata = yaml.load(f, Loader=yaml.SafeLoader)

@@ -20,6 +20,7 @@ from holoviews.streams import LinkedStream
 from holoviews.plotting.bokeh.callbacks import Callback
 
 from holoviews.operation.datashader import datashade
+from holoviews.operation.datashader import shade
 from holoviews.operation.datashader import dynspread
 from holoviews.operation.datashader import rasterize
 from holoviews.operation import decimate
@@ -157,7 +158,6 @@ class filterpoints(Operation):
                                                                   len(ydata))
             pts = pts.relabel(title)
         return pts
-
 
 class summary_table(Operation):
     ydim = param.String(default=None)
@@ -380,17 +380,22 @@ class skyplot(ParameterizedFunction):
         elif self.p.aggregator == 'count':
             aggregator = ds.count()
 
-        kwargs = dict(cmap=cc.palette[self.p.cmap],
-                      aggregator=aggregator)
 
-        decimate_opts = dict(plot={'tools': ['hover', 'box_select']},
-                             style={'alpha': 0, 'size': self.p.decimate_size,
+        decimate_opts = dict(plot={'tools': ['hover',
+                                             'box_select']},
+                             style={'alpha': 0,
+                                    'size': self.p.decimate_size,
                                     'nonselection_alpha': 0})
 
         decimated = decimate(pts).opts(**decimate_opts)
+
+        from datashader.colors import viridis
+
+        kwargs = dict(cmap=viridis,
+                      aggregator=aggregator)
         sky_shaded = datashade(pts, **kwargs)
 
-        return (dynspread(sky_shaded) * decimated).options(responsive=True)
+        return (sky_shaded * decimated).options(bgcolor="black", responsive=True)
 
 
 class skyplot_layout(ParameterizedFunction):
@@ -451,7 +456,11 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
-def visits_plot(dsets_visits, filters_to_metrics):
+def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
+
+    if not summarized_visits:
+        pass
+
     plot = None
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
@@ -461,7 +470,8 @@ def visits_plot(dsets_visits, filters_to_metrics):
                                       lambda x: x)(df),
                               index=df.index,
                               columns=df.columns).groupby(df.index)
-            label = '{} - {}'.format(filt,metric)
+
+            label = '{} - {}'.format(filt, metric)
             if not plot:
                 # Use df.values to avoid automatic naming of axis (use 'x','y')
                 plot = hv.Curve(df[metric].median().values, label=label)

@@ -2,12 +2,15 @@ import traceback
 import json
 import logging
 from functools import partial
+from collections import defaultdict
 import os
+import sklearn.preprocessing
 
 import param
 import panel as pn
 import holoviews as hv
 import numpy as np
+import pandas as pd
 
 from .base import Application
 from .base import Component
@@ -57,8 +60,13 @@ datasets = None
 filtered_datasets = None
 datavisits = None
 flags = None
+_filters = []
 
-_filters = ['HSC-R', 'HSC-Z', 'HSC-I', 'HSC-G']
+class Store(object):
+
+    def __init__(self):
+        self.active_dataset = None
+
 
 def init_dataset(data_repo_path):
 
@@ -68,27 +76,21 @@ def init_dataset(data_repo_path):
     global flags
     global _filters
 
-    #tables = ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced', 'visitMatchTable']
-    #tracts = ['9697', '9813', '9615']
-
-
     d = Dataset(data_repo_path)
     d.connect()
     d.init_data()
 
+    global store
+    store.active_dataset = d
+
     flags = d.flags
     _filters = d.filters
 
-    '''
-    d = Dataset(path)
-    d.connect()
-    d.init_data()
-    '''
     datasets = {}
     filtered_datasets = {}
-    for filt in _filters:
+    for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
-        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[0])]
+        dtf = dtf[(dtf.filter == filt)]
         df = dtf.compute()
 
         dataset = QADataset(df)
@@ -99,9 +101,36 @@ def init_dataset(data_repo_path):
         filtered_datasets[filt] = filtered_dataset
 
     datavisits = {}
-    for filt in _filters:
-        if filt in datavisits:
-            datavisits[filt] = d.visits[filt]
+    for filt in d.filters:
+        datavisits[filt] = d.visits_df[filt].head(10000)
+
+    return d
+
+
+# TODO: build and cache summarized visits dataframe
+def summarize_visits_dataframe(data_repo_path):
+
+    d = Dataset(data_repo_path)
+    d.connect()
+    d.init_data()
+
+    dfs = []
+    for filt in d.filters:
+        for metric in d.metrics:
+            if metric in datavisits[filt].columns:
+                df = datavisits[filt][metric].reset_index(-1)
+                df = pd.DataFrame(getattr(sklearn.preprocessing,
+                                          'minmax_scale',
+                                          lambda x: x)(df),
+                                  index=df.index,
+                                  columns=df.columns).groupby(df.index)
+
+                values = df[metric].median().values
+                df = pd.DataFrame(dict(median_norm=values, filter_type=filt,
+                                       metric=metric))
+                dfs.append(df)
+
+    return pd.concat(dfs, ignore_index=True)
 
 
 def load_data(data_repo_path=None):
@@ -115,22 +144,24 @@ def load_data(data_repo_path=None):
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    init_dataset(data_repo_path)
-    return datasets, flags, _filters
+    d = init_dataset(data_repo_path)
+    return d
 
 
-#  Initial .load_data()
-load_data()
+store = Store()
+store.active_dataset = load_data()
 
 
 def get_available_metrics(filt):
-    global datasets
 
     if filt not in datasets.keys():
         raise ValueError('Filter {} doesnt exist'.format(filt))
 
-    metrics = datasets[filt].vdims
-    return metrics
+    global store
+    if not store.active_dataset:
+        return None
+
+    return store.active_dataset.metrics
 
 
 def get_metric_categories():
@@ -265,14 +296,14 @@ class QuickLookComponent(Component):
         self.set_checkbox_style()
 
     def set_checkbox_style(self):
-        success_metrics = json.dumps(['Gaussian-PSF_magDiff_mmag', 'CircAper12pix-PSF_magDiff_mmag'])
-        error_metrics = json.dumps(['base_Footprint_nPix', 'CModel-PSF_magDiff_mmag'])
-
         code = '''$("input[type='checkbox']").addClass("metric-checkbox");'''
         self.execute_js_script(code)
-        code = '$(".metric-checkbox").siblings().filter(function () { return' + error_metrics + '.indexOf($(this).text()) > -1;}).css("color", "orange");'
-        code += '$(".metric-checkbox").siblings().filter(function () { return' + success_metrics + '.indexOf($(this).text()) > -1;}).css("color", "teal");'
-        self.execute_js_script(code)
+
+        global store
+        for filter_type, fails in store.active_dataset.failures.items():
+            error_metrics = json.dumps(fails)
+            code = '$(".' + filter_type + '-checkboxes .metric-checkbox").siblings().filter(function () { return ' + error_metrics + '.indexOf($(this).text()) > -1;}).css("color", "orange");'
+            self.execute_js_script(code)
 
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
@@ -436,7 +467,7 @@ class QuickLookComponent(Component):
         self._metric_panels = panels
 
         self._metric_layout.objects = [p.panel() for p in panels]
-        self.set_checkbox_style()
+        self.update_display()
 
     @param.depends('query_filter', watch=True)
     def _update_query_filter(self):
@@ -495,12 +526,16 @@ class QuickLookComponent(Component):
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
 
+        global datavisits
+
         plots_list = []
         skyplot_list = []
 
         top_plot = None
+
         try:
-            top_plot = visits_plot(datavisits, self.selected_metrics_by_filter)
+            top_plot = visits_plot(datavisits,
+                                   self.selected_metrics_by_filter)
         except Exception as e:
             self.add_message_from_error('Visits Plot Error',
                                         '', e)
@@ -552,10 +587,12 @@ class QuickLookComponent(Component):
                 self._plot_top.clear()
 
                 tab_layout = self.linked_tab_plots()
+
                 try:
                     _ = self._plot_layout.pop(0)
                 except:
                     pass
+
                 self._plot_layout.css_classes = []
                 self._plot_layout.append(tab_layout)
             else:
@@ -660,20 +697,27 @@ class MetricPanel(param.Parameterized):
                                for filt in self.filters]
 
     def _create_metric_checkbox_group(self, filt):
-        metrics = get_available_metrics(filt)
+
+        global store
+        metrics = store.active_dataset.metrics
+
         if not metrics:
             return pn.pane.Markdown("_No metrics available_")
+
         chkbox_group = MetricCheckboxGroup(metrics)
         chkbox_group.param.watch(partial(self._checkbox_callback, filt),
                                  'metrics')
         widget_kwargs = dict(metrics=pn.widgets.CheckBoxGroup)
-        return pn.panel(chkbox_group.param, widgets=widget_kwargs,
-                        show_name=False)
+        widg = pn.panel(chkbox_group.param, widgets=widget_kwargs,
+                         show_name=False)
+        widg.css_classes = [filt + '-checkboxes']
+        return widg
 
     def _checkbox_callback(self, filt, event):
         self.parent.selected = (filt, event.new, filt, event.new)
         self.parent.update_selected_by_filter(filt, event.new)
         self.parent.update_info_counts()
+        self.parent.update_display()
 
     def panel(self):
         return pn.Column(
