@@ -30,6 +30,8 @@ from bokeh.palettes import Spectral6
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
+from datashader.colors import viridis
+
 decimate.max_samples = 5000
 
 import logging
@@ -362,7 +364,6 @@ class skyplot(ParameterizedFunction):
 
     def __call__(self, dset, **params):
 
-
         self.p = ParamOverrides(self, params)
 
         if self.p.vdim is None:
@@ -389,11 +390,8 @@ class skyplot(ParameterizedFunction):
 
         decimated = decimate(pts).opts(**decimate_opts)
 
-        from datashader.colors import viridis
-
-        kwargs = dict(cmap=viridis,
-                      aggregator=aggregator)
-        sky_shaded = datashade(pts, **kwargs)
+        kwargs = dict(aggregator=aggregator)
+        sky_shaded = rasterize(pts, **kwargs).options(colorbar=True)
 
         return (sky_shaded * decimated).options(bgcolor="black", responsive=True)
 
@@ -464,26 +462,25 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     plot = None
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
-            df = dsets_visits[filt][metric].reset_index(-1)
-            df = pd.DataFrame(getattr(sklearn.preprocessing,
-                                      'minmax_scale',
-                                      lambda x: x)(df),
-                              index=df.index,
-                              columns=df.columns).groupby(df.index)
+            df = dsets_visits[filt][['visit',metric]]
+            mmax = df[metric].max()
+            mmin = df[metric].min()
+            df[metric] = (df[metric] - mmin)/(mmax - mmin)
+            df = df.groupby(df.visit)
+            df = df[metric].median().reset_index()
 
             label = '{} - {}'.format(filt, metric)
+            y = df[metric]
+            x = df['visit'].astype(str)
+            scatter = hv.Scatter((x,y), label=label)
             if not plot:
                 # Use df.values to avoid automatic naming of axis (use 'x','y')
-                plot = hv.Curve(df[metric].median().values, label=label)
+                plot = hv.Curve(scatter)
             else:
-                plot *= hv.Curve(df[metric].median().values, label=label)
+                plot *= hv.Curve(scatter)
 
     # Using 'soft_range' until data/plots are finished defining
     plot = plot.redim(y=hv.Dimension('y', soft_range=(-1,1)))
-    xlim = plot.range('x')
-    xdlt = (xlim[1] - xlim[0]) * 0.01
-    xlim = (xlim[0] - xdlt, xlim[1] + xdlt)
-    plot = plot.redim(x=hv.Dimension('x', soft_range=(xlim[0],xlim[1])))
 
     # Now we rename the axis
     xlabel = 'visit'
