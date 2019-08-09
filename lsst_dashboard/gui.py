@@ -59,6 +59,7 @@ from bokeh.plotting import Figure
 datasets = None
 filtered_datasets = None
 datavisits = None
+filtered_datavisits = None
 flags = None
 _filters = []
 
@@ -73,6 +74,7 @@ def init_dataset(data_repo_path):
     global datasets
     global filtered_datasets
     global datavisits
+    global filtered_datavisits
     global flags
     global _filters
 
@@ -80,6 +82,8 @@ def init_dataset(data_repo_path):
     d.connect()
     d.init_data()
 
+    #XXX: I think these lines are outdated; 'store.active_dataset' is currently
+    # being assigned at line ~150 `store.active_dataset = load_data()`
     global store
     store.active_dataset = d
 
@@ -93,16 +97,15 @@ def init_dataset(data_repo_path):
         dtf = dtf[(dtf.filter == filt)]
         df = dtf.head(1000)
 
-        dataset = QADataset(df)
         # TODO: defer to later when a filter is set
-        filtered_dataset = QADataset(df.copy())
-
-        datasets[filt] = dataset
-        filtered_datasets[filt] = filtered_dataset
+        datasets[filt] = QADataset(df)
+        filtered_datasets[filt] = QADataset(df.copy())
 
     datavisits = {}
+    filtered_datavisits = {}
     for filt in d.filters:
         datavisits[filt] = d.visits_df[filt].head(10000)
+        filtered_datavisits[filt] = datavisits[filt].copy()
 
     return d
 
@@ -481,22 +484,12 @@ class QuickLookComponent(Component):
         self.filter_main_dataframe()
 
     def filter_main_dataframe(self):
+        global filtered_datasets
+        global datasets
+
         for filt, qa_dataset in datasets.items():
             try:
-                query_expr = ''
-
-                flags_query = []
-                for flag,state in self.selected_flag_filters.items():
-                    flags_query.append('{}=={}'.format(flag,state))
-                if flags_query:
-                    query_expr += ' & '.join(flags_query)
-
-                query_filter = self.query_filter.strip()
-                if query_filter:
-                    if query_expr:
-                        query_expr += ' & {!s}'.format(query_filter)
-                    else:
-                        query_expr = '{!s}'.format(query_filter)
+                query_expr = self._assemble_query_expression()
 
                 if query_expr:
                     filtered_datasets[filt] = QADataset(datasets[filt].df.query(query_expr))
@@ -505,14 +498,58 @@ class QuickLookComponent(Component):
                 self.add_message_from_error('Filtering Error', '', e)
                 return
 
+        self.filter_visits_dataframe()
+
         self._update_selected_metrics_by_filter()
+
+    def filter_visits_dataframe(self):
+        global filtered_datavisits
+        global datavisits
+
+        for filt, df in datavisits.items():
+            try:
+                query_expr = self._assemble_query_expression()
+                if query_expr:
+                    filtered_datavisits[filt] = datavisits[filt].query(query_expr)
+
+            except Exception as e:
+                self.add_message_from_error('Filtering Visits Error', '', e)
+                return
+
+    def _assemble_query_expression(self):
+        query_expr = ''
+
+        flags_query = []
+        for flag,state in self.selected_flag_filters.items():
+            flags_query.append('{}=={}'.format(flag,state))
+        if flags_query:
+            query_expr += ' & '.join(flags_query)
+
+        query_filter = self.query_filter.strip()
+        if query_filter:
+            if query_expr:
+                query_expr += ' & {!s}'.format(query_filter)
+            else:
+                query_expr = '{!s}'.format(query_filter)
+
+        return query_expr
 
     def get_dataset_by_filter(self, filter_type):
         global datasets
+        global filtered_datasets
         if self.query_filter == '' and len(self.selected_flag_filters) == 0:
             return datasets[filter_type]
         else:
             return filtered_datasets[filter_type]
+
+    def get_datavisits(self):
+        global datavisits
+        global filtered_datavisits
+        # if self.query_filter == '' and len(self.selected_flag_filters) == 0:
+        if len(self.selected_flag_filters) == 0:
+            return datavisits
+        else:
+            return filtered_datavisits
 
     def add_message_from_error(self, title, info, exception_obj, level='error'):
 
@@ -526,16 +563,14 @@ class QuickLookComponent(Component):
     @param.depends('selected_metrics_by_filter', watch=True)
     def _update_selected_metrics_by_filter(self):
 
-        global datavisits
-
         plots_list = []
         skyplot_list = []
 
         top_plot = None
 
+        dvisits = self.get_datavisits()
         try:
-            top_plot = visits_plot(datavisits,
-                                   self.selected_metrics_by_filter)
+            top_plot = visits_plot(dvisits, self.selected_metrics_by_filter)
         except Exception as e:
             self.add_message_from_error('Visits Plot Error',
                                         '', e)
