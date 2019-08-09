@@ -36,13 +36,15 @@ class Dataset():
         self.visits_df = {}
     
     def connect(self):
-        # search for metadata file
+        # search for metadata.yaml file
+        # 1. Look in path directory i.e. '/project/tmorton/tickets/DM-20015/RC2_w18/metadata.yaml'
+        # 2. Look for datafolder in current directory i.e. './RC2_w18/metadata.yaml'
+        # 3. Look for datafolder in dir specified in LSST_META env variable i.e. /user/name/lsst_meta/RC2_w18/metadata.yaml'
+        #    when LSST_META='/user/name/lsst_meta'       
         if self.path.joinpath(METADATA_FILENAME).exists():
             self.metadata_path = self.path.joinpath(METADATA_FILENAME)
         else: 
-            self.metadata_path = Path(os.environ.get('LSST_META', os.curdir)).joinpath(self.path.name + f'_{METADATA_FILENAME}')
-
-        self.metadata_path = Path('/Users/bcollins/projects/lsst_dashboard/examples/sample_data/metadata.yaml')
+            self.metadata_path = Path(os.environ.get('LSST_META', os.curdir)).joinpath(self.path.name, METADATA_FILENAME)
 
         with self.metadata_path.open('r') as f:
             self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
