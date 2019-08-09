@@ -90,8 +90,8 @@ def init_dataset(data_repo_path):
     filtered_datasets = {}
     for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
-        dtf = dtf[(dtf.filter == filt)]
-        df = dtf.head(1000)
+        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
+        df = dtf.compute()
 
         dataset = QADataset(df)
         # TODO: defer to later when a filter is set
