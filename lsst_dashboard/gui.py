@@ -91,7 +91,7 @@ def init_dataset(data_repo_path):
     for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
         dtf = dtf[(dtf.filter == filt)]
-        df = dtf.compute()
+        df = dtf.head(1000)
 
         dataset = QADataset(df)
         # TODO: defer to later when a filter is set
@@ -195,7 +195,7 @@ class QuickLookComponent(Component):
 
     data_repository = param.String(label=None, allow_None=True)
 
-    query_filter = param.String()
+    query_filter = param.String(label="Query Expression")
 
     tract_count = param.Number(default=0)
 
@@ -238,20 +238,20 @@ class QuickLookComponent(Component):
         self._submit_comparison.on_click(self._update)
 
         self.flag_filter_select = pn.widgets.Select(
-            name='Add Flag Filter', width=180, options=flags)
+            name='Add Flag Filter', width=160, options=flags)
 
         self.flag_state_select = pn.widgets.Select(
             name='Flag State', width=75, options=['True', 'False'])
 
         self.flag_submit = pn.widgets.Button(
-            name='Add Selecterd Filter', width=10, height=30, align='end')
+            name='Add Flag Filter', width=10, height=30, align='end')
         self.flag_submit.on_click(self.on_flag_submit_click)
 
         self.flag_filter_selected = pn.widgets.Select(
             name='Remove Flag Filter', width=250)
 
         self.flag_remove = pn.widgets.Button(
-            name='Remove Selected Filter', width=50, height=30, align='end')
+            name='Remove Flag Filter', width=50, height=30, align='end')
         self.flag_remove.on_click(self.on_flag_remove_click)
 
         self.query_filter_submit = pn.widgets.Button(
@@ -628,12 +628,15 @@ class QuickLookComponent(Component):
         query_filter_widget = pn.panel(self.param.query_filter)
         query_filter_widget.width = 260
 
+        switcher_row = pn.Row(self._switch_view)
+        switcher_row.css_classes = ['view-switcher']
+
         components = [
             ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
             ('adhoc_js', self.adhoc_js),
 
-            ('view_switcher', pn.Row(self._switch_view)),
+            ('view_switcher', switcher_row),
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
             ('plot_top', self._plot_top),
