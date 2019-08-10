@@ -75,8 +75,8 @@ class Dataset():
             print(f'loading visit data for filter {filt}')
             self.fetch_visits(filt)
 
-    def fetch_coadd_table(self, version='unforced'):
-        table = 'analysisCoaddTable_' + version
+    def fetch_coadd_table(self, coadd_version='unforced'):
+        table = 'analysisCoaddTable_' + coadd_version
         dfs = []
         for filt in self.filters:
             for tract in self.tracts:
@@ -89,8 +89,21 @@ class Dataset():
         for tract in self.tracts:
             df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
             visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
-
+        
         self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
+
+    def fetch_visits_by_metric(self, filt, metric, coadd_version='unforced'):
+        table = 'analysisCoaddTable_' + coadd_version
+        ddf = self.visits_df[filt]
+        idx = []
+        for tract in self.tracts:
+            match_df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
+            idx += self.tables_df[table][metric].index.compute().tolist()
+        
+        visit_ids = match_df.loc[idx]['matchId'].columns
+        visits = ddf[ddf['visit'].isin(visit_ids)]
+        flags = [flag for flag in self.flags if flag in ddf.columns]
+        return visits[[metric, 'visit', 'tract', 'filt'] + flags]
 
     def _load_coadd_table(self, table, filt, tract):
         df = self.conn.get(table, tract=int(tract), filter=filt)
@@ -101,9 +114,10 @@ class Dataset():
         df['tract'] = tract
         return df
 
-    def _fetch_visit(self, visit, tract, filt):
+    def _fetch_visit(self, visit, tract, filt): #, metric):
         df = self.conn.get('analysisVisitTable', visit=int(visit), tract=int(tract), filter=filt)
         df = df.toDataFrame(self.metrics + self.flags)
+        # df = df.dropna(subset=[metric]) # breaks when metric missing
         df['visit'] = visit
         df['tract'] = tract
         df['filt'] = filt
