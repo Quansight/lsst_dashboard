@@ -34,7 +34,8 @@ class Dataset():
         self.visits = {}
         self.tables_df = {}
         self.visits_df = {}
-        self.all_visits_df = {}
+        self.match_df = {}
+        self.visits_by_metric_df = {}
 
     def connect(self):
         # search for metadata.yaml file
@@ -87,25 +88,27 @@ class Dataset():
 
     def fetch_visits(self, filt):
         visits = []
+        self.match_df[filt] = {}
         for tract in self.tracts:
             df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
             visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
+            self.match_df[filt][tract] = df
         
-        self.visits_df[filt] = {}
-        self.all_visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
+        self.visits_by_metric_df[filt] = {}
+        self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def fetch_visits_by_metric(self, filt, metric, coadd_version='unforced'):
         table = 'analysisCoaddTable_' + coadd_version
-        ddf = self.all_visits_df[filt]
-        idx = []
+        ddf = self.visits_df[filt]
+        visits = []
         for tract in self.tracts:
-            match_df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
-            idx += self.tables_df[table][metric].index.compute().tolist()
-        
-        visit_ids = match_df.loc[idx]['matchId'].columns
-        visits = ddf[ddf['visit'].isin(visit_ids)]
+            match_df = self.match_df[filt][tract]
+            idx = self.tables_df[table][metric].index.compute()
+            visits += match_df.loc[idx]['matchId'].columns.tolist()
+
+        visits = ddf[ddf['visit'].isin(visits)]
         flags = [flag for flag in self.flags if flag in ddf.columns]
-        self.visits_df[filt][metric] = visits[[metric, 'visit', 'tract', 'filt'] + flags]
+        self.visits_by_metric_df[filt][metric] = visits[[metric, 'visit', 'tract', 'filt'] + flags]
 
     def _load_coadd_table(self, table, filt, tract):
         df = self.conn.get(table, tract=int(tract), filter=filt)
@@ -127,18 +130,26 @@ class Dataset():
     def read_parquet(self):
         p = self.path
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables_df[table] = dd.read_parquet(p.joinpath(table), engine='pyarrow')
+            self.tables_df[table] = dd.read_parquet(str(p.joinpath(table)), engine='pyarrow')
 
         for filt in self.filters:
-            self.all_visits_df[filt] = dd.read_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow')
+            self.visits_df[filt] = dd.read_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow')
+            self.match_df[filt] = {}
+            self.visits_by_metric_df[filt] = {}
+            for tract in self.tracts:
+                self.match_df[filt][tract] = dd.read_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data')
+
 
     def to_parquet(self, path):
         p = Path(path)
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables_df[table].to_parquet(p.joinpath(table), engine='pyarrow', compression='snappy')
+            self.tables_df[table].to_parquet(str(p.joinpath(table)), engine='pyarrow', compression='snappy')
 
         for filt in self.filters:
-            self.all_visits_df[filt].to_parquet(p.joinpath(f'{filt}_visits'), engine='pyarrow', compression='snappy')
+            self.visits_df[filt].to_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow', compression='snappy')
+            for tract in self.tracts:
+                 # parquet columns names must be strings
+                self.match_df[filt][tract].to_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data', complevel=9, format='table')
 
     def load_from_hdf(self):
         tables = {}
