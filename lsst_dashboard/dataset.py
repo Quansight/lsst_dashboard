@@ -98,6 +98,12 @@ class Dataset():
         self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def fetch_visits_by_metric(self, filt, metric, coadd_version='unforced'):
+        try:
+            tmp = self.visits_by_metric_df[filt][metric] # if dataframe exists don't recalc 
+            return
+        except:
+            pass
+
         table = 'analysisCoaddTable_' + coadd_version
         ddf = self.visits_df[filt]
         visits = []
