@@ -56,7 +56,10 @@ class Dataset():
 
         # if Butler is available use it to connect. If not available we are reading from disk
         if Butler: # 
-            self.conn = Butler(str(self.path))
+            try:
+                self.conn = Butler(str(self.path))
+            except:
+                print(f'{self.path} is not available in Butler using demo data')
 
     def init_data(self):
         if self.conn is None:
