@@ -83,8 +83,6 @@ def init_dataset(data_repo_path):
     global datavisits
     global filtered_datavisits
 
-    logger.info(data_repo_path)
-
     d = Dataset(data_repo_path)
     d.connect()
     d.init_data()
@@ -152,11 +150,14 @@ def summarize_visits_dataframe(data_repo_path):
 
 
 def load_data(data_repo_path=None):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.environ['LSST_SAMPLE_DATA']
+    #current_directory = os.path.dirname(os.path.abspath(__file__))
+    #root_directory = os.path.split(current_directory)[0]
     if not data_repo_path:
-        data_repo_path = sample_data_directory
+        try:
+            sample_data_directory = os.environ['LSST_SAMPLE_DATA']
+            data_repo_path = sample_data_directory
+        except AttributeError as e:
+            logger.error("'LSST_SAMPLE_DATA' env variable not defined")
 
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
@@ -335,6 +336,12 @@ class QuickLookComponent(Component):
         msg_args = dict(msg=msg, level=level, duration=duration)
         self.status_message_queue.append(msg_args)
         self.param.trigger('status_message_queue')
+        # Drop message in terminal/logger too
+        try:
+            # temporary try/except until 'level' values are all checked
+            getattr(logger,level)(msg)
+        except:
+            pass
 
     def on_flag_submit_click(self, event):
         flag_name = self.flag_filter_select.value
