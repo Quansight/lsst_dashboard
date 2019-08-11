@@ -113,6 +113,10 @@ class Dataset():
             visits += match_df.loc[idx]['matchId'].columns.tolist()
 
         visits = ddf[ddf['visit'].isin(visits)]
+        if metric not in visits.columns:
+            print(f'no visits found for ({filt}, {metric})')
+            return None
+
         flags = [flag for flag in self.flags if flag in ddf.columns]
         self.visits_by_metric_df[filt][metric] = visits[[metric, 'visit', 'tract', 'filt'] + flags]
 
