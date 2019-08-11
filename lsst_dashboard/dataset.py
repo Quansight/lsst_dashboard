@@ -34,6 +34,12 @@ class Dataset():
         self.visits = {}
         self.tables_df = {}
         self.visits_df = {}
+        self.metadata = {}
+        self.filters = []
+        self.metrics = []
+        self.failures = {}
+        self.flags = []
+        self.tracts = []
 
     def connect(self):
         # search for metadata.yaml file
