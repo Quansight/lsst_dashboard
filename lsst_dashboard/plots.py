@@ -489,6 +489,8 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     xlabel = 'visit'
     ylabel = 'normalized median'
 
+    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+
     return plot.options(responsive=True, height=200, show_grid=True,
                         xlabel=xlabel, ylabel=ylabel,
-                        xrotation=45)
+                        xrotation=45, bgcolor="black", gridstyle=grid_style)
