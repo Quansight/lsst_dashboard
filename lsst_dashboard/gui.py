@@ -32,8 +32,12 @@ logger.addHandler(logging.FileHandler('dashboard.log'))
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 root_directory = os.path.split(current_directory)[0]
-sample_data_directory = os.path.join(root_directory,
-                                     'examples')
+
+
+sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
+                                       os.path.join(root_directory,
+                                                    'examples',
+                                                    'RC2_w18'))
 
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
@@ -128,7 +132,9 @@ def load_data(data_repo_path=None):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
     sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                           os.path.join(root_directory, 'examples'))
+                                           os.path.join(root_directory,
+                                                        'examples',
+                                                        'RC2_w18'))
     if not data_repo_path:
         data_repo_path = sample_data_directory
 
