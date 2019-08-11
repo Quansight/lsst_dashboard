@@ -109,8 +109,11 @@ class Dataset():
         visits = []
         for tract in self.tracts:
             match_df = self.match_df[filt][tract]
+            try: # sometimes metric is not found
             idx = self.tables_df[table][metric].index.compute()
             visits += match_df.loc[idx]['matchId'].columns.tolist()
+            except:
+                pass
 
         visits = ddf[ddf['visit'].isin(visits)]
         if metric not in visits.columns:
