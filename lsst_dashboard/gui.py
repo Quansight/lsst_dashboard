@@ -101,7 +101,7 @@ def init_dataset(data_repo_path):
     for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
         dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
-        df = dtf.compute().head(10000)
+        df = dtf.compute()
 
         # TODO: defer to later when a filter is set
         datasets[filt] = QADataset(df)
