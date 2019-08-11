@@ -509,9 +509,10 @@ class QuickLookComponent(Component):
 
             except Exception as e:
                 self.add_message_from_error('Filtering Error', '', e)
+                raise
                 return
 
-        self.filter_visits_dataframe()
+        #self.filter_visits_dataframe()
 
         self._update_selected_metrics_by_filter()
 
@@ -521,16 +522,17 @@ class QuickLookComponent(Component):
 
         for filt, metrics in datavisits.items():
             for metric, df in metrics.items():
+
                 try:
-                    query_expr = self._assemble_query_expression()
-                    if query_expr:
+                    query_expr = self._assemble_query_expression(ignore_query_expr=True)
+                    if query_expr and datavisits[filt][metric] is not None:
                         filtered_datavisits[filt][metric] = datavisits[filt][metric].query(query_expr)
 
                 except Exception as e:
                     self.add_message_from_error('Filtering Visits Error', '', e)
                     return
 
-    def _assemble_query_expression(self):
+    def _assemble_query_expression(self, ignore_query_expr=False):
         query_expr = ''
 
         flags_query = []
@@ -538,6 +540,9 @@ class QuickLookComponent(Component):
             flags_query.append('{}=={}'.format(flag,state))
         if flags_query:
             query_expr += ' & '.join(flags_query)
+
+        if ignore_query_expr:
+            return query_expr
 
         query_filter = self.query_filter.strip()
         if query_filter:
@@ -571,6 +576,8 @@ class QuickLookComponent(Component):
                                              exception_obj)[0]
         msg_body = '<b>Info:</b> ' + info + '<br />'
         msg_body += '<b>Cause:</b> ' + tb
+        logger.error(title)
+        logger.error(msg_body)
         self.add_status_message(title,
                                 msg_body, level=level, duration=10)
 
