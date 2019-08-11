@@ -388,13 +388,12 @@ class skyplot(ParameterizedFunction):
                                     'size': self.p.decimate_size,
                                     'nonselection_alpha': 0})
 
+        kwargs = dict(aggregator=aggregator, cmap=viridis)
         decimated = decimate(pts).opts(**decimate_opts)
+        sky_shaded = datashade(pts, **kwargs)
 
-        kwargs = dict(aggregator=aggregator)
-        sky_shaded = rasterize(pts, **kwargs).options(colorbar=True)
-
-        return (sky_shaded * decimated).options(bgcolor="black", responsive=True)
-
+        plot = dynspread(sky_shaded) * decimated
+        return plot.options(bgcolor="black", responsive=True)
 
 class skyplot_layout(ParameterizedFunction):
     """Layout of skyplots with linked crosshair
@@ -461,7 +460,7 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
 
     plot = None
     for filt, metrics in filters_to_metrics.items():
-        for metric in metrics:     
+        for metric in metrics:
             df = dsets_visits[filt][metric].compute()
             df[metric] = minmax_scale(df[metric])
             df = df.groupby('visit')
