@@ -40,31 +40,6 @@ with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
 
 pn.extension()
 
-
-def link_axes(root_view, root_model):
-    ref = root_model.ref['id']
-    range_map = defaultdict(list)
-    for pane in root_view.select(pn.pane.HoloViews):
-        for p in pane._plots[ref][0].traverse(specs=[ElementPlot]):
-            fig = p.state
-            if fig.x_range.tags:
-                range_map[fig.x_range.tags[0]].append((fig, p, fig.x_range))
-            if fig.y_range.tags:
-                range_map[fig.y_range.tags[0]].append((fig, p, fig.y_range))
-
-
-    for tag, axes in range_map.items():
-        fig, p, axis = axes[0]
-        for fig, p, _ in axes[1:]:
-            if tag in fig.x_range.tags and not axis is fig.x_range:
-                fig.x_range = axis
-                p.handles['x_range'] = axis
-            if tag in fig.y_range.tags and not axis is fig.y_range:
-                fig.y_range = axis
-                p.handles['y_range'] = axis
-
-pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
-
 datasets = []
 filtered_datasets = []
 datavisits = []
