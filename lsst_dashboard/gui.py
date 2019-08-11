@@ -110,8 +110,17 @@ def init_dataset(data_repo_path):
     datavisits = {}
     filtered_datavisits = {}
     for filt in d.filters:
-        datavisits[filt] = d.visits_df[filt].head(10000)
-        filtered_datavisits[filt] = datavisits[filt].copy()
+        datavisits[filt] = {}
+        filtered_datavisits[filt] = {}
+        for metric in d.metrics:
+            df = d.visits_by_metric_df[filt][metric]
+            filtered_df = None
+            if df is not None:
+                df = df
+                filtered_df = df.copy()
+
+            datavisits[filt][metric] = df
+            filtered_datavisits[filt][metric] = filtered_df
 
     return d
 
@@ -143,6 +152,9 @@ def summarize_visits_dataframe(data_repo_path):
 
 
 def load_data(data_repo_path=None):
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    root_directory = os.path.split(current_directory)[0]
+    sample_data_directory = os.environ['LSST_SAMPLE_DATA']
     if not data_repo_path:
         data_repo_path = sample_data_directory
 
@@ -520,15 +532,16 @@ class QuickLookComponent(Component):
         global filtered_datavisits
         global datavisits
 
-        for filt, df in datavisits.items():
-            try:
-                query_expr = self._assemble_query_expression()
-                if query_expr:
-                    filtered_datavisits[filt] = datavisits[filt].query(query_expr)
+        for filt, metrics in datavisits.items():
+            for metric, df in metrics.items():
+                try:
+                    query_expr = self._assemble_query_expression()
+                    if query_expr:
+                        filtered_datavisits[filt][metric] = datavisits[filt][metric].query(query_expr)
 
-            except Exception as e:
-                self.add_message_from_error('Filtering Visits Error', '', e)
-                return
+                except Exception as e:
+                    self.add_message_from_error('Filtering Visits Error', '', e)
+                    return
 
     def _assemble_query_expression(self):
         query_expr = ''
