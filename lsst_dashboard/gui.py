@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
+root_directory = os.path.split(current_directory)[0]
+sample_data_directory = os.path.join(root_directory,
+                                     'examples')
 
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
@@ -62,17 +65,15 @@ def link_axes(root_view, root_model):
 
 pn.viewable.Viewable._preprocessing_hooks.append(link_axes)
 
-datasets = None
-filtered_datasets = None
-datavisits = None
-filtered_datavisits = None
-flags = None
-_filters = []
+datasets = []
+filtered_datasets = []
+datavisits = []
+filtered_datavisits = []
 
 class Store(object):
 
     def __init__(self):
-        self.active_dataset = None
+        self.active_dataset = Dataset('')
 
 
 def init_dataset(data_repo_path):
@@ -81,8 +82,8 @@ def init_dataset(data_repo_path):
     global filtered_datasets
     global datavisits
     global filtered_datavisits
-    global flags
-    global _filters
+
+    logger.info(data_repo_path)
 
     d = Dataset(data_repo_path)
     d.connect()
@@ -94,14 +95,13 @@ def init_dataset(data_repo_path):
     store.active_dataset = d
 
     flags = d.flags
-    _filters = d.filters
 
     datasets = {}
     filtered_datasets = {}
     for filt in d.filters:
         dtf = d.tables_df['analysisCoaddTable_forced']
         dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
-        df = dtf.compute().head(10000)
+        df = dtf.compute()
 
         # TODO: defer to later when a filter is set
         datasets[filt] = QADataset(df)
@@ -143,10 +143,6 @@ def summarize_visits_dataframe(data_repo_path):
 
 
 def load_data(data_repo_path=None):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.path.join(root_directory,
-                                         'examples')
     if not data_repo_path:
         data_repo_path = sample_data_directory
 
@@ -154,17 +150,15 @@ def load_data(data_repo_path=None):
         raise ValueError('Data Repo Path does not exist.')
 
     d = init_dataset(data_repo_path)
+
     return d
 
 
 store = Store()
-store.active_dataset = load_data()
+#store.active_dataset = load_data()
 
 
 def get_available_metrics(filt):
-
-    if filt not in datasets.keys():
-        raise ValueError('Filter {} doesnt exist'.format(filt))
 
     global store
     if not store.active_dataset:
@@ -174,9 +168,7 @@ def get_available_metrics(filt):
 
 
 def get_metric_categories():
-
     categories = ['Photometry', 'Astrometry', 'Shape', 'Color']
-
     return categories
 
 
@@ -202,7 +194,8 @@ def get_unique_object_count():
 
 class QuickLookComponent(Component):
 
-    data_repository = param.String(label=None, allow_None=True)
+    data_repository = param.String(default=sample_data_directory,
+                                   label=None, allow_None=True)
 
     query_filter = param.String(label="Query Expression")
 
@@ -224,7 +217,7 @@ class QuickLookComponent(Component):
 
     selected = param.Tuple(default=(None, None, None, None), length=4)
 
-    selected_metrics_by_filter = param.Dict(default={f: [] for f in _filters})
+    selected_metrics_by_filter = param.Dict(default={f: [] for f in store.active_dataset.filters})
 
     selected_flag_filters = param.Dict(default={})
 
@@ -236,9 +229,11 @@ class QuickLookComponent(Component):
 
     label = param.String(default='Quick Look')
 
-    def __init__(self, **param):
+    def __init__(self, store, **param):
 
         super().__init__(**param)
+
+        self.store = store
 
         self._submit_repository = pn.widgets.Button(
             name='Load Data', width=50, align='end')
@@ -249,7 +244,7 @@ class QuickLookComponent(Component):
         self._submit_comparison.on_click(self._update)
 
         self.flag_filter_select = pn.widgets.Select(
-            name='Add Flag Filter', width=160, options=flags)
+            name='Add Flag Filter', width=160, options=self.store.active_dataset.flags)
 
         self.flag_state_select = pn.widgets.Select(
             name='Flag State', width=75, options=['True', 'False'])
@@ -259,7 +254,7 @@ class QuickLookComponent(Component):
         self.flag_submit.on_click(self.on_flag_submit_click)
 
         self.flag_filter_selected = pn.widgets.Select(
-            name='Remove Flag Filter', width=250)
+            name='Active Flag Filters', width=250)
 
         self.flag_remove = pn.widgets.Button(
             name='Remove Flag Filter', width=50, height=30, align='end')
@@ -305,6 +300,9 @@ class QuickLookComponent(Component):
 
         self.add_status_message('Data Ready', data_repo_path,
                                 level='success', duration=3)
+        # update ui
+        self.flag_filter_select.options = self.store.active_dataset.flags
+        self._load_metrics()
         self.update_display()
 
     def update_display(self):
@@ -480,9 +478,9 @@ class QuickLookComponent(Component):
         """
         Populates the _metrics Row with metrics loaded from the repository
         """
-        global _filters
-
-        panels = [MetricPanel(metric='LSST', filters=_filters, parent=self)]
+        panels = [MetricPanel(metric='LSST',
+                  filters=self.store.active_dataset.filters,
+                  parent=self)]
         self._metric_panels = panels
 
         self._metric_layout.objects = [p.panel() for p in panels]
@@ -814,4 +812,4 @@ _css = '''
 '''
 
 
-dashboard = Application(body=QuickLookComponent())
+dashboard = Application(body=QuickLookComponent(store))
