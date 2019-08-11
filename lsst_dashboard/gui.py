@@ -154,7 +154,8 @@ def summarize_visits_dataframe(data_repo_path):
 def load_data(data_repo_path=None):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.environ['LSST_SAMPLE_DATA']
+    sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
+                                           os.path.join(root_directory, 'examples'))
     if not data_repo_path:
         data_repo_path = sample_data_directory
 
