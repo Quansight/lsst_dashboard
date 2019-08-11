@@ -176,6 +176,8 @@ class Dataset():
                 except:
                     print(f'...unable to save visits for ({filt}, {metric})')
                     continue
+                with pd.option_context('mode.use_inf_as_na', True):
+                    df = df.dropna(subset=[metric])
                 df.to_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow', compression='snappy')
                 
     def load_from_hdf(self):
