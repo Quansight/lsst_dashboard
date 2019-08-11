@@ -31,6 +31,7 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
 from datashader.colors import viridis
+from bokeh.palettes import Viridis
 
 decimate.max_samples = 5000
 
@@ -217,9 +218,9 @@ class scattersky(ParameterizedFunction):
         Dimension of the dataset to use as x-coordinate""")
     ydim = param.String(default='y0', doc="""
         Dimension of the dataset to use as y-coordinate""")
-    scatter_cmap = param.String(default='fire', doc="""
+    scatter_cmap = param.String(default='bgyw', doc="""
         Colormap to use for the scatter plot""")
-    sky_cmap = param.String(default='coolwarm', doc="""
+    sky_cmap = param.String(default='bgyw', doc="""
         Colormap to use for the sky plot""")
     height = param.Number(default=300, doc="""
         Height in pixels of the combined layout""")
@@ -247,7 +248,9 @@ class scattersky(ParameterizedFunction):
                                       streams=[self.p.filter_stream])
         scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
                             norm=dict(axiswise=True))
-        scatter_shaded = datashade(scatter_pts, cmap=cc.palette[self.p.scatter_cmap])
+        scatter_shaded = datashade(scatter_pts,
+                                    # cmap=cc.palette[self.p.scatter_cmap])
+                                    cmap=viridis)
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
 
         # Set up sky plot
@@ -259,7 +262,8 @@ class scattersky(ParameterizedFunction):
         sky_shaded = rasterize(sky_pts,
                                aggregator=ds.mean(self.p.ydim)).options(colorbar=True,
                                                            responsive=True,
-                                                           cmap=cc.palette[self.p.sky_cmap])
+                                                           # cmap=cc.palette[self.p.sky_cmap])
+                                                           cmap=Viridis[256])
         sky = sky_shaded.opts(**sky_opts)
         # sky = dynspread(sky_shaded).opts(**sky_opts)
 
@@ -285,12 +289,14 @@ class scattersky(ParameterizedFunction):
 
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
 
-        scatter_p = raw_scatter*scatter
+        scatter_p = (raw_scatter*scatter).options(bgcolor="black")
+
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
             sky_p = raw_sky*sky
         else:
             sky_p = sky
+        sky_p = sky_p.options(bgcolor="black")
 
         if self.p.show_table:
             return (table + scatter_p + sky_p)
