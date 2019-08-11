@@ -7,7 +7,7 @@ https://quansight.nyc3.digitaloceanspaces.com/datasets/RC2_w18.tar.gz
 
 2. Setup and activate conda environment with Python 3.7 and PyViz stack
 
-3. Use panel off master branch
+3. Use panel off v0.7.0a2 branch (temporarily until official release)
 ```
 git clone https://github.com/pyviz/panel
 cd panel
