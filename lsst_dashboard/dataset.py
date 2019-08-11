@@ -110,8 +110,8 @@ class Dataset():
         for tract in self.tracts:
             match_df = self.match_df[filt][tract]
             try: # sometimes metric is not found
-            idx = self.tables_df[table][metric].index.compute()
-            visits += match_df.loc[idx]['matchId'].columns.tolist()
+                idx = self.tables_df[table][metric].index.compute()
+                visits += match_df.loc[idx]['matchId'].columns.tolist()
             except:
                 pass
 
@@ -146,12 +146,17 @@ class Dataset():
             self.tables_df[table] = dd.read_parquet(str(p.joinpath(table)), engine='pyarrow')
 
         for filt in self.filters:
-            self.visits_df[filt] = dd.read_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow')
-            self.match_df[filt] = {}
+            #self.visits_df[filt] = dd.read_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow')
+            #self.match_df[filt] = {}
+            #for tract in self.tracts:
+            #    self.match_df[filt][tract] = dd.read_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data')
             self.visits_by_metric_df[filt] = {}
-            for tract in self.tracts:
-                self.match_df[filt][tract] = dd.read_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data')
-
+            for metric in self.metrics:
+                if p.joinpath(f'{filt}_{metric}_visits.parq').exists():
+                    df = dd.read_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow')
+                else:
+                    df = None
+                self.visits_by_metric_df[filt][metric] = df
 
     def to_parquet(self, path):
         p = Path(path)
@@ -159,11 +164,20 @@ class Dataset():
             self.tables_df[table].to_parquet(str(p.joinpath(table)), engine='pyarrow', compression='snappy')
 
         for filt in self.filters:
-            self.visits_df[filt].to_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow', compression='snappy')
-            for tract in self.tracts:
-                 # parquet columns names must be strings
-                self.match_df[filt][tract].to_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data', complevel=9, format='table')
-
+            #self.visits_df[filt].to_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow', compression='snappy')
+            #for tract in self.tracts:
+            #     # parquet columns names must be strings
+            #    self.match_df[filt][tract].to_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data', complevel=9, format='table')
+            for metric in self.metrics:
+                print(f'saving visits for ({filt}, {metric})')
+                self.fetch_visits_by_metric(filt, metric)
+                try:
+                    df = self.visits_by_metric_df[filt][metric].compute()
+                except:
+                    print(f'...unable to save visits for ({filt}, {metric})')
+                    continue
+                df.to_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow', compression='snappy')
+                
     def load_from_hdf(self):
         tables = {}
         visits = {}
