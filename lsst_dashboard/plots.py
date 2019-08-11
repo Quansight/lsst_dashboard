@@ -6,7 +6,7 @@ import pandas as pd
 import holoviews as hv
 import datashader as ds
 import colorcet as cc
-import sklearn.preprocessing
+from sklearn.preprocessing import minmax_scale
 
 from param import ParameterizedFunction
 from param import ParamOverrides
@@ -461,12 +461,10 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
 
     plot = None
     for filt, metrics in filters_to_metrics.items():
-        for metric in metrics:
-            df = dsets_visits[filt][['visit',metric]]
-            mmax = df[metric].max()
-            mmin = df[metric].min()
-            df[metric] = (df[metric] - mmin)/(mmax - mmin)
-            df = df.groupby(df.visit)
+        for metric in metrics:     
+            df = dsets_visits[filt][metric].compute()
+            df[metric] = minmax_scale(df[metric])
+            df = df.groupby('visit')
             df = df[metric].median().reset_index()
 
             label = '{} - {}'.format(filt, metric)
