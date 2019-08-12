@@ -276,26 +276,55 @@ class QuickLookComponent(Component):
                                 margin=(10, 10, 10, 10))
         self._plot_layout = pn.Column(sizing_mode='stretch_width',
                                       margin=(10, 10, 10, 10))
+
+        self.list_layout = pn.Column(sizing_mode='stretch_width')
+
         self._update(None)
 
     def _on_load_data_repository(self, event):
+
+        global datasets
+        global filtered_datasets
+        global datavisits
+        global filtered_datavisits
+
+        self.store.active_dataset = Dataset('')
+        self.skyplot_list = []
+        self.plots_list = []
+        self.plot_top = None
+
+        datasets = {}
+        filtered_datasets = {}
+        datavisits = {}
+        filtered_datavisits = {}
+
+        self._load_metrics()
+        self._switch_view_mode()
+        self.update_display()
+
         data_repo_path = self.data_repository
         self.add_status_message('Load Data Start...', data_repo_path,
                                 level='info')
 
         try:
-            load_data(data_repo_path)
+            self.store.active_dataset = load_data(data_repo_path)
+
         except Exception as e:
             self.update_display()
             self.add_message_from_error('Data Loading Error',
                                         data_repo_path, e)
-            return
+            raise
 
         self.add_status_message('Data Ready', data_repo_path,
                                 level='success', duration=3)
         # update ui
         self.flag_filter_select.options = self.store.active_dataset.flags
+
+        for f in self.store.active_dataset.filters:
+            self.selected_metrics_by_filter[f] = []
+
         self._load_metrics()
+        self._switch_view_mode()
         self.update_display()
 
     def update_display(self):
@@ -632,41 +661,38 @@ class QuickLookComponent(Component):
             else:
                 plot_panel = pn.panel(plot)
                 linked.jslink(plot_panel, x_range='x_range')
+                linked.jslink(plot_panel, y_range='y_range')
                 tabs.append((name, plot_panel))
 
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
     def _switch_view_mode(self, *events):
         view_mode = self._switch_view.value
-        if len(self.plots_list):
-            if view_mode == 'Skyplot View':
-                self._plot_top.clear()
 
-                tab_layout = self.linked_tab_plots()
-
-                try:
-                    _ = self._plot_layout.pop(0)
-                except:
-                    pass
-
-                self._plot_layout.css_classes = []
-                self._plot_layout.append(tab_layout)
-            else:
-                self._plot_top.clear();
-                self._plot_top.append(self.plot_top)
-                self._plot_layout.css_classes = ['metricsRow']
-                list_layout = pn.Column(sizing_mode='stretch_width')
-                for i,p in self.plots_list:
-                    list_layout.append(p)
-                try:
-                    _ = self._plot_layout.pop(0)
-                except:
-                    pass
-                self._plot_layout.append(list_layout)
-        else:
+        if view_mode == 'Skyplot View':
             self._plot_top.clear()
+
+            tab_layout = self.linked_tab_plots()
+
+            try:
+                _ = self._plot_layout.pop(0)
+            except:
+                pass
+
             self._plot_layout.css_classes = []
-            self._plot_layout.clear()
+            self._plot_layout.append(tab_layout)
+        else:
+            self._plot_top.clear();
+            self._plot_top.append(self.plot_top)
+            self._plot_layout.css_classes = ['metricsRow']
+            self.list_layout = pn.Column(sizing_mode='stretch_width')
+            for i,p in self.plots_list:
+                self.list_layout.append(p)
+            try:
+                _ = self._plot_layout.pop(0)
+            except:
+                pass
+            self._plot_layout.append(self.list_layout)
 
     def jinja(self):
 
