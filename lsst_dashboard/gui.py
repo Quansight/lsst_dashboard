@@ -228,6 +228,10 @@ class QuickLookComponent(Component):
 
         self.store = store
 
+        self._clear_metrics_button = pn.widgets.Button(
+            name='Clear', width=30, align='end')
+        self._clear_metrics_button.on_click(self._on_clear_metrics)
+
         self._submit_repository = pn.widgets.Button(
             name='Load Data', width=50, align='end')
         self._submit_repository.on_click(self._on_load_data_repository)
@@ -367,6 +371,16 @@ class QuickLookComponent(Component):
         self.param.trigger('selected_flag_filters')
         self.add_status_message('Removed Flag Filter',
                                 flag_name, level='info')
+
+    def _on_clear_metrics(self, event):
+
+        for k in self.selected_metrics_by_filter.keys():
+            self.selected_metrics_by_filter[k] = []
+
+        self.param.trigger('selected_metrics_by_filter')
+
+        code = '''$("input[type='checkbox']").prop("checked", false);'''
+        self.execute_js_script(code)
 
     def on_run_query_filter_click(self, event):
         pass
@@ -716,7 +730,10 @@ class QuickLookComponent(Component):
         switcher_row = pn.Row(self._switch_view)
         switcher_row.css_classes = ['view-switcher']
 
+        clear_button_row = pn.Row(self._clear_metrics_button)
+
         components = [
+            ('metrics_clear_button', clear_button_row),
             ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
             ('adhoc_js', self.adhoc_js),
