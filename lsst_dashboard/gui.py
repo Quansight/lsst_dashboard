@@ -278,7 +278,11 @@ class QuickLookComponent(Component):
         self._switch_view = self._create_switch_view_buttons()
         self._plot_top = pn.Row(sizing_mode='stretch_width',
                                 margin=(10, 10, 10, 10))
+
         self._plot_layout = pn.Column(sizing_mode='stretch_width',
+                                      margin=(10, 10, 10, 10))
+
+        self.skyplot_layout = pn.Column(sizing_mode='stretch_width',
                                       margin=(10, 10, 10, 10))
 
         self.list_layout = pn.Column(sizing_mode='stretch_width')
@@ -680,32 +684,31 @@ class QuickLookComponent(Component):
 
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
+    def attempt_to_clear(self, obj):
+        try:
+            obj.clear()
+        except:
+            pass
+
     def _switch_view_mode(self, *events):
-        view_mode = self._switch_view.value
 
-        if view_mode == 'Skyplot View':
-            self._plot_top.clear()
+        # clear existing plot layouts
+        self.attempt_to_clear(self._plot_top)
+        self.attempt_to_clear(self._plot_layout)
+        self.attempt_to_clear(self.skyplot_layout)
+        self.attempt_to_clear(self.list_layout)
 
-            tab_layout = self.linked_tab_plots()
+        if self._switch_view.value == 'Skyplot View':
+            self.execute_js_script('''$( ".skyplot-plot-area" ).show(); $( ".metrics-plot-area" ).hide();''')
+            self.skyplot_layout.append(self.linked_tab_plots())
 
-            try:
-                _ = self._plot_layout.pop(0)
-            except:
-                pass
-
-            self._plot_layout.css_classes = []
-            self._plot_layout.append(tab_layout)
         else:
-            self._plot_top.clear();
+            self.execute_js_script('''$( ".skyplot-plot-area" ).hide(); $( ".metrics-plot-area" ).show();''')
+
             self._plot_top.append(self.plot_top)
-            self._plot_layout.css_classes = ['metricsRow']
-            self.list_layout = pn.Column(sizing_mode='stretch_width')
-            for i,p in self.plots_list:
+            for i, p in self.plots_list:
                 self.list_layout.append(p)
-            try:
-                _ = self._plot_layout.pop(0)
-            except:
-                pass
+
             self._plot_layout.append(self.list_layout)
 
     def jinja(self):
@@ -741,6 +744,7 @@ class QuickLookComponent(Component):
             ('view_switcher', switcher_row),
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
+            ('skyplot_metrics_plots', self.skyplot_layout),
             ('plot_top', self._plot_top),
             ('flags', pn.Column(pn.Row(self.flag_filter_select,
                                        self.flag_state_select),
@@ -850,13 +854,9 @@ _css = '''
     overflow-y: auto !important;
 }
 
-.metricsRow {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    top: 300px;
-    height: 100%;
-    width: 100%;
+.skyplot-extras {
+    height: 100% !important;
+    width: 100% !important;
     overflow-y: auto;
 }
 '''
