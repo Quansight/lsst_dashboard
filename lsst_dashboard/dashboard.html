@@ -72,6 +72,24 @@ button  {
   margin-left: 5px !important;
 }
 
+body {
+  overflow-y: hidden !important;
+}
+
+.visits-plot-area {
+  overflow-y: hidden !important;
+}
+
+.metrics-plot-area {
+  overflow-y: auto !important;
+  position: relative;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(100vh - 300px);
+}
+
 </style>
 
 {% endblock %}
@@ -139,10 +157,14 @@ button  {
 
         <main role="main" class="col-md-8 ml-sm-auto col-lg-9 pt-3 px-4">
             {% if roots.plot_top %}
+	      <div class="visits-plot-area">
               {{ embed(roots.plot_top) }}
+	      </div>
             {% endif %}
 
-            {{ embed(roots.metrics_plots) }}
+	      <div class="metrics-plot-area">
+		    {{ embed(roots.metrics_plots) }}
+	      </div>
             {{ embed(roots.status_message_queue) }}
             {{ embed(roots.adhoc_js) }}
         </main>

@@ -693,7 +693,7 @@ class QuickLookComponent(Component):
             except:
                 pass
 
-            self._plot_layout.css_classes = []
+            self._plot_layout.css_classes = ['skyplot-extras']
             self._plot_layout.append(tab_layout)
         else:
             self._plot_top.clear();
@@ -850,13 +850,9 @@ _css = '''
     overflow-y: auto !important;
 }
 
-.metricsRow {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    top: 300px;
-    height: 100%;
-    width: 100%;
+.skyplot-extras {
+    height: 100% !important;
+    width: 100% !important;
     overflow-y: auto;
 }
 '''
