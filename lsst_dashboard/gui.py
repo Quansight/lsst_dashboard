@@ -705,6 +705,7 @@ class QuickLookComponent(Component):
         else:
             self.execute_js_script('''$( ".skyplot-plot-area" ).hide(); $( ".metrics-plot-area" ).show();''')
 
+            logger.info(self.plot_top)
             self._plot_top.append(self.plot_top)
             for i, p in self.plots_list:
                 self.list_layout.append(p)

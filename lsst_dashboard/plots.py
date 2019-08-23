@@ -469,34 +469,37 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
             df = dsets_visits[filt][metric].compute()
-            df[metric] = minmax_scale(df[metric])
+            label = '{} - {}'.format(filt, metric)
+            df[label] = minmax_scale(df[metric])
             df = df.groupby('visit')
-            df = df[metric].median().reset_index()
+            df = df[label].median().reset_index()
             if dfc is None:
                 dfc = df.set_index('visit')
             else:
-                dfc = dfc.merge(df.set_index('visit'), on='visit')
+                dfc = dfc.merge(df.set_index('visit'), on='visit',
+                        how='outer', sort=True)
 
     dfc = dfc.stack(dropna=False, level=-1).reset_index()
     dfc = dfc.rename(columns={'level_1':'filters', 0:'median'})
-    #label = '{} - {}'.format(filt, metric)
     dfc['visit'] = dfc['visit'].astype(str)
     ds = hv.Dataset(dfc, kdims=['visit','filters'], vdims=['median'])
 
     plot = ds.to(hv.Curve, 'visit', 'median').overlay('filters')
-    plot = plot.opts(hv.opts.Curve(width=800, tools=['hover'])).opts(show_legend=False)
-    assert plot is not None
-    logger.info(plot)
-    return plot
-#    # Using 'soft_range' until data/plots are finished defining
-#    plot = plot.redim(y=hv.Dimension('y', soft_range=(-1,1)))
-#
-#    # Now we rename the axis
-#    xlabel = 'visit'
-#    ylabel = 'normalized median'
-#
-#    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+    plot = plot.opts(hv.opts.Curve(tools=['hover']))
+
+    plot = plot.redim(y=hv.Dimension('median', range=(-1,1)))
+
+    # Now we rename the axis
+    xlabel = 'visit'
+    ylabel = 'normalized median'
+
+    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
 #
 #    return plot.options(responsive=True, height=200, show_grid=True,
 #                        xlabel=xlabel, ylabel=ylabel,
 #                        xrotation=45, bgcolor="black", gridstyle=grid_style)
+    return plot.opts(show_legend=False, show_grid=True,
+                     gridstyle=grid_style, 
+                     xlabel=xlabel, ylabel=ylabel,
+                     responsive=True, aspect=5,
+                     bgcolor='black', xrotation=45)
