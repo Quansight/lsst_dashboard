@@ -480,20 +480,23 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     dfc = dfc.stack(dropna=False, level=-1).reset_index()
     dfc = dfc.rename(columns={'level_1':'filters', 0:'median'})
     #label = '{} - {}'.format(filt, metric)
+    dfc['visit'] = dfc['visit'].astype(str)
     ds = hv.Dataset(dfc, kdims=['visit','filters'], vdims=['median'])
 
     plot = ds.to(hv.Curve, 'visit', 'median').overlay('filters')
-    return plot.opts(hv.opts.Curve(width=800, tools=['hover'])).opts(show_legend=False)
-
-    # Using 'soft_range' until data/plots are finished defining
-    plot = plot.redim(y=hv.Dimension('y', soft_range=(-1,1)))
-
-    # Now we rename the axis
-    xlabel = 'visit'
-    ylabel = 'normalized median'
-
-    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-
-    return plot.options(responsive=True, height=200, show_grid=True,
-                        xlabel=xlabel, ylabel=ylabel,
-                        xrotation=45, bgcolor="black", gridstyle=grid_style)
+    plot = plot.opts(hv.opts.Curve(width=800, tools=['hover'])).opts(show_legend=False)
+    assert plot is not None
+    logger.info(plot)
+    return plot
+#    # Using 'soft_range' until data/plots are finished defining
+#    plot = plot.redim(y=hv.Dimension('y', soft_range=(-1,1)))
+#
+#    # Now we rename the axis
+#    xlabel = 'visit'
+#    ylabel = 'normalized median'
+#
+#    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+#
+#    return plot.options(responsive=True, height=200, show_grid=True,
+#                        xlabel=xlabel, ylabel=ylabel,
+#                        xrotation=45, bgcolor="black", gridstyle=grid_style)
