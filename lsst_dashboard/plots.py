@@ -465,22 +465,25 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
         pass
 
     plot = None
+    dfc = None
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
             df = dsets_visits[filt][metric].compute()
             df[metric] = minmax_scale(df[metric])
             df = df.groupby('visit')
             df = df[metric].median().reset_index()
-
-            label = '{} - {}'.format(filt, metric)
-            y = df[metric]
-            x = df['visit'].astype(str)
-            scatter = hv.Scatter((x,y), label=label)
-            if not plot:
-                # Use df.values to avoid automatic naming of axis (use 'x','y')
-                plot = hv.Curve(scatter)
+            if dfc is None:
+                dfc = df.set_index('visit')
             else:
-                plot *= hv.Curve(scatter)
+                dfc = dfc.merge(df.set_index('visit'), on='visit')
+
+    dfc = dfc.stack(dropna=False, level=-1).reset_index()
+    dfc = dfc.rename(columns={'level_1':'filters', 0:'median'})
+    #label = '{} - {}'.format(filt, metric)
+    ds = hv.Dataset(dfc, kdims=['visit','filters'], vdims=['median'])
+
+    plot = ds.to(hv.Curve, 'visit', 'median').overlay('filters')
+    return plot.opts(hv.opts.Curve(width=800, tools=['hover'])).opts(show_legend=False)
 
     # Using 'soft_range' until data/plots are finished defining
     plot = plot.redim(y=hv.Dimension('y', soft_range=(-1,1)))
