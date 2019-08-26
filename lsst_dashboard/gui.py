@@ -66,8 +66,6 @@ def init_dataset(data_repo_path):
     d.connect()
     d.init_data()
 
-    #XXX: I think these lines are outdated; 'store.active_dataset' is currently
-    # being assigned at line ~150 `store.active_dataset = load_data()`
     global store
     store.active_dataset = d
 
@@ -80,7 +78,6 @@ def init_dataset(data_repo_path):
         dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
         df = dtf.compute()
 
-        # TODO: defer to later when a filter is set
         datasets[filt] = QADataset(df)
         filtered_datasets[filt] = QADataset(df.copy())
 
@@ -163,18 +160,6 @@ def get_available_metrics(filt):
 def get_metric_categories():
     categories = ['Photometry', 'Astrometry', 'Shape', 'Color']
     return categories
-
-
-def get_patch_count():
-    return np.random.randint(10e5, 10e7, size=(1))[0]
-
-
-def get_visit_count():
-    return np.random.randint(10e5, 10e7, size=(1))[0]
-
-
-def get_filter_count():
-    return np.random.randint(10e5, 10e7, size=(1))[0]
 
 
 def get_unique_object_count():

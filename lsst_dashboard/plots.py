@@ -396,9 +396,12 @@ class skyplot(ParameterizedFunction):
 
         kwargs = dict(aggregator=aggregator, cmap=viridis)
         decimated = decimate(pts).opts(**decimate_opts)
-        sky_shaded = datashade(pts, **kwargs)
+        #sky_shaded = datashade(pts, **kwargs)
+        sky_shaded = rasterize(pts, **kwargs).opts(cmap=Viridis[256],
+                                                   colorbar=True)
 
-        plot = dynspread(sky_shaded) * decimated
+        #plot = dynspread(sky_shaded) * decimated
+        plot = sky_shaded * decimated
         return plot.options(bgcolor="black", responsive=True)
 
 class skyplot_layout(ParameterizedFunction):
