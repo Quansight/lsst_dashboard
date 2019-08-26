@@ -165,10 +165,6 @@ def get_metric_categories():
     return categories
 
 
-def get_tract_count():
-    return np.random.randint(10e3, 10e4, size=(1))[0]
-
-
 def get_patch_count():
     return np.random.randint(10e5, 10e7, size=(1))[0]
 
@@ -415,7 +411,6 @@ class QuickLookComponent(Component):
         self._load_metrics()
 
     def create_info_element(self, name, value):
-
         box_css = """
         background-color: #EEEEEE;
         border: 1px solid #777777;
@@ -426,9 +421,8 @@ class QuickLookComponent(Component):
         """
 
         fval = format(value, ',')
-        return '<li class="nav-item"><span style="{}"><b>{}</b> {}</span></li>'.format(box_css,
-                                                                      fval,
-                                                                      name)
+        outel = '<li class="nav-item"><span style="{}"><b>{}</b> {}</span></li>'
+        return outel.format(box_css,fval,name)
 
     @param.depends('tract_count', 'patch_count', 'visit_count',
                    'filter_count', 'unique_object_count', watch=True)
@@ -443,7 +437,7 @@ class QuickLookComponent(Component):
         html += self.create_info_element('Visits', self.visit_count)
         html += self.create_info_element('Unique Objects',
                                          self.unique_object_count)
-        self._info.object = '<ul>{}</ul>'.format(html)
+        self._info.object = '<ul class="navbar">{}</ul>'.format(html)
 
 
     def create_status_message(self, msg, level='info', duration=5):
@@ -514,10 +508,33 @@ class QuickLookComponent(Component):
         script = '<script>(function() { ' + js_body +  '})()</script>'
         self.adhoc_js.object = script
 
+    def get_patch_count(self):
+        patchs = set()
+        for filt,_ in self.selected_metrics_by_filter.items():
+            dset = self.get_dataset_by_filter(filt)
+            patchs = patchs.union(set(dset.df['patchId'].unique()))
+        return len(patchs)
+
+    def get_tract_count(self):
+        tracts = set()
+        for filt,_ in self.selected_metrics_by_filter.items():
+            dset = self.get_dataset_by_filter(filt)
+            tracts = tracts.union(set(dset.df['tract'].unique()))
+        return len(tracts)
+
+    def get_visit_count(self):
+        dvisits = self.get_datavisits()
+        visits = set()
+        for filt,metrics in self.selected_metrics_by_filter.items():
+            for metric in metrics:
+                df = dvisits[filt][metric].compute()
+                visits = visits.union(set(df['visit'].unique()))
+        return len(visits)
+
     def update_info_counts(self):
-        self.tract_count = get_tract_count()
-        self.patch_count = get_patch_count()
-        self.visit_count = get_visit_count()
+        self.tract_count = self.get_tract_count()
+        self.patch_count = self.get_patch_count()
+        self.visit_count = self.get_visit_count()
         self.unique_object_count = get_unique_object_count()
 
     def _load_metrics(self):
@@ -741,7 +758,7 @@ class QuickLookComponent(Component):
             ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
             ('adhoc_js', self.adhoc_js),
-
+            ('infobar', self._info),
             ('view_switcher', switcher_row),
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
@@ -766,27 +783,27 @@ class QuickLookComponent(Component):
 
         return tmpl
 
-    def panel(self):
-        row1 = pn.Row(self.param.data_repository, self._submit_repository)
-        row2 = pn.Row(self.param.comparison, self._submit_comparison)
-
-        return pn.Column(
-            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
-                         max_height=5),
-            pn.Row(self._info),
-            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
-                         max_height=10),
-            pn.Row(
-                self._metric_layout,
-                pn.Column(
-                    self._switch_view,
-                    self._plot_top,
-                    self._plot_layout,
-                    sizing_mode='stretch_width',
-                ),
-            ),
-            sizing_mode='stretch_both',
-        )
+#    def panel(self):
+#        row1 = pn.Row(self.param.data_repository, self._submit_repository)
+#        row2 = pn.Row(self.param.comparison, self._submit_comparison)
+#
+#        return pn.Column(
+#            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
+#                         max_height=5),
+#            pn.Row(self._info),
+#            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
+#                         max_height=10),
+#            pn.Row(
+#                self._metric_layout,
+#                pn.Column(
+#                    self._switch_view,
+#                    self._plot_top,
+#                    self._plot_layout,
+#                    sizing_mode='stretch_width',
+#                ),
+#            ),
+#            sizing_mode='stretch_both',
+#        )
 
 
 class MetricPanel(param.Parameterized):
