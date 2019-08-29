@@ -1,0 +1,32 @@
+- name: Brendan Collins
+  github: brendancol
+  email: bcollins@parietal.io
+  alternate_emails:
+  - parietal.io@gmail.com
+  aliases:
+  - brendancol
+  num_commits: 55
+  first_commit: 2019-07-24 08:29:36
+- name: Carlos H Brandt
+  github: chbrandt
+  email: cbrandt@parietal.io
+  alternate_emails:
+  - carloshenriquebrandt@gmail.com
+  - c.brandt@jacobs-university.de
+  num_commits: 33
+  first_commit: 2019-07-26 13:55:43
+- name: Tony Fast
+  github: tonyfast
+  email: tony.fast@gmail.com
+  num_commits: 3
+  first_commit: 2019-06-25 01:02:07
+- name: Philipp Rudiger
+  github: philippjfr
+  email: prudiger@anaconda.com
+  num_commits: 3
+  first_commit: 2019-07-24 08:59:51
+- name: Dharhas Pothina
+  github: dharhas
+  email: dharhas@quansight.com
+  num_commits: 42
+  first_commit: 2019-07-18 16:16:54
