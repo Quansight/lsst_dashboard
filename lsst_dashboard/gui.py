@@ -745,9 +745,10 @@ class QuickLookComponent(Component):
 
         data_repo_widget = pn.panel(self.param.data_repository,
                                     show_labels=False)
-        data_repo_widget.width = 400
-        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'),
-                               data_repo_widget, self._submit_repository)
+        data_repo_widget.width = 300
+#        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'),
+#                               data_repo_widget, self._submit_repository)
+        data_repo_row = pn.Row(data_repo_widget, self._submit_repository)
         data_repo_row.css_classes = ['data-repo-input']
 
         query_filter_widget = pn.panel(self.param.query_filter)
