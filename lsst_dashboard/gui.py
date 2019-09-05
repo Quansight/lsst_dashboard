@@ -42,8 +42,6 @@ sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
 
-pn.extension()
-
 datasets = []
 filtered_datasets = []
 datavisits = []
