@@ -32,17 +32,15 @@ class Dataset():
         self.path = Path(path)
         self.tables = {}
         self.visits = {}
-        self.tables_df = {}
-        self.visits_df = {}
+        self.all_visits = {}
         self.metadata = {}
         self.filters = []
         self.metrics = []
         self.failures = {}
         self.flags = []
         self.tracts = []
-        self.match_df = {}
-        self.visits_by_metric_df = {}
-
+        self.matches = {}
+ 
     def connect(self):
         # search for metadata.yaml file
         # 1. Look in path directory i.e. '/project/tmorton/tickets/DM-20015/RC2_w18/metadata.yaml'
@@ -90,34 +88,34 @@ class Dataset():
             for tract in self.tracts:
                 dfs.append(delayed(self._load_coadd_table)(table, filt, tract))
 
-        self.tables_df[table] = dd.from_delayed(dfs)
+        self.tables[table] = dd.from_delayed(dfs)
 
     def fetch_visits(self, filt):
         visits = []
-        self.match_df[filt] = {}
+        self.matches[filt] = {}
         for tract in self.tracts:
             df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
             visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
-            self.match_df[filt][tract] = df
+            self.match[filt][tract] = df
         
-        self.visits_by_metric_df[filt] = {}
-        self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
+        self.visits[filt] = {}
+        self.all_visits[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def fetch_visits_by_metric(self, filt, metric, coadd_version='unforced'):
         try:
-            tmp = self.visits_by_metric_df[filt][metric] # if dataframe exists don't recalc 
+            tmp = self.visits[filt][metric] # if dataframe exists don't recalc 
             return
         except:
             pass
 
         table = 'analysisCoaddTable_' + coadd_version
-        ddf = self.visits_df[filt]
+        ddf = self.all_visits[filt]
         visits = []
         for tract in self.tracts:
-            match_df = self.match_df[filt][tract]
+            match = self.matches[filt][tract]
             try: # sometimes metric is not found
-                idx = self.tables_df[table][metric].index.compute()
-                visits += match_df.loc[idx]['matchId'].columns.tolist()
+                idx = self.tables[table][metric].index.compute()
+                visits += match.loc[idx]['matchId'].columns.tolist()
             except:
                 pass
 
@@ -127,7 +125,7 @@ class Dataset():
             return None
 
         flags = [flag for flag in self.flags if flag in ddf.columns]
-        self.visits_by_metric_df[filt][metric] = visits[[metric, 'visit', 'tract', 'filt'] + flags]
+        self.visits[filt][metric] = visits[[metric, 'visit', 'tract', 'filt'] + flags]
 
     def _load_coadd_table(self, table, filt, tract):
         df = self.conn.get(table, tract=int(tract), filter=filt)
@@ -149,25 +147,25 @@ class Dataset():
     def read_parquet(self):
         p = self.path
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables_df[table] = dd.read_parquet(str(p.joinpath(table)), engine='pyarrow')
+            self.tables[table] = dd.read_parquet(str(p.joinpath(table)), engine='pyarrow')
 
         for filt in self.filters:
             #self.visits_df[filt] = dd.read_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow')
             #self.match_df[filt] = {}
             #for tract in self.tracts:
             #    self.match_df[filt][tract] = dd.read_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data')
-            self.visits_by_metric_df[filt] = {}
+            self.visits[filt] = {}
             for metric in self.metrics:
                 if p.joinpath(f'{filt}_{metric}_visits.parq').exists():
                     df = dd.read_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow')
                 else:
                     df = None
-                self.visits_by_metric_df[filt][metric] = df
+                self.visits[filt][metric] = df
 
     def to_parquet(self, path):
         p = Path(path)
         for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables_df[table].to_parquet(str(p.joinpath(table)), engine='pyarrow', compression='snappy')
+            self.tables[table].to_parquet(str(p.joinpath(table)), engine='pyarrow', compression='snappy')
 
         for filt in self.filters:
             #self.visits_df[filt].to_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow', compression='snappy')
@@ -178,31 +176,10 @@ class Dataset():
                 print(f'saving visits for ({filt}, {metric})')
                 self.fetch_visits_by_metric(filt, metric)
                 try:
-                    df = self.visits_by_metric_df[filt][metric].compute()
+                    df = self.visits[filt][metric].compute()
                 except:
                     print(f'...unable to save visits for ({filt}, {metric})')
                     continue
                 with pd.option_context('mode.use_inf_as_na', True):
                     df = df.dropna(subset=[metric])
                 df.to_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow', compression='snappy')
-                
-    def load_from_hdf(self):
-        tables = {}
-        visits = {}
-        for f in self.path.glob('*.h5'):
-            filt = f.name.split('.')[0]
-            tables[filt] = {}
-            visits[filt] = {}
-            with pd.HDFStore(f) as hdf:
-                for k in hdf.keys():
-                    if k.endswith('meta'):
-                        continue
-                    table, tract = k.split('/')[-1].rsplit('_', 1)
-                    if table=='visits':
-                        visits[filt][tract] = hdf.select(k)
-                    if table not in tables[filt]:
-                        tables[filt][table] = {}
-                        tables[filt][table][tract] = hdf.select(k)
-
-        self.tables = tables
-        self.visits = visits

@@ -74,7 +74,7 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
     datasets = {}
     filtered_datasets = {}
     for filt in d.filters:
-        dtf = d.tables_df[datastack]
+        dtf = d.tables[datastack]
         dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
         df = dtf.compute()
 
@@ -87,7 +87,7 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
         datavisits[filt] = {}
         filtered_datavisits[filt] = {}
         for metric in d.metrics:
-            df = d.visits_by_metric_df[filt][metric]
+            df = d.visits[filt][metric]
             filtered_df = None
             if df is not None:
                 df = df
