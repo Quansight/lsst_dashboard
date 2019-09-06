@@ -36,11 +36,12 @@
   margin: 0;
   position: relative;
   top: -5px;
-  margin-left: -50px !important;
+  margin-left: -80px !important;
 }
 
 .data-repo-input input {
   border-radius: 0 !important;
+  margin-left: -50px !important;
 }
 
 .data-repo-input button {
@@ -108,36 +109,46 @@ body {
         </span>
     </a>
 
-<!--     <div class="collapse navbar-collapse flex-md-column"> -->
-        <ul class="navbar-nav px-3" style="padding: 0 !important;">
-            <li class="nav-item">{{ embed(roots.view_switcher) }}</li>
-        </ul>
+    <ul class="navbar-nav px-3" style="padding: 0 !important;">
+        <li class="nav-item">
+            {{ embed(roots.view_switcher) }}
+        </li>
+    </ul>
 
-        <ul class="navbar-nav px-3" style="padding: 0 !important;">
-            <li class="nav-item">{{ embed(roots.data_repo_path) }}</li>
+    <li class="nav-item">
+        <ul style="display:flex; padding: 0 !important;">
+            {{ embed(roots.infobar) }}
         </ul>
-    <!-- </div> -->
+    </li>
 
+    <ul class="navbar-nav px-3" style="padding: 0 !important;">
+        <li class="nav-item">
+            {{ embed(roots.data_repo_path) }}
+        </li>
+    <!-- </ul> -->
+
+    <!-- <ul class="navbar-nav px-3" style="padding: 0 !important;"> -->
+        <li class="nav-item">
+            {{ embed(roots.stack_switcher) }}
+        </li>
+    </ul>
 </nav>
 
 <div class="container-fluid">
     <div class="row">
         <nav class="controls-area col-md-3 d-none d-md-block bg-light sidebar">
-
             <div class="sidebar-sticky">
 
-        {{ embed(roots.infobar) }}
-
-
                 <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <span>Select Metrics</span> {{ embed(roots.metrics_clear_button) }}
+                    <span>Select Metrics</span> 
+                    {{ embed(roots.metrics_clear_button) }}
                 </h6>
                 <ul class="nav flex-column">
+                    <li class="nav-item"></li>
+
                     <li class="nav-item">
-
+                        {{ embed(roots.metrics_selectors) }}
                     </li>
-
-                    <li class="nav-item">{{ embed(roots.metrics_selectors) }}</li>
                 </ul>
 
                 <hr />
@@ -162,6 +173,7 @@ body {
         </nav>
 
         <main role="main" class="col-md-8 ml-sm-auto col-lg-9 pt-3 px-4">
+
         {% if roots.plot_top %}
         <div class="visits-plot-area">
             {{ embed(roots.plot_top) }}
@@ -171,11 +183,15 @@ body {
         <div class="metrics-plot-area">
             {{ embed(roots.metrics_plots) }}
         </div>
+
         <div class="skyplot-plot-area">
             {{ embed(roots.skyplot_metrics_plots) }}
         </div>
+
         {{ embed(roots.status_message_queue) }}
+
         {{ embed(roots.adhoc_js) }}
+
         </main>
     </div>
 

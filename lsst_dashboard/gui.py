@@ -55,7 +55,7 @@ class Store(object):
         self.active_dataset = Dataset('')
 
 
-def init_dataset(data_repo_path):
+def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
 
     global datasets
     global filtered_datasets
@@ -74,7 +74,7 @@ def init_dataset(data_repo_path):
     datasets = {}
     filtered_datasets = {}
     for filt in d.filters:
-        dtf = d.tables_df['analysisCoaddTable_forced']
+        dtf = d.tables_df[datastack]
         dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
         df = dtf.compute()
 
@@ -125,7 +125,7 @@ def summarize_visits_dataframe(data_repo_path):
     return pd.concat(dfs, ignore_index=True)
 
 
-def load_data(data_repo_path=None):
+def load_data(data_repo_path=None, datastack = 'forced'):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
     sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
@@ -139,7 +139,8 @@ def load_data(data_repo_path=None):
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    d = init_dataset(data_repo_path)
+    datastack = 'analysisCoaddTable_' + datastack
+    d = init_dataset(data_repo_path, datastack=datastack)
 
     return d
 
@@ -196,6 +197,7 @@ class QuickLookComponent(Component):
     selected_flag_filters = param.Dict(default={})
 
     view_mode = ['Skyplot View', 'Detail View']
+    data_stack = ['Forced stack', 'Unforced stack']
 
     plot_top = None
     plots_list = []
@@ -257,6 +259,7 @@ class QuickLookComponent(Component):
         self._metric_panels = []
         self._metric_layout = pn.Column()
         self._switch_view = self._create_switch_view_buttons()
+        self._switch_stack = self._create_switch_datastack_buttons()
         self._plot_top = pn.Row(sizing_mode='stretch_width',
                                 margin=(10, 10, 10, 10))
 
@@ -295,8 +298,10 @@ class QuickLookComponent(Component):
         self.add_status_message('Load Data Start...', data_repo_path,
                                 level='info')
 
+        dstack_switch_val = self._switch_stack.value.lower()
+        datastack = 'unforced' if 'unforced' in dstack_switch_val else 'forced'
         try:
-            self.store.active_dataset = load_data(data_repo_path)
+            self.store.active_dataset = load_data(data_repo_path, datastack)
 
         except Exception as e:
             self.update_display()
@@ -387,6 +392,15 @@ class QuickLookComponent(Component):
         radio_group.param.watch(self._switch_view_mode, ['value'])
         return radio_group
 
+    def _create_switch_datastack_buttons(self):
+        radio_group = pn.widgets.RadioBoxGroup(name='SwitchDataStack',
+                                               options=self.data_stack,
+                                               align='center',
+                                               value=self.data_stack[0],
+                                               inline=True)
+        radio_group.param.watch(self._switch_data_stack, ['value'])
+        return radio_group
+
     def update_selected_by_filter(self, filter_type, selected_values):
         self.selected_metrics_by_filter.update({filter_type: selected_values})
         self.param.trigger('selected_metrics_by_filter')
@@ -406,7 +420,7 @@ class QuickLookComponent(Component):
         """
 
         fval = format(value, ',')
-        outel = '<li class="nav-item"><span style="{}"><b>{}</b> {}</span></li>'
+        outel = '<li><span style="{}"><b>{}</b> {}</span></li>'
         return outel.format(box_css,fval,name)
 
     @param.depends('tract_count', 'patch_count', 'visit_count',
@@ -692,6 +706,17 @@ class QuickLookComponent(Component):
         except:
             pass
 
+    def _switch_data_stack(self, *events):
+
+        # clear existing plot layouts
+        self.attempt_to_clear(self._plot_top)
+        self.attempt_to_clear(self._plot_layout)
+        self.attempt_to_clear(self.skyplot_layout)
+        self.attempt_to_clear(self.list_layout)
+
+        self._on_clear_metrics(event=None)
+        self._on_load_data_repository(None)
+
     def _switch_view_mode(self, *events):
 
         # clear existing plot layouts
@@ -722,9 +747,10 @@ class QuickLookComponent(Component):
 
         data_repo_widget = pn.panel(self.param.data_repository,
                                     show_labels=False)
-        data_repo_widget.width = 400
-        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'),
-                               data_repo_widget, self._submit_repository)
+        data_repo_widget.width = 300
+#        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'),
+#                               data_repo_widget, self._submit_repository)
+        data_repo_row = pn.Row(data_repo_widget, self._submit_repository)
         data_repo_row.css_classes = ['data-repo-input']
 
         query_filter_widget = pn.panel(self.param.query_filter)
@@ -733,8 +759,11 @@ class QuickLookComponent(Component):
         new_column_widget = pn.panel(self.param.new_column_expr)
         new_column_widget.width = 260
 
-        switcher_row = pn.Row(self._switch_view)
-        switcher_row.css_classes = ['view-switcher']
+        datastack_switcher = pn.Row(self._switch_stack)
+        datastack_switcher.css_classes = ['view-switcher']
+
+        view_switcher = pn.Row(self._switch_view)
+        view_switcher.css_classes = ['view-switcher']
 
         clear_button_row = pn.Row(self._clear_metrics_button)
 
@@ -743,8 +772,12 @@ class QuickLookComponent(Component):
             ('data_repo_path', data_repo_row),
             ('status_message_queue', self.status_message),
             ('adhoc_js', self.adhoc_js),
+
             ('infobar', self._info),
-            ('view_switcher', switcher_row),
+#            ('view_switcher', switcher_row),
+            ('stack_switcher', datastack_switcher),
+            ('view_switcher', view_switcher),
+
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
             ('skyplot_metrics_plots', self.skyplot_layout),
