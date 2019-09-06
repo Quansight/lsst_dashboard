@@ -69,6 +69,10 @@ button  {
   margin-left: 5px !important;
 }
 
+.stack-switcher span {
+  vertical-align: sub !important;
+}
+
 body {
   overflow-y: hidden !important;
 }
@@ -115,30 +119,37 @@ body {
         </li>
     </ul>
 
-    <li class="nav-item">
-        <ul style="display:flex; padding: 0 !important;">
-            {{ embed(roots.infobar) }}
-        </ul>
-    </li>
-
     <ul class="navbar-nav px-3" style="padding: 0 !important;">
         <li class="nav-item">
             {{ embed(roots.data_repo_path) }}
         </li>
-    <!-- </ul> -->
-
-    <!-- <ul class="navbar-nav px-3" style="padding: 0 !important;"> -->
-        <li class="nav-item">
-            {{ embed(roots.stack_switcher) }}
-        </li>
     </ul>
+
 </nav>
 
 <div class="container-fluid">
     <div class="row">
-        <nav class="controls-area col-md-3 d-none d-md-block bg-light sidebar">
+        <nav class="controls-area col-md-3 d-none d-md-block bg-light sidebar" style="max-width:21rem;">
             <div class="sidebar-sticky">
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Summary</span> 
+                </h6>
 
+        <ul style="padding: 0 !important;">
+        <li class="nav-item">
+            {{ embed(roots.infobar) }}
+        </li>
+        </ul>
+                <hr />
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Data Mode</span> 
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+		    {{ embed(roots.stack_switcher) }}
+                    </li>
+                </ul>
+                <hr />
                 <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                     <span>Select Metrics</span> 
                     {{ embed(roots.metrics_clear_button) }}

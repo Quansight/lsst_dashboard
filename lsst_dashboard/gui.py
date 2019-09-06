@@ -434,9 +434,9 @@ class QuickLookComponent(Component):
         html += self.create_info_element('Tracts', self.tract_count)
         html += self.create_info_element('Patches', self.patch_count)
         html += self.create_info_element('Visits', self.visit_count)
-        html += self.create_info_element('Unique Objects',
-                                         self.unique_object_count)
-        self._info.object = '<ul class="navbar">{}</ul>'.format(html)
+        # html += self.create_info_element('Unique Objects',
+        #                                  self.unique_object_count)
+        self._info.object = '<ul class="list-group list-group-horizontal" style="list-style: none;">{}</ul>'.format(html)
 
 
     def create_status_message(self, msg, level='info', duration=5):
@@ -760,7 +760,7 @@ class QuickLookComponent(Component):
         new_column_widget.width = 260
 
         datastack_switcher = pn.Row(self._switch_stack)
-        datastack_switcher.css_classes = ['view-switcher']
+        datastack_switcher.css_classes = ['stack-switcher']
 
         view_switcher = pn.Row(self._switch_view)
         view_switcher.css_classes = ['view-switcher']
