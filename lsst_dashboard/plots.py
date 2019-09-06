@@ -396,9 +396,10 @@ class skyplot(ParameterizedFunction):
 
         decimated = decimate(pts).opts(**decimate_opts)
         kwargs = dict(aggregator=aggregator, cmap=viridis)
-        sky_shaded = datashade(pts, **kwargs)
+        raster_ = rasterize(pts, **kwargs)
+        sky_shaded = shade(raster_)
         #sky_shaded = rasterize(pts, **kwargs).opts(cmap=Viridis[256], colorbar=True)
-        color_gadget = rasterize(pts, **kwargs).opts(cmap=Viridis[256],
+        color_gadget = raster_.opts(cmap=Viridis[256],
                 colorbar=True, alpha=0)
 
         plot = dynspread(sky_shaded) * decimated * color_gadget
