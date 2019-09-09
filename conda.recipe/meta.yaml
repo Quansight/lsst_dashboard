@@ -1,4 +1,5 @@
-{% set version = "0.0.1" %}
+{% set name = "simplejson" %}
+{% set version = "0.0.2a" %}
 
 package:
   name: lsst_dashboard
@@ -6,7 +7,7 @@ package:
 
 source:
   url: https://github.com/Quansight/lsst_dashboard/archive/v{{ version }}.tar.gz
-  sha1: 58368ff5139f2257423d8f189671fc5149f30af8
+  sha256: 3ff072dec778b63518fd62042bc00559e43b940c42fc21037531f5f0b89c3ff8
 
 build:
   number: 0
