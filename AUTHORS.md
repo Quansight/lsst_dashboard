@@ -9,5 +9,5 @@ The LSST Dashboard project has some great contributors! They are:
 * [Tony Fast](https://github.com/tonyfast)
 
 
-These have been sorted alphabetically.
+These have been sorted alphabetically based on github username.
 

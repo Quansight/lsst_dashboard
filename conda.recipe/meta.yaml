@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/Quansight/lsst_dashboard/archive/v{{ version }}.tar.gz
-  sha256: 8c90836dc6f4a6bd89f5883e6143c89710f58eb8
+  sha1: 58368ff5139f2257423d8f189671fc5149f30af8
 
 build:
   number: 0
