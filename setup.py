@@ -1,7 +1,7 @@
 import setuptools
 __name__ == "__main__" and setuptools.setup(**dict(
     name="lsst_dashboard",
-    version='0.0.1',
+    version='v0.0.2a',
     author="quansight",
     author_email="tony.fast@quansight.com",
     description="Conventions for writing code in the notebook.",
