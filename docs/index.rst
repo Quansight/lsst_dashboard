@@ -1,13 +1,11 @@
 Welcome to lsst-panel's documentation!
 ======================================
-.. automodule:: lsst_dashboard.base
-    :members:
     
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-
+   ./gui/gui
 
 Indices and tables
 ==================
