@@ -5,7 +5,7 @@ Welcome to lsst-panel's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   ./gui/gui
+   ./lsst_dashboard/lsst_dashboard
 
 Indices and tables
 ==================
