@@ -22,3 +22,6 @@ dependencies:
     - pyarrow
     - sphinx
     - scikit-learn
+    - pip:
+      - git+https://github.com/pyviz-dev/nbsite.git
+    
