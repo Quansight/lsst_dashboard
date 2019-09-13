@@ -1,4 +1,4 @@
-lsst_dashboard
+lsst-panel
 ==============
 
 .. toctree::
