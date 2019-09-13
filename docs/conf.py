@@ -21,6 +21,19 @@ project = 'lsst-panel'
 copyright = '2019, Quansight'
 author = 'Quansight'
 
+#need to add path so that function will work that will handle the case where sphinx will
+#ignore certain strings in the code.
+sys.path.insert(0, os.path.abspath('../../nbsite/'))
+from nbsite import nbbuild
+
+def setup(app):
+    try:
+        from nbsite.paramdoc import param_formatter
+        app.connect('autodoc-process-docstring', param_formatter)
+    except ImportError:
+        print('no param_formatter (no param?)')
+
+    nbbuild.setup(app)
 
 # -- General configuration ---------------------------------------------------
 
