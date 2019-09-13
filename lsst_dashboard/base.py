@@ -2,16 +2,16 @@ import param
 import panel as pn
 
 class Application(param.Parameterized):
-    """
+    r"""
     The Application class is the top-level object which coordinates
     the layout of the different components of the dashboard. It
     primarily consists of a header and body, the header is generated
     automatically from the current title and a logo while the body
-    is a :class:`Component` which implements a :meth:`Component.panel`
+    is a \:class\:\`Component\` which implements a \:meth\:\`Component.panel\`
     method which returns panel objects which can be composed into the
     overall application layout.
     """
-
+    
     body = param.ClassSelector(class_=param.Parameterized, doc="""
         The Component to render in the application's body.""")
 
@@ -63,9 +63,9 @@ class Application(param.Parameterized):
 
 class Component(param.Parameterized):
     """
-    Baseclass for visual components of the :class:`Application`.
+    Baseclass for visual components of the \:class\:\`Application\`.
     Defines a common API shared by all displayable components which
-    allows access to the parent object, the :class:`Application` and
+    allows access to the parent object, the \:class\:\`Application\` and
     defines methods which should return the title and a displayable
     panel object.
     """
@@ -97,8 +97,8 @@ class Component(param.Parameterized):
 class TabComponent(Component):
     """
     The TabComponent displays a set of Tabs which may each contain a
-    different :class:`Component`. This allows moving back and forth
-    between stages of the :class:`Application`.
+    different \:class\:\`Component\`. This allows moving back and forth
+    between stages of the \:class\:\`Application\`.
     """
 
     current = param.ClassSelector(class_=Component, precedence=-1, doc="""
