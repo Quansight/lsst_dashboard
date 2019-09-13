@@ -661,6 +661,7 @@ class QuickLookComponent(Component):
 
         self.plot_top = top_plot
 
+        filter_stream_scatter = FilterStream()
         for filt, plots in self.selected_metrics_by_filter.items():
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
@@ -672,9 +673,10 @@ class QuickLookComponent(Component):
 
                 skyplot_list.append((filt + ' - ' + p, plot_sky))
 
-                plots_ss = scattersky(dset.ds,#.groupby('label'),
+                plots_ss = scattersky(dset.ds,
                                       xdim='psfMag',
-                                      ydim=p)
+                                      ydim=p,
+                                      filter_stream=filter_stream_scatter)
                 plot = plots_ss
                 plots_list.append((p,plot))
 
@@ -684,8 +686,8 @@ class QuickLookComponent(Component):
         self.update_display()
         self._switch_view_mode()
 
-    def linked_tab_plots(self):
 
+    def linked_tab_plots(self):
         linked = None
         tabs = []
         for name, plot in self.skyplot_list:
@@ -697,7 +699,6 @@ class QuickLookComponent(Component):
                 linked.jslink(plot_panel, x_range='x_range')
                 linked.jslink(plot_panel, y_range='y_range')
                 tabs.append((name, plot_panel))
-
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
     def attempt_to_clear(self, obj):
@@ -707,7 +708,6 @@ class QuickLookComponent(Component):
             pass
 
     def _switch_data_stack(self, *events):
-
         # clear existing plot layouts
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
@@ -717,8 +717,8 @@ class QuickLookComponent(Component):
         self._on_clear_metrics(event=None)
         self._on_load_data_repository(None)
 
-    def _switch_view_mode(self, *events):
 
+    def _switch_view_mode(self, *events):
         # clear existing plot layouts
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
@@ -731,16 +731,14 @@ class QuickLookComponent(Component):
 
         else:
             self.execute_js_script('''$( ".skyplot-plot-area" ).hide(); $( ".metrics-plot-area" ).show();''')
-
             logger.info(self.plot_top)
             self._plot_top.append(self.plot_top)
             for i, p in self.plots_list:
                 self.list_layout.append(p)
-
             self._plot_layout.append(self.list_layout)
 
-    def jinja(self):
 
+    def jinja(self):
         from ._jinja2_templates import quicklook
         import holoviews as hv
         tmpl = pn.Template(dashboard_html_template)
@@ -800,28 +798,6 @@ class QuickLookComponent(Component):
             tmpl.add_panel(l, c)
 
         return tmpl
-
-#    def panel(self):
-#        row1 = pn.Row(self.param.data_repository, self._submit_repository)
-#        row2 = pn.Row(self.param.comparison, self._submit_comparison)
-#
-#        return pn.Column(
-#            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
-#                         max_height=5),
-#            pn.Row(self._info),
-#            pn.pane.HTML('<hr width=100%>', sizing_mode='stretch_width',
-#                         max_height=10),
-#            pn.Row(
-#                self._metric_layout,
-#                pn.Column(
-#                    self._switch_view,
-#                    self._plot_top,
-#                    self._plot_layout,
-#                    sizing_mode='stretch_width',
-#                ),
-#            ),
-#            sizing_mode='stretch_both',
-#        )
 
 
 class MetricPanel(param.Parameterized):
