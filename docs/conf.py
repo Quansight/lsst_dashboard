@@ -14,16 +14,14 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'lsst-panel'
 copyright = '2019, Quansight'
 author = 'Quansight'
 
-#need to add path so that function will work that will handle the case where sphinx will
-#ignore certain strings in the code.
-sys.path.insert(0, os.path.abspath('../../nbsite/'))
+#nbsite has a plug-in that will help some of the work arounds for problems that
+#"param" was causing during the sphinx creation of documents.
 from nbsite import nbbuild
 
 def setup(app):
