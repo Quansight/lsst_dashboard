@@ -5,9 +5,11 @@ sudo: false
 matrix:
   include:
     - name: "python 3.7 on linux"
+    os: linux
     python: 3.7
     dist: xenial
     - name: "python 3.7 on macos"
+    os: macos
     python: 3.7
     dist: xenial
 
