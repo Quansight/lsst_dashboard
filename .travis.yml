@@ -4,12 +4,12 @@ sudo: false
 
 matrix:
   include:
-    - name: "python 3.7 on linux"
-    os: linux
+
+    - os: linux
     python: 3.7
     dist: xenial
-    - name: "python 3.7 on macos"
-    os: osx
+    
+    - os: osx
     osx_image: xcode10
     language: generic
     env: PYTHON=36
