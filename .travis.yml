@@ -9,7 +9,7 @@ matrix:
     python: 3.7
     dist: xenial
     - name: "python 3.7 on macos"
-    os: macos
+    os: osx
     python: 3.7
     dist: xenial
 
