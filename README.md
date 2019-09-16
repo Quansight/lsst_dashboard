@@ -1,6 +1,7 @@
 
 ## LSST Data Processing Explorer
-
+![Travis Build Status](https://travis-ci.com/Quansight/lsst_dashboard.svg?branch=master)(https://travis-ci.com/Quansight/lsst_dashboard)  
+  
 ### Getting Started...
 
 1. Download and Extract sample dataset here:
