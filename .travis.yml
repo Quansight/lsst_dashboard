@@ -10,7 +10,9 @@ matrix:
     dist: xenial
     - name: "python 3.7 on macos"
     os: osx
-    python: 3.7
+    osx_image: xcode10
+    language: generic
+    env: PYTHON=36
     dist: xenial
 
 before_install:
