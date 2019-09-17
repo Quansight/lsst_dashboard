@@ -15,6 +15,11 @@ matrix:
       env: PYTHON=36
       dist: xenial
 
+env:
+  global:
+  # Doctr deploy key for Quansight/lsst_dashboard
+    - secure: "e1KRfjmiVFXrUOaPfl2gfUSSU01iaHwIy9g76q/+b7Up00VcA51I8JzI8VzHwEXTrsV9pHgyt/McyBdR5zJ1h8aGiSXefMsgL9ocxvvdI1WgmGfOXURQbiihnzwygKWPWcJvri9lgfWThaEGEGECZtqLYUcsDRt0oX2lOmDrHiyiB72szJN707jCq1jFs41IcAWeuoKqgF3dRJlOAAWDv2Wdj38H9ylsX4P4ApTh78vxcD+JRZnqT05d9b3vkKsr3kW75J0z1NR4lRc5MIwG5be5ppxqSJ2SZMkKOGVGmq5RnqptH28EFtHjRnYDybeZeVKmqoa3wJhFNsT6ArmwxH2dCCahAOiEPb0FZRJN7FZlFcadbQahOCqrfQD2tJ7UH8ZreDbcLzz8fC9Dt2sPQZJ04RHVILIM84SgD04DY3mUGng/J4c0D2F0mzfx4FI6z7Qsly8ph2WOvbpRiiz2RJHGXY4iXebdCvaTc9n/6CbLLb/m9wdBwuK7xijmK7XdIQS2NkdN3DwkAwIgx7XiK+wKCbFNjqeuEXIfQmPHH8iMxH7kqQWF/bcOFkZA6EYyrWoZigKG9UkYi4RldITbiY+0bHF7A0GdU8w1/dNReXNEdV39CM7KLUr5ZH5qXYOKzHXLJRSQlk+STDyMHHczzD3sIdZgn1s+EKTJyLoWqpM="
+
 before_install:
   # install conda
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MINICONDA_OS=Linux; else MINICONDA_OS=MacOSX; fi
@@ -36,3 +41,13 @@ install:
 
 script:
   - python -m pytest
+  - set -e
+  - pip install doctr
+  - pwd
+  - cd docs
+  - make html
+  - cd ..
+  - doctr deploy . --built-docs ./docs/_build/html/ 
+
+
+      

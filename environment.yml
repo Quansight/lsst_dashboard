@@ -24,4 +24,6 @@ dependencies:
     - sphinx
     - scikit-learn
     - nbsite
+    - recommonmark
+    - sphinx_rtd_theme
     
