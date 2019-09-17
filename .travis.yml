@@ -36,3 +36,16 @@ install:
 
 script:
   - python -m pytest
+
+env:
+      global:
+        # Doctr deploy key for Quansight/lsst_dashboard
+        - secure: "JZZB5EP/CYjRirqkW2vu+P+stLgwgqpTs68hSlto7uBDT7nRtQfElGCl/vwarr8Xlv2+iEJeGf3kjysZsuKX8wpQ7XDuKUopnlmSl+Esf6UVLY2zq3f9JBuEMl9BHlS/5e2lHs3QFdvSU40xD4SCTYY7bLU5M9Sd1FMS9mjV8SX7UN8F1mC+2HupZ8RWeZ02vj3LXjtZ2Zr0Hr3ouwMi/QY18ewTQralrVVCOZKzED6suhLJythoWO8Qw0R42YYUpFXxyV1ZKU27sf4QcsS9vbAbHYYr+8qGvGtyJf9R+8N2AqphPKJe5Pa/49MN/yjaZH0R26NaiHSdeqFZ43s9Ui2/I6y7Lheh5g4jJnsL5ORMIcjg4JCgRT+ACNswYas5tZEIG7CMfDruInM3alrdQWAAAnC7Lnc5jczH31dQmc+jFGqkgunl3RRP0ryNfe+pFeK38DI21L9Hgt5DQSuj9Bndhowsi/YfqvhhyXU8GmAZEUfsJuR9XY2oCkqv+N5QmMYrFzr4CepzYquWuFJOCujzDRBFRuV75l5DY3gT6InYHxnjR0HZHPl7byrsbQWQFZs/ZMKz+/nyjqLzdEOK277/z3sJCSMW+LAqnfNVdxWwWvnEFQk7xz4azjW8zmA7aIDS7Qi7LHto1Ho6tQ4OKqITHC4miNSQRTWocgeobSY="
+
+    script:
+      - set -e
+      - cd docs
+      - make html
+      - pip install doctr
+      - cd ..
+      - doctr deploy . --built-docs ./docs/_build/html/
