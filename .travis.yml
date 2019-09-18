@@ -36,7 +36,7 @@ install:
 
 script:
   - python -m pytest
-
+  
 env:
   global:
   # Doctr deploy key for Quansight/lsst_dashboard
