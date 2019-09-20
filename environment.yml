@@ -2,6 +2,7 @@ name: lsst-panel
 
 channels:
     - conda-forge
+    - pyviz
     - defaults
 
 dependencies:
@@ -20,3 +21,9 @@ dependencies:
     - fastparquet
     - pytables
     - pyarrow
+    - sphinx
+    - scikit-learn
+    - nbsite
+    - recommonmark
+    - sphinx_rtd_theme
+    
