@@ -43,10 +43,11 @@ script:
   - python -m pytest
   - set -e
   - cd docs
+  - make clean
   - make html
   - cd ..
   - pip install doctr
-  - doctr deploy . --built-docs ./docs/_build/html/ .
+  - doctr deploy . --built-docs ./docs/_build/html/ --no-require-master
 
 
       
