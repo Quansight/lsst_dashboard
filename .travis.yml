@@ -18,7 +18,7 @@ matrix:
 env:
   global:
   # Doctr deploy key for Quansight/lsst_dashboard
-    - secure: "UNia0Igou7jIx/WHfHJOzH19SeLFcIS2bs0Y1c4Qr8PhXo2TDnHfGdJkmkWF5XlndMxOg8RZeHqvMHJA3aHua9z1HspUmcTT8sfVQY7xqLjNm+pi+faOL23LQcqSxzUy0/EQWjRtkUjofjJaS1vI+h6HF8/Gu1DkVzAAQMLkwBePHMwkNTZrUEjKsmzxDWy+V3+GuoEJ1fBPSdnQHGqWftfERn/hVgn6i+Ma/vq+P+y+jbt6QltcSRSUP/ZmveqP52NnrQrQjppH5GcAlGb+TkGJNOuATbhGI8QAaGEQY1d5YtL1zVAvdFycXbzJ+XlibfVJd5HUtPoTdzq++tnwh72Pzs10YcEibUd5VIwuSbnNzlBO5MhecFNOPlCd+4J6ahuskPgKyfU0mvdFRrOedNTzuok7M0QyC9efmvLhH1uKxfDNcahjFCWXLrqnPQtn/Sx56xEh32W0+/L7nhYUZRGjp4F3lOJVNWM7Mklu7UhEs2hbxedgR3By4o3T1BOF7AdLs5yMgRtmcL7yx54bnGUd9WxOPAmarEmbA1rLxKHcl97UtZppB3rBfbFu+vg+xt/kSwPj2AJ9EM/ZaQ166ih9hCmcmagYoabJ7jA0VIOfTSaA4ybSxxftjpTlDXEwk0aqP/H4GA94SIag0W3qBAKfGPfVOp/LMWtbgnT02uI="
+    - secure: "DC2Pci72yP6l69pQDLP6yXoF5ili/x3YSly46z3E/SD3ocuOMys3bNMBP/izEV1bFEWQuSowgudU3wLc1E9hEMJUnQPTaLCyXyyQ9yVSatz0aE7qekF8ejkYJ/hggDHWIjKQSeR966nwwakVJhDe5ohlcQyZl/vY75X2XakM9WBWcCaxjcbfyuXXUNFq3ZSx04irX24g7eJb0BHPclOi1EF41F2flIkZ7ev9zsy8T/dcvBripnjRGgg/nD2IlAckup0FU7hkIhxZhvWuy2JiitesOH2qr6Z0y2/U7Oki/yRC/RAOG9wmGPWUQshDfqAymbm/ogGfR4LYLjRNQMVu8IDvpZoIQTj+shpH+qfAWqXvQgiGsvncEWP0/QkEAPzeJ8gLo7hnuY3N9hM/zjKR4D3lqvMghNU4pahiikBuAS1AJUP5Kn8tsL7g7uX8KQlC1JOoOqd5PlavbXAb9XM4Ym/rK9o7QvDmTl4nBQqWntZZo/smZCCDItOIXbBo8aSc8yutvi7PviC3Ihf9QjOidXH6fOOg40BvGdR1z0gjlrXrpeHXLRTBMqXIHw76AVMiUa0qGH6+OfI3UW7cleIwk7JEMukqcH/Ti31wrIchbta7l1J69nmfAjbz41cEJVRaBG5DdrktWSNmLuPS++Ih6soWN/fY81I7IN571IBGh60="
 
 before_install:
   # install conda
@@ -42,12 +42,11 @@ install:
 script:
   - python -m pytest
   - set -e
-  - pip install doctr
-  - pwd
   - cd docs
   - make html
   - cd ..
-  - doctr deploy . --built-docs ./docs/_build/html/ 
+  - pip install doctr
+  - doctr deploy . --built-docs ./docs/_build/html/ .
 
 
       
