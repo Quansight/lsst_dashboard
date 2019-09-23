@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>qa_dataset &mdash; lsst-panel  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="utils" href="utils.html" />
+    <link rel="prev" title="plots" href="plots.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> lsst-panel
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="lsst_dashboard.html">lsst-panel</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="base.html">base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset.html">dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="match.html">match</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plots.html">plots</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">qa_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">lsst-panel</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="lsst_dashboard.html">lsst-panel</a> &raquo;</li>
+        
+      <li>qa_dataset</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/lsst_dashboard/qa_dataset.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-lsst_dashboard.qa_dataset">
+<span id="qa-dataset"></span><h1>qa_dataset<a class="headerlink" href="#module-lsst_dashboard.qa_dataset" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="lsst_dashboard.qa_dataset.MatchedQADataset">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.qa_dataset.</code><code class="sig-name descname">MatchedQADataset</code><span class="sig-paren">(</span><em class="sig-param">data1</em>, <em class="sig-param">data2</em>, <em class="sig-param">match_radius=0.5</em>, <em class="sig-param">match_registry=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.qa_dataset.MatchedQADataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>A QADataset constructed from positional matching of two others</p>
+<p>The purpose of this is to, e.g., compare results of some postprocessing
+analysis of one rerun to that of another.  This does so by closest
+RA/Dec spatial matching.  For this object, the <cite>.df</cite> attribute
+is computed as follows:  all ‘kdims’ are taken from the <cite>data1</cite>
+<cite>QADataset</cite>, and the value of the ‘vdims’ is computed as the
+difference of the values between the datasets (<cite>data2 - data1</cite>).</p>
+<p>Matching is done using <cite>lsst.qa.explorer.match.match_lists</cite>, which
+uses a KDTree.</p>
+<p>TODO: Results should be cached in <cite>match_registry</cite>, if provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data2</strong> (<em>data1</em><em>,</em>) – Two datasets to match.</p></li>
+<li><p><strong>match_radius</strong> (<cite>float</cite>) – Max match distance in arcsec.  Default is 0.5.</p></li>
+<li><p><strong>match_registry</strong> (<cite>str</cite> (optional)) – Path to an .h5 file containing cached match results.
+(Not implemented yet; implementation should parallel
+that of <cite>lsst.qa.explorer.catalog.MatchedCatalog</cite>).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.MatchedQADataset.flags">
+<em class="property">property </em><code class="sig-name descname">flags</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.MatchedQADataset.flags" title="Permalink to this definition">¶</a></dt>
+<dd><p>All boolean columns of dataframe</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.MatchedQADataset.match_distance">
+<em class="property">property </em><code class="sig-name descname">match_distance</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.MatchedQADataset.match_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Distance between objects identified as matches</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.MatchedQADataset.match_inds">
+<em class="property">property </em><code class="sig-name descname">match_inds</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.MatchedQADataset.match_inds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.MatchedQADataset.match_inds1">
+<em class="property">property </em><code class="sig-name descname">match_inds1</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.MatchedQADataset.match_inds1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.MatchedQADataset.match_inds2">
+<em class="property">property </em><code class="sig-name descname">match_inds2</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.MatchedQADataset.match_inds2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.qa_dataset.QADataset">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.qa_dataset.</code><code class="sig-name descname">QADataset</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">vdims='all'</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience wrapper of holoviews Dataset for catalog-type data</p>
+<p>The main purpose of this object is to easily package a <cite>DataFrame</cite>
+containing some catalog-style data (e.g., the result of a postprocessing
+analysis) as a Holoviews <cite>Dataset</cite> object.  This involves the following:</p>
+<ul class="simple">
+<li><p>defining which columns are “key dimensions” (“kdims”) or “value dimensions”</p></li>
+</ul>
+<p>(“vdims”).  The <cite>_idNames</cite> and <cite>_kdims</cite> attributes define what columns
+get automatically categorized as “kdims” (such as RA, Dec, label, etc.); also, any
+flags (identified as boolean columns by inspection) are also kdims.  By default,
+everything else is a “vdim” (meaning, an quantity whose value is interesting).
+Otherwise, specific ‘vdims’ may be noted, in which case some columns will be
+unused by the <cite>hv.Dataset</cite>.</p>
+<ul class="simple">
+<li><p>Defining the <cite>hv.Dataset</cite> object, which beyond defining the dimensions</p></li>
+</ul>
+<p>also necessitates getting rid of infs/nans in the data.</p>
+<p>Some subclasses of <cite>QADataset</cite> may also choose to defer creation of the <cite>.df</cite>
+attribute, which in this main object is passed as a parameter at initialization.
+Such a subclass will then need to define a <cite>_makeDataFrame</cite> method
+(See, for example, <cite>MatchedQADataset</cite>.)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<cite>pandas.DataFrame</cite>) – Dataframe to wrap; e.g., the output of a <cite>PostprocessAnalysis</cite>.</p></li>
+<li><p><strong>vdims</strong> (<cite>str</cite> or <cite>list</cite>, optional) – Column names to count as “value dimensions”; that is,
+quantities that you might want to explore.  If ‘all’ (default),
+then the vdims will be everything except <cite>._kdims</cite>, <cite>._idNames</cite>
+and flags (which are defined as all boolean columns).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.df">
+<em class="property">property </em><code class="sig-name descname">df</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dataframe containing all columns to be explored</p>
+<p>This is either passed directly in the constructor or
+created by the <cite>._makeDataFrame()</cite> method, which
+can be implemented differently in subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.ds">
+<em class="property">property </em><code class="sig-name descname">ds</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.ds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holoviews Dataset object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.flags">
+<em class="property">property </em><code class="sig-name descname">flags</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.flags" title="Permalink to this definition">¶</a></dt>
+<dd><p>All boolean columns of dataframe</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.idNames">
+<em class="property">property </em><code class="sig-name descname">idNames</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.idNames" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.kdims">
+<em class="property">property </em><code class="sig-name descname">kdims</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.kdims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.skyDmap">
+<code class="sig-name descname">skyDmap</code><span class="sig-paren">(</span><em class="sig-param">vdim</em>, <em class="sig-param">magRange=array([16.</em>, <em class="sig-param">16.2</em>, <em class="sig-param">16.4</em>, <em class="sig-param">16.6</em>, <em class="sig-param">16.8</em>, <em class="sig-param">17.</em>, <em class="sig-param">17.2</em>, <em class="sig-param">17.4</em>, <em class="sig-param">17.6</em>, <em class="sig-param">17.8</em>, <em class="sig-param">18.</em>, <em class="sig-param">18.2</em>, <em class="sig-param">18.4</em>, <em class="sig-param">18.6</em>, <em class="sig-param">18.8</em>, <em class="sig-param">19.</em>, <em class="sig-param">19.2</em>, <em class="sig-param">19.4</em>, <em class="sig-param">19.6</em>, <em class="sig-param">19.8</em>, <em class="sig-param">20.</em>, <em class="sig-param">20.2</em>, <em class="sig-param">20.4</em>, <em class="sig-param">20.6</em>, <em class="sig-param">20.8</em>, <em class="sig-param">21.</em>, <em class="sig-param">21.2</em>, <em class="sig-param">21.4</em>, <em class="sig-param">21.6</em>, <em class="sig-param">21.8</em>, <em class="sig-param">22.</em>, <em class="sig-param">22.2</em>, <em class="sig-param">22.4</em>, <em class="sig-param">22.6</em>, <em class="sig-param">22.8</em>, <em class="sig-param">23.</em>, <em class="sig-param">23.2</em>, <em class="sig-param">23.4</em>, <em class="sig-param">23.6</em>, <em class="sig-param">23.8</em>, <em class="sig-param">24. ])</em>, <em class="sig-param">magCol='psfMag'</em>, <em class="sig-param">filter_stream=None</em>, <em class="sig-param">range_override=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.skyDmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dynamic map of values of a particular dimension</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vdim</strong> (<em>str</em>) – Name of dimension to explore.</p></li>
+<li><p><strong>magRange</strong> (<em>array</em>) – Values of faint magnitude limit.  Only points up to this limit will be plotted.
+Beware of scrolling to too faint a limit; it might give you too many points!</p></li>
+<li><p><strong>filter_stream</strong> (<cite>qa.explorer.plots.FilterStream</cite>, optional) – Stream of constraints that controls what data to display.  Useful to link
+multiple plots together</p></li>
+<li><p><strong>range_override</strong> (<em>(</em><em>min</em><em>, </em><em>max</em><em>)</em><em>, </em><em>optional</em>) – By default the colormap will be scaled between the 0.005 to 0.995 quantiles
+of the entire data (not just that displayed).  Sometimes this is not a useful range to view,
+so this parameter allows a custom colormap range to be set.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.skyPoints">
+<code class="sig-name descname">skyPoints</code><span class="sig-paren">(</span><em class="sig-param">vdim</em>, <em class="sig-param">maxMag</em>, <em class="sig-param">label='star'</em>, <em class="sig-param">magCol='psfMag'</em>, <em class="sig-param">filter_range=None</em>, <em class="sig-param">flags=None</em>, <em class="sig-param">bad_flags=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.skyPoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Points object with ra, dec as key dimensions and requested value dimension</p>
+<p>This is used by <cite>skyDmap</cite> to make an interactive colormapped plot of
+individual points in the dataset (as opposed to a datashaded view.)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vdim</strong> (<em>str</em>) – Name of requested value dimension (one of the columns of <cite>.df</cite>);
+this will be the color_index.</p></li>
+<li><p><strong>maxMag</strong> (<em>float</em>) – Faint limit of objects to plot.  Points are selected to have
+<cite>magCol &lt; maxMag</cite>.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Label to select points (e.g., <cite>‘star’</cite>, <cite>‘galaxy’</cite> or any other
+label that is in the ‘label’ column of <cite>.df</cite>)</p></li>
+<li><p><strong>magCol</strong> (<em>str</em>) – Dimension that gets filtered on by <cite>maxMag</cite>.</p></li>
+<li><p><strong>flags</strong><strong>, </strong><strong>bad_flags</strong> (<em>filter_range</em><em>,</em>) – Arguments passed by <cite>FilterStream</cite> object (from <cite>skyDmap</cite>).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.qa_dataset.QADataset.vdims">
+<em class="property">property </em><code class="sig-name descname">vdims</code><a class="headerlink" href="#lsst_dashboard.qa_dataset.QADataset.vdims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.html" class="btn btn-neutral float-right" title="utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="plots.html" class="btn btn-neutral float-left" title="plots" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Quansight
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

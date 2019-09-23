@@ -1,0 +1,567 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>gui &mdash; lsst-panel  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="match" href="match.html" />
+    <link rel="prev" title="dataset" href="dataset.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> lsst-panel
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="lsst_dashboard.html">lsst-panel</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="base.html">base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset.html">dataset</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="match.html">match</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plots.html">plots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qa_dataset.html">qa_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">lsst-panel</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="lsst_dashboard.html">lsst-panel</a> &raquo;</li>
+        
+      <li>gui</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/lsst_dashboard/gui.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-lsst_dashboard.gui">
+<span id="gui"></span><h1>gui<a class="headerlink" href="#module-lsst_dashboard.gui" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="lsst_dashboard.gui.MetricCheckboxGroup">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">MetricCheckboxGroup</code><span class="sig-paren">(</span><em class="sig-param">available_metrics</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.MetricCheckboxGroup" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">metrics</span></code> = param.ListSelector(default=[], objects=[])</p>
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricCheckboxGroup.metrics">
+<code class="sig-name descname">metrics</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.gui.MetricCheckboxGroup.metrics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricCheckboxGroup.name">
+<code class="sig-name descname">name</code><em class="property"> = 'MetricCheckboxGroup'</em><a class="headerlink" href="#lsst_dashboard.gui.MetricCheckboxGroup.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricCheckboxGroup.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.gui.MetricCheckboxGroup.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.gui.MetricPanel">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">MetricPanel</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel" title="Permalink to this definition">¶</a></dt>
+<dd><p>A MetricPanel displays checkboxs grouped by
+filter type group for a particular metric,
+broken down into separate tabs for each filter.</p>
+<p><code class="docutils literal notranslate"><span class="pre">metric</span></code> = param.String(default=’’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">parent</span></code> = param.ClassSelector(class_=&lt;class ‘lsst_dashboard.gui.QuickLookComponent’&gt;)</p>
+<p><code class="docutils literal notranslate"><span class="pre">filters</span></code> = param.List(bounds=(0, None), default=[])</p>
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricPanel.filters">
+<code class="sig-name descname">filters</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel.filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricPanel.metric">
+<code class="sig-name descname">metric</code><em class="property"> = ''</em><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel.metric" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricPanel.name">
+<code class="sig-name descname">name</code><em class="property"> = 'MetricPanel'</em><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.MetricPanel.panel">
+<code class="sig-name descname">panel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel.panel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricPanel.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.MetricPanel.parent">
+<code class="sig-name descname">parent</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.gui.MetricPanel.parent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.gui.QuickLookComponent">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">QuickLookComponent</code><span class="sig-paren">(</span><em class="sig-param">store</em>, <em class="sig-param">**param</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">application</span></code> = param.ClassSelector(class_=&lt;class ‘lsst_dashboard.base.Application’&gt;)</dt><dd><p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">Application</span></code> responsible for rendering the component.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">parent</span></code> = param.ClassSelector(class_=&lt;class ‘param.parameterized.Parameterized’&gt;)</dt><dd><p>The parent <code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code> of the the object.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">label</span></code> = param.String(default=’Quick Look’)</dt><dd><p>A label to identify the Component by.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">data_repository</span></code> = param.String(default=’/home/travis/build/Quansight/lsst_dashboard/examples/RC2_w18’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">query_filter</span></code> = param.String(default=’’, label=’Query Expression’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">new_column_expr</span></code> = param.String(default=’’, label=’Data Column Expression’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">tract_count</span></code> = param.Number(default=0, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">status_message_queue</span></code> = param.List(bounds=(0, None), default=[])</p>
+<p><code class="docutils literal notranslate"><span class="pre">patch_count</span></code> = param.Number(default=0, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">visit_count</span></code> = param.Number(default=0, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">filter_count</span></code> = param.Number(default=0, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">unique_object_count</span></code> = param.Number(default=0, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">comparison</span></code> = param.String(default=’’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">selected</span></code> = param.Tuple(default=(None, None, None, None), length=4)</p>
+<p><code class="docutils literal notranslate"><span class="pre">selected_metrics_by_filter</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</p>
+<p><code class="docutils literal notranslate"><span class="pre">selected_flag_filters</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</p>
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.add_message_from_error">
+<code class="sig-name descname">add_message_from_error</code><span class="sig-paren">(</span><em class="sig-param">title</em>, <em class="sig-param">info</em>, <em class="sig-param">exception_obj</em>, <em class="sig-param">level='error'</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.add_message_from_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.add_status_message">
+<code class="sig-name descname">add_status_message</code><span class="sig-paren">(</span><em class="sig-param">title</em>, <em class="sig-param">body</em>, <em class="sig-param">level='info'</em>, <em class="sig-param">duration=5</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.add_status_message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.attempt_to_clear">
+<code class="sig-name descname">attempt_to_clear</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.attempt_to_clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.comparison">
+<code class="sig-name descname">comparison</code><em class="property"> = ''</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.comparison" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.create_info_element">
+<code class="sig-name descname">create_info_element</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.create_info_element" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.create_status_message">
+<code class="sig-name descname">create_status_message</code><span class="sig-paren">(</span><em class="sig-param">msg</em>, <em class="sig-param">level='info'</em>, <em class="sig-param">duration=5</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.create_status_message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.data_repository">
+<code class="sig-name descname">data_repository</code><em class="property"> = '/home/travis/build/Quansight/lsst_dashboard/examples/RC2_w18'</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.data_repository" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.data_stack">
+<code class="sig-name descname">data_stack</code><em class="property"> = ['Forced stack', 'Unforced stack']</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.data_stack" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.execute_js_script">
+<code class="sig-name descname">execute_js_script</code><span class="sig-paren">(</span><em class="sig-param">js_body</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.execute_js_script" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.filter_count">
+<code class="sig-name descname">filter_count</code><em class="property"> = 0</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.filter_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.filter_main_dataframe">
+<code class="sig-name descname">filter_main_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.filter_main_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.filter_visits_dataframe">
+<code class="sig-name descname">filter_visits_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.filter_visits_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.gen_clear_func">
+<code class="sig-name descname">gen_clear_func</code><span class="sig-paren">(</span><em class="sig-param">msg</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.gen_clear_func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.get_dataset_by_filter">
+<code class="sig-name descname">get_dataset_by_filter</code><span class="sig-paren">(</span><em class="sig-param">filter_type</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.get_dataset_by_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.get_datavisits">
+<code class="sig-name descname">get_datavisits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.get_datavisits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.get_patch_count">
+<code class="sig-name descname">get_patch_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.get_patch_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.get_tract_count">
+<code class="sig-name descname">get_tract_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.get_tract_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.get_visit_count">
+<code class="sig-name descname">get_visit_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.get_visit_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.jinja">
+<code class="sig-name descname">jinja</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.jinja" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.label">
+<code class="sig-name descname">label</code><em class="property"> = 'Quick Look'</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.label" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.linked_tab_plots">
+<code class="sig-name descname">linked_tab_plots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.linked_tab_plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.name">
+<code class="sig-name descname">name</code><em class="property"> = 'QuickLookComponent'</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.new_column_expr">
+<code class="sig-name descname">new_column_expr</code><em class="property"> = ''</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.new_column_expr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.on_define_new_column_click">
+<code class="sig-name descname">on_define_new_column_click</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.on_define_new_column_click" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.on_flag_remove_click">
+<code class="sig-name descname">on_flag_remove_click</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.on_flag_remove_click" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.on_flag_submit_click">
+<code class="sig-name descname">on_flag_submit_click</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.on_flag_submit_click" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.on_query_filter_clear">
+<code class="sig-name descname">on_query_filter_clear</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.on_query_filter_clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.on_run_query_filter_click">
+<code class="sig-name descname">on_run_query_filter_click</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.on_run_query_filter_click" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.patch_count">
+<code class="sig-name descname">patch_count</code><em class="property"> = 0</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.patch_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.plot_top">
+<code class="sig-name descname">plot_top</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.plot_top" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.plots_list">
+<code class="sig-name descname">plots_list</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.plots_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.query_filter">
+<code class="sig-name descname">query_filter</code><em class="property"> = ''</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.query_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.selected">
+<code class="sig-name descname">selected</code><em class="property"> = (None, None, None, None)</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.selected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.selected_flag_filters">
+<code class="sig-name descname">selected_flag_filters</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.selected_flag_filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.selected_metrics_by_filter">
+<code class="sig-name descname">selected_metrics_by_filter</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.selected_metrics_by_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.set_checkbox_style">
+<code class="sig-name descname">set_checkbox_style</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.set_checkbox_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.skyplot_list">
+<code class="sig-name descname">skyplot_list</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.skyplot_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.status_message_queue">
+<code class="sig-name descname">status_message_queue</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.status_message_queue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.tract_count">
+<code class="sig-name descname">tract_count</code><em class="property"> = 0</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.tract_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.unique_object_count">
+<code class="sig-name descname">unique_object_count</code><em class="property"> = 0</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.unique_object_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.update_display">
+<code class="sig-name descname">update_display</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.update_display" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.update_info_counts">
+<code class="sig-name descname">update_info_counts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.update_info_counts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.gui.QuickLookComponent.update_selected_by_filter">
+<code class="sig-name descname">update_selected_by_filter</code><span class="sig-paren">(</span><em class="sig-param">filter_type</em>, <em class="sig-param">selected_values</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.update_selected_by_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.view_mode">
+<code class="sig-name descname">view_mode</code><em class="property"> = ['Skyplot View', 'Detail View']</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.view_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.gui.QuickLookComponent.visit_count">
+<code class="sig-name descname">visit_count</code><em class="property"> = 0</em><a class="headerlink" href="#lsst_dashboard.gui.QuickLookComponent.visit_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.gui.Store">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">Store</code><a class="headerlink" href="#lsst_dashboard.gui.Store" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.gui.get_available_metrics">
+<code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">get_available_metrics</code><span class="sig-paren">(</span><em class="sig-param">filt</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.get_available_metrics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.gui.get_metric_categories">
+<code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">get_metric_categories</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.get_metric_categories" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.gui.get_unique_object_count">
+<code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">get_unique_object_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.get_unique_object_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.gui.init_dataset">
+<code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">init_dataset</code><span class="sig-paren">(</span><em class="sig-param">data_repo_path</em>, <em class="sig-param">datastack='analysisCoaddTable_forced'</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.init_dataset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.gui.load_data">
+<code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param">data_repo_path=None</em>, <em class="sig-param">datastack='forced'</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.load_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.gui.summarize_visits_dataframe">
+<code class="sig-prename descclassname">lsst_dashboard.gui.</code><code class="sig-name descname">summarize_visits_dataframe</code><span class="sig-paren">(</span><em class="sig-param">data_repo_path</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.gui.summarize_visits_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="match.html" class="btn btn-neutral float-right" title="match" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="dataset.html" class="btn btn-neutral float-left" title="dataset" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Quansight
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

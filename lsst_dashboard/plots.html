@@ -1,0 +1,969 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>plots &mdash; lsst-panel  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="qa_dataset" href="qa_dataset.html" />
+    <link rel="prev" title="match" href="match.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> lsst-panel
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="lsst_dashboard.html">lsst-panel</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="base.html">base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset.html">dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="match.html">match</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">plots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qa_dataset.html">qa_dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">lsst-panel</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="lsst_dashboard.html">lsst-panel</a> &raquo;</li>
+        
+      <li>plots</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/lsst_dashboard/plots.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-lsst_dashboard.plots">
+<span id="plots"></span><h1>plots<a class="headerlink" href="#module-lsst_dashboard.plots" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="lsst_dashboard.plots.FilterStream">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">FilterStream</code><span class="sig-paren">(</span><em class="sig-param">rename={}</em>, <em class="sig-param">source=None</em>, <em class="sig-param">subscribers=[]</em>, <em class="sig-param">linked=False</em>, <em class="sig-param">transient=False</em>, <em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.FilterStream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream to apply arbitrary filtering on a Dataset.</p>
+<p>Many of the plotting functions accept a <cite>FilterStream</cite> object;
+the utility of this is that you can define a single <cite>FilterStream</cite>,
+and if you connect the same one to all your plots, then all of the
+selections/flag selections/etc. can be linked.</p>
+<p>See the demo notebooks for an example of usage.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">filter_range</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</dt><dd><p>Ranges of parameters to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FilterStream.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.FilterStream.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FilterStream.filter_range">
+<code class="sig-name descname">filter_range</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.plots.FilterStream.filter_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FilterStream.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.FilterStream.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FilterStream.name">
+<code class="sig-name descname">name</code><em class="property"> = 'FilterStream'</em><a class="headerlink" href="#lsst_dashboard.plots.FilterStream.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FilterStream.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.FilterStream.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.FlagSetter">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">FlagSetter</code><span class="sig-paren">(</span><em class="sig-param">filter_stream</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.FlagSetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream for setting flags</p>
+<p>Most useful in context of a parambokeh widget, e.g.:</p>
+<blockquote>
+<div><p>from explorer.plots import FlagSetter
+import parambokeh</p>
+<p>flag_setter = FlagSetter(filter_stream=filter_stream, flags=data.flags, bad_flags=data.flags)
+parambokeh.Widgets(flag_setter, callback=flag_setter.event, push=False, on_init=True)</p>
+</div></blockquote>
+<p>Where <cite>filter_stream</cite> has been previously defined and connected to other plots
+for which you want to see points with certain flags shown/hidden/etc.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.ListSelector(default=[], objects=[])</dt><dd><p>Flags to select</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.ListSelector(default=[], objects=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FlagSetter.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.FlagSetter.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="lsst_dashboard.plots.FlagSetter.event">
+<code class="sig-name descname">event</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.FlagSetter.event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the stream parameters and trigger an event.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FlagSetter.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.FlagSetter.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FlagSetter.name">
+<code class="sig-name descname">name</code><em class="property"> = 'FlagSetter'</em><a class="headerlink" href="#lsst_dashboard.plots.FlagSetter.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.FlagSetter.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.FlagSetter.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.Reset">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">Reset</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.Reset" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="lsst_dashboard.plots.Reset.name">
+<code class="sig-name descname">name</code><em class="property"> = 'Reset'</em><a class="headerlink" href="#lsst_dashboard.plots.Reset.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.Reset.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.Reset.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.ResetCallback">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">ResetCallback</code><span class="sig-paren">(</span><em class="sig-param">plot</em>, <em class="sig-param">streams</em>, <em class="sig-param">source</em>, <em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.ResetCallback" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="lsst_dashboard.plots.ResetCallback.models">
+<code class="sig-name descname">models</code><em class="property"> = ['plot']</em><a class="headerlink" href="#lsst_dashboard.plots.ResetCallback.models" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.ResetCallback.on_events">
+<code class="sig-name descname">on_events</code><em class="property"> = ['reset']</em><a class="headerlink" href="#lsst_dashboard.plots.ResetCallback.on_events" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.filter_dset">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">filter_dset</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.filter_dset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process a dataset based on FilterStream state (filter_range, flags, bad_flags)</p>
+<p>This is used in many applications to define dynamically selected <cite>holoviews.Dataset</cite>
+objects.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">group</span></code> = param.String(default=’Operation’)</dt><dd><p>The group string used to identify the output of the
+       Operation. By default this should match the operation name.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dynamic</span></code> = param.ObjectSelector(default=’default’, objects=[‘default’, True, False])</dt><dd><p>Whether the operation should be applied dynamically when a
+       specific frame is requested, specified as a Boolean. If set to
+       ‘default’ the mode will be determined based on the input type,
+       i.e. if the data is a DynamicMap it will stay dynamic.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_ranges</span></code> = param.ClassSelector(class_=(&lt;class ‘dict’&gt;, &lt;class ‘tuple’&gt;), default={})</dt><dd><p>Ranges to be used for input normalization (if applicable) in a
+       format appropriate for the Normalization.ranges parameter.
+
+       By default, no normalization is applied. If key-wise
+       normalization is required, a 2-tuple may be supplied where the
+       first component is a Normalization.ranges list and the second
+       component is Normalization.keys.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">link_inputs</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>If the operation is dynamic, whether or not linked streams
+       should be transferred from the operation inputs for backends
+       that support linked streams.
+
+       For example if an operation is applied to a DynamicMap with an
+       RangeXY, this switch determines whether the corresponding
+       visualization should update this stream with range changes
+       originating from the newly generated axes.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">streams</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>List of streams that are applied if dynamic=True, allowing
+        for dynamic interaction with the plot.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">filter_range</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</dt><dd><p>Dictionary of filter bounds.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filter_dset.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.filter_dset.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filter_dset.filter_range">
+<code class="sig-name descname">filter_range</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.plots.filter_dset.filter_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filter_dset.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.filter_dset.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filter_dset.name">
+<code class="sig-name descname">name</code><em class="property"> = 'filter_dset'</em><a class="headerlink" href="#lsst_dashboard.plots.filter_dset.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filter_dset.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.filter_dset.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.filterpoints">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">filterpoints</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.filterpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process a dataset based on FilterStream state (filter_range, flags, bad_flags)</p>
+<p>This is used in many applications to define dynamically selected <cite>holoviews.Points</cite>
+objects.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">group</span></code> = param.String(default=’Operation’)</dt><dd><p>The group string used to identify the output of the
+       Operation. By default this should match the operation name.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dynamic</span></code> = param.ObjectSelector(default=’default’, objects=[‘default’, True, False])</dt><dd><p>Whether the operation should be applied dynamically when a
+       specific frame is requested, specified as a Boolean. If set to
+       ‘default’ the mode will be determined based on the input type,
+       i.e. if the data is a DynamicMap it will stay dynamic.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_ranges</span></code> = param.ClassSelector(class_=(&lt;class ‘dict’&gt;, &lt;class ‘tuple’&gt;), default={})</dt><dd><p>Ranges to be used for input normalization (if applicable) in a
+       format appropriate for the Normalization.ranges parameter.
+
+       By default, no normalization is applied. If key-wise
+       normalization is required, a 2-tuple may be supplied where the
+       first component is a Normalization.ranges list and the second
+       component is Normalization.keys.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">link_inputs</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>If the operation is dynamic, whether or not linked streams
+       should be transferred from the operation inputs for backends
+       that support linked streams.
+
+       For example if an operation is applied to a DynamicMap with an
+       RangeXY, this switch determines whether the corresponding
+       visualization should update this stream with range changes
+       originating from the newly generated axes.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">streams</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>List of streams that are applied if dynamic=True, allowing
+        for dynamic interaction with the plot.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">filter_range</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</dt><dd><p>Dictionary of filter bounds.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">xdim</span></code> = param.String(default=’x’)</dt><dd><p>Name of x-dimension</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ydim</span></code> = param.String(default=’y’)</dt><dd><p>Name of y-dimension</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">set_title</span></code> = param.Boolean(bounds=(0, 1), default=False)</p>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.filter_range">
+<code class="sig-name descname">filter_range</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.filter_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.name">
+<code class="sig-name descname">name</code><em class="property"> = 'filterpoints'</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.set_title">
+<code class="sig-name descname">set_title</code><em class="property"> = False</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.set_title" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.xdim">
+<code class="sig-name descname">xdim</code><em class="property"> = 'x'</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.xdim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.filterpoints.ydim">
+<code class="sig-name descname">ydim</code><em class="property"> = 'y'</em><a class="headerlink" href="#lsst_dashboard.plots.filterpoints.ydim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.multi_scattersky">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">multi_scattersky</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky" title="Permalink to this definition">¶</a></dt>
+<dd><p>Layout of multiple scattersky plots, one for each vdim in dset</p>
+<p><code class="docutils literal notranslate"><span class="pre">filter_stream</span></code> = param.ClassSelector(class_=&lt;class ‘lsst_dashboard.plots.FilterStream’&gt;, default=FilterStream(bad_flags=[],filter_range={},flags=[]))</p>
+<p><code class="docutils literal notranslate"><span class="pre">height</span></code> = param.Number(default=300, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">width</span></code> = param.Number(default=900, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">xdim</span></code> = param.String(default=’x’)</dt><dd><p>Dimension of the dataset to use as x-coordinate</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.multi_scattersky.filter_stream">
+<code class="sig-name descname">filter_stream</code><em class="property"> = FilterStream(bad_flags=[],filter_range={},flags=[])</em><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky.filter_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.multi_scattersky.height">
+<code class="sig-name descname">height</code><em class="property"> = 300</em><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky.height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.multi_scattersky.name">
+<code class="sig-name descname">name</code><em class="property"> = 'multi_scattersky'</em><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.multi_scattersky.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.multi_scattersky.width">
+<code class="sig-name descname">width</code><em class="property"> = 900</em><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky.width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.multi_scattersky.xdim">
+<code class="sig-name descname">xdim</code><em class="property"> = 'x'</em><a class="headerlink" href="#lsst_dashboard.plots.multi_scattersky.xdim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.plots.notify_stream">
+<code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">notify_stream</code><span class="sig-paren">(</span><em class="sig-param">bounds</em>, <em class="sig-param">filter_stream</em>, <em class="sig-param">xdim</em>, <em class="sig-param">ydim</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.notify_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to attach to bounds stream as subscriber to notify FilterStream.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.plots.reset_stream">
+<code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">reset_stream</code><span class="sig-paren">(</span><em class="sig-param">filter_stream</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.reset_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.scattersky">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">scattersky</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.scattersky" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates two datashaded views from a Dataset.</p>
+<p>First plot is an x-y scatter plot, with colormap according to density
+of points; second plot is a sky plot where the colormap corresponds
+to the average y values of the first plot in each datashaded pixel.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">xdim</span></code> = param.String(default=’x’)</dt><dd><p>Dimension of the dataset to use as x-coordinate</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ydim</span></code> = param.String(default=’y0’)</dt><dd><p>Dimension of the dataset to use as y-coordinate</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">scatter_cmap</span></code> = param.String(default=’bgyw’)</dt><dd><p>Colormap to use for the scatter plot</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sky_cmap</span></code> = param.String(default=’bgyw’)</dt><dd><p>Colormap to use for the sky plot</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">height</span></code> = param.Number(default=300, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</dt><dd><p>Height in pixels of the combined layout</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">width</span></code> = param.Number(default=625, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</dt><dd><p>Width in pixels of the combined layout</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">filter_stream</span></code> = param.ClassSelector(class_=&lt;class ‘lsst_dashboard.plots.FilterStream’&gt;, default=FilterStream(bad_flags=[],filter_range={},flags=[]))</dt><dd><p>Stream to which selection ranges get added.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">show_rawsky</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>Whether to show the “unselected” sky points in greyscale when there is a selection.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">show_table</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>Whether to show the table next to the plots.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.filter_stream">
+<code class="sig-name descname">filter_stream</code><em class="property"> = FilterStream(bad_flags=[],filter_range={},flags=[])</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.filter_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.height">
+<code class="sig-name descname">height</code><em class="property"> = 300</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.name">
+<code class="sig-name descname">name</code><em class="property"> = 'scattersky'</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.scatter_cmap">
+<code class="sig-name descname">scatter_cmap</code><em class="property"> = 'bgyw'</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.scatter_cmap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.show_rawsky">
+<code class="sig-name descname">show_rawsky</code><em class="property"> = False</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.show_rawsky" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.show_table">
+<code class="sig-name descname">show_table</code><em class="property"> = False</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.show_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.sky_cmap">
+<code class="sig-name descname">sky_cmap</code><em class="property"> = 'bgyw'</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.sky_cmap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.width">
+<code class="sig-name descname">width</code><em class="property"> = 625</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.xdim">
+<code class="sig-name descname">xdim</code><em class="property"> = 'x'</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.xdim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.scattersky.ydim">
+<code class="sig-name descname">ydim</code><em class="property"> = 'y0'</em><a class="headerlink" href="#lsst_dashboard.plots.scattersky.ydim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.skyplot">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">skyplot</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.skyplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Datashaded + decimated RA/dec plot, with colormap of third dimension</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cmap</span></code> = param.String(default=’coolwarm’)</dt><dd><p>Colormap to use.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">aggregator</span></code> = param.ObjectSelector(default=’mean’, objects=[‘mean’, ‘std’, ‘count’])</dt><dd><p>Aggregator for datashading.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">vdim</span></code> = param.String()</dt><dd><p>Dimension to use for colormap.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">width</span></code> = param.Number(inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">height</span></code> = param.Number(inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">decimate_size</span></code> = param.Number(default=5, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</dt><dd><p>Size of (invisible) decimated points.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">filter_stream</span></code> = param.ClassSelector(class_=&lt;class ‘lsst_dashboard.plots.FilterStream’&gt;, default=FilterStream(bad_flags=[],filter_range={},flags=[]))</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.aggregator">
+<code class="sig-name descname">aggregator</code><em class="property"> = 'mean'</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.aggregator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.cmap">
+<code class="sig-name descname">cmap</code><em class="property"> = 'coolwarm'</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.cmap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.decimate_size">
+<code class="sig-name descname">decimate_size</code><em class="property"> = 5</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.decimate_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.filter_stream">
+<code class="sig-name descname">filter_stream</code><em class="property"> = FilterStream(bad_flags=[],filter_range={},flags=[])</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.filter_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.height">
+<code class="sig-name descname">height</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.name">
+<code class="sig-name descname">name</code><em class="property"> = 'skyplot'</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.vdim">
+<code class="sig-name descname">vdim</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.vdim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot.width">
+<code class="sig-name descname">width</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot.width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.skyplot_layout">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">skyplot_layout</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.skyplot_layout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Layout of skyplots with linked crosshair</p>
+<p><code class="docutils literal notranslate"><span class="pre">crosshair</span></code> = param.Boolean(bounds=(0, 1), default=True)</p>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot_layout.crosshair">
+<code class="sig-name descname">crosshair</code><em class="property"> = True</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot_layout.crosshair" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot_layout.name">
+<code class="sig-name descname">name</code><em class="property"> = 'skyplot_layout'</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot_layout.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyplot_layout.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.skyplot_layout.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.skypoints">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">skypoints</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.skypoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates Points with ra, dec as kdims, and interesting stuff as vdims</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">group</span></code> = param.String(default=’Operation’)</dt><dd><p>The group string used to identify the output of the
+       Operation. By default this should match the operation name.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dynamic</span></code> = param.ObjectSelector(default=’default’, objects=[‘default’, True, False])</dt><dd><p>Whether the operation should be applied dynamically when a
+       specific frame is requested, specified as a Boolean. If set to
+       ‘default’ the mode will be determined based on the input type,
+       i.e. if the data is a DynamicMap it will stay dynamic.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_ranges</span></code> = param.ClassSelector(class_=(&lt;class ‘dict’&gt;, &lt;class ‘tuple’&gt;), default={})</dt><dd><p>Ranges to be used for input normalization (if applicable) in a
+       format appropriate for the Normalization.ranges parameter.
+
+       By default, no normalization is applied. If key-wise
+       normalization is required, a 2-tuple may be supplied where the
+       first component is a Normalization.ranges list and the second
+       component is Normalization.keys.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">link_inputs</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>If the operation is dynamic, whether or not linked streams
+       should be transferred from the operation inputs for backends
+       that support linked streams.
+
+       For example if an operation is applied to a DynamicMap with an
+       RangeXY, this switch determines whether the corresponding
+       visualization should update this stream with range changes
+       originating from the newly generated axes.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">streams</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>List of streams that are applied if dynamic=True, allowing
+        for dynamic interaction with the plot.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">filter_range</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</dt><dd><p>Dictionary of filter bounds.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skypoints.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.skypoints.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skypoints.filter_range">
+<code class="sig-name descname">filter_range</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.plots.skypoints.filter_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skypoints.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.skypoints.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skypoints.name">
+<code class="sig-name descname">name</code><em class="property"> = 'skypoints'</em><a class="headerlink" href="#lsst_dashboard.plots.skypoints.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skypoints.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.skypoints.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.skyshade">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">skyshade</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.skyshade" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experimental</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">group</span></code> = param.String(default=’Operation’)</dt><dd><p>The group string used to identify the output of the
+       Operation. By default this should match the operation name.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dynamic</span></code> = param.ObjectSelector(default=’default’, objects=[‘default’, True, False])</dt><dd><p>Whether the operation should be applied dynamically when a
+       specific frame is requested, specified as a Boolean. If set to
+       ‘default’ the mode will be determined based on the input type,
+       i.e. if the data is a DynamicMap it will stay dynamic.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_ranges</span></code> = param.ClassSelector(class_=(&lt;class ‘dict’&gt;, &lt;class ‘tuple’&gt;), default={})</dt><dd><p>Ranges to be used for input normalization (if applicable) in a
+       format appropriate for the Normalization.ranges parameter.
+
+       By default, no normalization is applied. If key-wise
+       normalization is required, a 2-tuple may be supplied where the
+       first component is a Normalization.ranges list and the second
+       component is Normalization.keys.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">link_inputs</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>If the operation is dynamic, whether or not linked streams
+       should be transferred from the operation inputs for backends
+       that support linked streams.
+
+       For example if an operation is applied to a DynamicMap with an
+       RangeXY, this switch determines whether the corresponding
+       visualization should update this stream with range changes
+       originating from the newly generated axes.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">streams</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>List of streams that are applied if dynamic=True, allowing
+        for dynamic interaction with the plot.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cmap</span></code> = param.String(default=’coolwarm’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">aggregator</span></code> = param.ObjectSelector(default=’mean’, objects=[‘mean’, ‘std’, ‘count’])</p>
+<p><code class="docutils literal notranslate"><span class="pre">width</span></code> = param.Number(inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">height</span></code> = param.Number(inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">vdim</span></code> = param.String(default=’y’)</p>
+<p><code class="docutils literal notranslate"><span class="pre">decimate_size</span></code> = param.Number(default=5, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<p><code class="docutils literal notranslate"><span class="pre">max_samples</span></code> = param.Number(default=10000, inclusive_bounds=(True, True), time_dependent=False, time_fn=Time(label=’Time’, name=’Time00001’, time_type=&lt;class ‘int’&gt;, timestep=1.0, unit=None, until=Infinity()))</p>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.aggregator">
+<code class="sig-name descname">aggregator</code><em class="property"> = 'mean'</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.aggregator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.cmap">
+<code class="sig-name descname">cmap</code><em class="property"> = 'coolwarm'</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.cmap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.decimate_size">
+<code class="sig-name descname">decimate_size</code><em class="property"> = 5</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.decimate_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.height">
+<code class="sig-name descname">height</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.max_samples">
+<code class="sig-name descname">max_samples</code><em class="property"> = 10000</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.max_samples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.name">
+<code class="sig-name descname">name</code><em class="property"> = 'skyshade'</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.vdim">
+<code class="sig-name descname">vdim</code><em class="property"> = 'y'</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.vdim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.skyshade.width">
+<code class="sig-name descname">width</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.plots.skyshade.width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lsst_dashboard.plots.summary_table">
+<em class="property">class </em><code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">summary_table</code><span class="sig-paren">(</span><em class="sig-param">**params</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.summary_table" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">group</span></code> = param.String(default=’Operation’)</dt><dd><p>The group string used to identify the output of the
+       Operation. By default this should match the operation name.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dynamic</span></code> = param.ObjectSelector(default=’default’, objects=[‘default’, True, False])</dt><dd><p>Whether the operation should be applied dynamically when a
+       specific frame is requested, specified as a Boolean. If set to
+       ‘default’ the mode will be determined based on the input type,
+       i.e. if the data is a DynamicMap it will stay dynamic.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_ranges</span></code> = param.ClassSelector(class_=(&lt;class ‘dict’&gt;, &lt;class ‘tuple’&gt;), default={})</dt><dd><p>Ranges to be used for input normalization (if applicable) in a
+       format appropriate for the Normalization.ranges parameter.
+
+       By default, no normalization is applied. If key-wise
+       normalization is required, a 2-tuple may be supplied where the
+       first component is a Normalization.ranges list and the second
+       component is Normalization.keys.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">link_inputs</span></code> = param.Boolean(bounds=(0, 1), default=False)</dt><dd><p>If the operation is dynamic, whether or not linked streams
+       should be transferred from the operation inputs for backends
+       that support linked streams.
+
+       For example if an operation is applied to a DynamicMap with an
+       RangeXY, this switch determines whether the corresponding
+       visualization should update this stream with range changes
+       originating from the newly generated axes.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">streams</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>List of streams that are applied if dynamic=True, allowing
+        for dynamic interaction with the plot.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ydim</span></code> = param.String()</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">filter_range</span></code> = param.Dict(class_=&lt;class ‘dict’&gt;, default={})</dt><dd><p>Dictionary of filter bounds.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to select.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bad_flags</span></code> = param.List(bounds=(0, None), default=[])</dt><dd><p>Flags to ignore</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.summary_table.bad_flags">
+<code class="sig-name descname">bad_flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.summary_table.bad_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.summary_table.filter_range">
+<code class="sig-name descname">filter_range</code><em class="property"> = {}</em><a class="headerlink" href="#lsst_dashboard.plots.summary_table.filter_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.summary_table.flags">
+<code class="sig-name descname">flags</code><em class="property"> = []</em><a class="headerlink" href="#lsst_dashboard.plots.summary_table.flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.summary_table.name">
+<code class="sig-name descname">name</code><em class="property"> = 'summary_table'</em><a class="headerlink" href="#lsst_dashboard.plots.summary_table.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.summary_table.param">
+<code class="sig-name descname">param</code><em class="property"> = &lt;param.parameterized.Parameters object&gt;</em><a class="headerlink" href="#lsst_dashboard.plots.summary_table.param" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="lsst_dashboard.plots.summary_table.ydim">
+<code class="sig-name descname">ydim</code><em class="property"> = None</em><a class="headerlink" href="#lsst_dashboard.plots.summary_table.ydim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="lsst_dashboard.plots.visits_plot">
+<code class="sig-prename descclassname">lsst_dashboard.plots.</code><code class="sig-name descname">visits_plot</code><span class="sig-paren">(</span><em class="sig-param">dsets_visits</em>, <em class="sig-param">filters_to_metrics</em>, <em class="sig-param">summarized_visits=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.plots.visits_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="qa_dataset.html" class="btn btn-neutral float-right" title="qa_dataset" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="match.html" class="btn btn-neutral float-left" title="match" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Quansight
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
