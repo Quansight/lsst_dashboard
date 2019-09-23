@@ -47,6 +47,6 @@ script:
   - make html
   - cd ..
   - pip install doctr
-  - doctr deploy --built-docs ./docs/_build/html/ . --branch-whitelist fix_doctr
+  - doctr deploy . --built-docs ./docs/_build/html/ --branch-whitelist fix_doctr
 
       
