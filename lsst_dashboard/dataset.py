@@ -79,39 +79,36 @@ class Dataset():
         self.fetch_coadd_table('forced')
         print('loading coadd_unforced table')
         self.fetch_coadd_table('unforced')
-        for filt in self.filters:
-            print(f'loading visit data for filter {filt}')
-            self.fetch_visits(filt)
+        self.fetch_visits()
 
     def fetch_coadd_table(self, coadd_version='unforced'):
-        table = 'analysisCoaddTable_' + coadd_version
-        dfs = []
+        table = 'qaDashboardCoaddTable'  # + coadd_version
+        filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
+        self.tables_df[table] = dd.read_parquet(filenames)
+
+    def fetch_visits(self):
+        table = 'qaDashboardCoaddTable'
+        filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
+        self.visits_df = dd.read_parquet(filenames)
+
         for filt in self.filters:
+            self.match_df[filt] = {}
             for tract in self.tracts:
-                dfs.append(delayed(self._load_coadd_table)(table, filt, tract))
+                self.match_df[filt][tract] = self.conn.get('visitMatchTable',
+                                                           tract=int(tract),
+                                                           filter=filt).toDataFrame()
 
-        self.tables_df[table] = dd.from_delayed(dfs)
-
-    def fetch_visits(self, filt):
-        visits = []
-        self.match_df[filt] = {}
-        for tract in self.tracts:
-            df = self.conn.get('visitMatchTable', tract=int(tract), filter=filt).toDataFrame()
-            visits.append([delayed(self._fetch_visit)(visit, tract, filt) for visit in df['matchId'].columns])
-            self.match_df[filt][tract] = df
-        
         self.visits_by_metric_df[filt] = {}
-        self.visits_df[filt] = dd.from_delayed(list(itertools.chain(*visits)))
 
     def fetch_visits_by_metric(self, filt, metric, coadd_version='unforced'):
         try:
-            tmp = self.visits_by_metric_df[filt][metric] # if dataframe exists don't recalc 
+            tmp = self.visits_by_metric_df[filt][metric] # if dataframe exists don't recalc
             return
         except:
             pass
 
-        table = 'analysisCoaddTable_' + coadd_version
-        ddf = self.visits_df[filt]
+        table = 'qaDashboardCoaddTable'
+        ddf = self.visits_df
         visits = []
         for tract in self.tracts:
             match_df = self.match_df[filt][tract]
@@ -121,13 +118,13 @@ class Dataset():
             except:
                 pass
 
-        visits = ddf[ddf['visit'].isin(visits)]
+        visits = ddf[ddf['visitId'].isin(visits)]
         if metric not in visits.columns:
             print(f'no visits found for ({filt}, {metric})')
             return None
 
         flags = [flag for flag in self.flags if flag in ddf.columns]
-        self.visits_by_metric_df[filt][metric] = visits[[metric, 'visit', 'tract', 'filt'] + flags]
+        self.visits_by_metric_df[filt][metric] = visits[[metric, 'visitId', 'tractId', 'filt'] + flags]
 
     def _load_coadd_table(self, table, filt, tract):
         df = self.conn.get(table, tract=int(tract), filter=filt)
@@ -185,7 +182,7 @@ class Dataset():
                 with pd.option_context('mode.use_inf_as_na', True):
                     df = df.dropna(subset=[metric])
                 df.to_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow', compression='snappy')
-                
+
     def load_from_hdf(self):
         tables = {}
         visits = {}
