@@ -64,7 +64,7 @@ class Dataset():
         df = self.coadd['qaDashboardCoaddTable']
         self.flags = df.columns[df.dtypes == bool].to_list()
         self.filters = df['filter'].unique().compute().to_list() # this takes some time, mightbe better to read from metadata file
-        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patchId', 'dec', 'label', 'psfMag', 'ra', 'filter', 'dataset', 'tract'])
+        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag', 'ra', 'filter', 'dataset', 'tract'])
         print('-- read visit data --')
         self.fetch_visits()
         self.fetch_visits_by_metric()
@@ -77,7 +77,13 @@ class Dataset():
         else:
             filenames = [str(self.path.join(f'{table}-{t}.parq')) for t in self.tracts]
 
-        self.coadd[table] = dd.read_parquet(filenames, npartitions=16).rename(columns={'dir0': 'tract'})
+        # workaround for tract not reliably being in file:
+        dfs = []
+        for tract, f in zip(self.tracts, filenames):
+            df = dd.read_parquet(f, npartitions=4).rename(columns={'patchId': 'patch'})
+            df['tract'] = tract
+            dfs.append(df)
+        self.coadd[table] = dd.concat(dfs)
 
     def fetch_visits(self):
         table = 'qaDashboardVisitTable'
