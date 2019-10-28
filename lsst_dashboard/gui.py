@@ -33,12 +33,6 @@ logger.addHandler(logging.FileHandler('dashboard.log'))
 current_directory = os.path.dirname(os.path.abspath(__file__))
 root_directory = os.path.split(current_directory)[0]
 
-
-sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                       os.path.join(root_directory,
-                                                    'examples',
-                                                    'RC2_w18'))
-
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
 
@@ -49,13 +43,15 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
+sample_data_directory = '/project/tmorton/tickets/DM-21335/'
+
 class Store(object):
 
     def __init__(self):
         self.active_dataset = Dataset('')
 
 
-def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
+def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable'):
 
     global datasets
     global filtered_datasets
@@ -64,7 +60,6 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
 
     d = Dataset(data_repo_path)
     d.connect()
-    d.init_data()
 
     global store
     store.active_dataset = d
@@ -73,11 +68,10 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
 
     datasets = {}
     filtered_datasets = {}
+    dtf = d.coadd[datastack]
+    dtf = dtf.set_index('filter')
     for filt in d.filters:
-        dtf = d.tables_df[datastack]
-        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
-        df = dtf.compute()
-
+        df = dtf.loc[filt].compute()
         datasets[filt] = QADataset(df)
         filtered_datasets[filt] = QADataset(df.copy())
 
@@ -87,12 +81,12 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
         datavisits[filt] = {}
         filtered_datavisits[filt] = {}
         for metric in d.metrics:
-            df = d.visits_by_metric_df[filt][metric]
+            df = d.visits_by_metric[filt][metric]
             filtered_df = None
             if df is not None:
                 df = df
                 filtered_df = df.copy()
-
+    
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
@@ -104,7 +98,6 @@ def summarize_visits_dataframe(data_repo_path):
 
     d = Dataset(data_repo_path)
     d.connect()
-    d.init_data()
 
     dfs = []
     for filt in d.filters:
@@ -128,18 +121,14 @@ def summarize_visits_dataframe(data_repo_path):
 def load_data(data_repo_path=None, datastack = 'forced'):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                           os.path.join(root_directory,
-                                                        'examples',
-                                                        'RC2_w18'))
+
     if not data_repo_path:
         data_repo_path = sample_data_directory
-
 
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    datastack = 'analysisCoaddTable_' + datastack
+    datastack = 'qaDashboardCoaddTable' # + datastack -- disabled forced/unforced for now
     d = init_dataset(data_repo_path, datastack=datastack)
 
     return d
@@ -197,7 +186,7 @@ class QuickLookComponent(Component):
     selected_flag_filters = param.Dict(default={})
 
     view_mode = ['Skyplot View', 'Detail View']
-    data_stack = ['Forced stack', 'Unforced stack']
+    data_stack = ['Forced Coadd', 'Unforced Coadd']
 
     plot_top = None
     plots_list = []
@@ -511,7 +500,7 @@ class QuickLookComponent(Component):
         patchs = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
-            patchs = patchs.union(set(dset.df['patchId'].unique()))
+            patchs = patchs.union(set(dset.df['patch'].unique()))
         return len(patchs)
 
     def get_tract_count(self):
