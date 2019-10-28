@@ -33,12 +33,6 @@ logger.addHandler(logging.FileHandler('dashboard.log'))
 current_directory = os.path.dirname(os.path.abspath(__file__))
 root_directory = os.path.split(current_directory)[0]
 
-
-sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                       os.path.join(root_directory,
-                                                    'examples',
-                                                    'RC2_w18'))
-
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
 
@@ -48,6 +42,8 @@ datasets = []
 filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
+
+sample_data_directory = '/project/tmorton/tickets/DM-21335/'
 
 class Store(object):
 
@@ -125,13 +121,9 @@ def summarize_visits_dataframe(data_repo_path):
 def load_data(data_repo_path=None, datastack = 'forced'):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                           os.path.join(root_directory,
-                                                        'examples',
-                                                        'RC2_w18'))
+
     if not data_repo_path:
         data_repo_path = sample_data_directory
-
 
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
