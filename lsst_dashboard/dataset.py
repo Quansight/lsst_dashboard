@@ -1,22 +1,12 @@
 import yaml
 from pathlib import Path
 import dask.dataframe as dd
-from dask import delayed
-import pandas as pd
 import os
-import itertools
 
 try:
     from lsst.daf.persistence import Butler
-    from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
-    transforms = CompositeFunctor({'label': StarGalaxyLabeller(),
-                          'psfMag': Magnitude('base_PsfFlux_instFlux'),
-                          'ra': RAColumn(),
-                          'dec': DecColumn()})
-except ImportError:
+except:
     Butler = None
-    StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor = [None, None, None, None, None]
-
 
 METADATA_FILENAME = 'metadata.yaml'
 
@@ -27,21 +17,18 @@ class Dataset():
         d.connect()
         d.init_data()
     """
-    def __init__(self, path):
+    def __init__(self, path, tracts=None):
         self.conn = None
         self.path = Path(path)
-        self.tables = {}
-        self.visits = {}
-        self.tables_df = {}
-        self.visits_df = {}
+        self.coadd = {}
+        self.visits = None
+        self.visits_by_metric = {}
         self.metadata = {}
         self.filters = []
         self.metrics = []
         self.failures = {}
         self.flags = []
-        self.tracts = []
-        self.match_df = {}
-        self.visits_by_metric_df = {}
+        self.tracts = tracts
 
     def connect(self):
         # search for metadata.yaml file
@@ -49,6 +36,8 @@ class Dataset():
         # 2. Look for datafolder in current directory i.e. './RC2_w18/metadata.yaml'
         # 3. Look for datafolder in dir specified in LSST_META env variable i.e. /user/name/lsst_meta/RC2_w18/metadata.yaml'
         #    when LSST_META='/user/name/lsst_meta'
+      
+        print('-- read metadata file --')
         if self.path.joinpath(METADATA_FILENAME).exists():
             self.metadata_path = self.path.joinpath(METADATA_FILENAME)
         else:
@@ -56,150 +45,55 @@ class Dataset():
 
         with self.metadata_path.open('r') as f:
             self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
-            self.filters = self.metadata.get('filters')
-            self.metrics = self.metadata.get('metrics')
             self.failures = self.metadata.get('failures')
-            self.flags = self.metadata.get('flags')
-            self.tracts = self.metadata.get('tracts')
+            if self.tracts is None:
+                self.tracts = self.metadata.get('tracts')
 
         # if Butler is available use it to connect. If not available we are reading from disk
         if Butler:
             try:
+                print('-- connect to butler --')
                 self.conn = Butler(str(self.path))
             except:
                 print(f'{self.path} is not available in Butler attempting to read parquet files instead')
 
-    def init_data(self):
-        if self.conn is None:
-            print('Butler not found, loading data from parquet')
-            self.read_parquet()
-            return
-
-        print('loading coadd_forced table')
-        self.fetch_coadd_table('forced')
-        print('loading coadd_unforced table')
-        self.fetch_coadd_table('unforced')
+        print('-- read coadd table --')
+        self.fetch_coadd_table()  # currently ignoring forced/unforced
+        # update metadata based on coadd table fields
+        print('-- generate other metadata fields --')
+        df = self.coadd['qaDashboardCoaddTable']
+        self.flags = df.columns[df.dtypes == bool].to_list()
+        self.filters = df['filter'].unique().compute().to_list() # this takes some time, mightbe better to read from metadata file
+        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patchId', 'dec', 'label', 'psfMag', 'ra', 'filter', 'dataset', 'tract'])
+        print('-- read visit data --')
         self.fetch_visits()
+        self.fetch_visits_by_metric()
+        print('-- done with reads --')
 
     def fetch_coadd_table(self, coadd_version='unforced'):
         table = 'qaDashboardCoaddTable'  # + coadd_version
-        filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
-        self.tables_df[table] = dd.read_parquet(filenames)
+        if self.conn:
+            filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
+        else:
+            filenames = [str(self.path.join(f'{table}-{t}.parq')) for t in self.tracts]
+
+        self.coadd[table] = dd.read_parquet(filenames, npartitions=16).rename(columns={'dir0': 'tract'})
 
     def fetch_visits(self):
-        table = 'qaDashboardCoaddTable'
-        filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
-        self.visits_df = dd.read_parquet(filenames)
+        table = 'qaDashboardVisitTable'
+        if self.conn:
+            filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
+        else:
+            filenames = [str(self.path.join(f'{table}-{t}.parq')) for t in self.tracts]
+        
+        self.visits = dd.read_parquet(filenames, npartitions=16).rename(columns={'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'})
 
+    def fetch_visits_by_metric(self):
+        cols = self.visits.columns[self.visits.dtypes == bool].to_list() + ['dec', 'label', 'psfMag', 'ra', 'filter', 'tract', 'visit']
         for filt in self.filters:
-            self.match_df[filt] = {}
-            for tract in self.tracts:
-                self.match_df[filt][tract] = self.conn.get('visitMatchTable',
-                                                           tract=int(tract),
-                                                           filter=filt).toDataFrame()
-
-        self.visits_by_metric_df[filt] = {}
-
-    def fetch_visits_by_metric(self, filt, metric, coadd_version='unforced'):
-        try:
-            tmp = self.visits_by_metric_df[filt][metric] # if dataframe exists don't recalc
-            return
-        except:
-            pass
-
-        table = 'qaDashboardCoaddTable'
-        ddf = self.visits_df
-        visits = []
-        for tract in self.tracts:
-            match_df = self.match_df[filt][tract]
-            try: # sometimes metric is not found
-                idx = self.tables_df[table][metric].index.compute()
-                visits += match_df.loc[idx]['matchId'].columns.tolist()
-            except:
-                pass
-
-        visits = ddf[ddf['visitId'].isin(visits)]
-        if metric not in visits.columns:
-            print(f'no visits found for ({filt}, {metric})')
-            return None
-
-        flags = [flag for flag in self.flags if flag in ddf.columns]
-        self.visits_by_metric_df[filt][metric] = visits[[metric, 'visitId', 'tractId', 'filt'] + flags]
-
-    def _load_coadd_table(self, table, filt, tract):
-        df = self.conn.get(table, tract=int(tract), filter=filt)
-        new_cols = transforms(df)
-        cols = self.metrics + self.flags + ['patchId', 'id']
-        df = pd.concat([df.toDataFrame(columns=cols), new_cols], axis=1)
-        df['filter'] = filt
-        df['tract'] = tract
-        return df
-
-    def _fetch_visit(self, visit, tract, filt):
-        df = self.conn.get('analysisVisitTable', visit=int(visit), tract=int(tract), filter=filt)
-        df = df.toDataFrame(self.metrics + self.flags)
-        df['visit'] = visit
-        df['tract'] = tract
-        df['filt'] = filt
-        return df
-
-    def read_parquet(self):
-        p = self.path
-        for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables_df[table] = dd.read_parquet(str(p.joinpath(table)), engine='pyarrow')
-
-        for filt in self.filters:
-            #self.visits_df[filt] = dd.read_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow')
-            #self.match_df[filt] = {}
-            #for tract in self.tracts:
-            #    self.match_df[filt][tract] = dd.read_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data')
-            self.visits_by_metric_df[filt] = {}
+            self.visits_by_metric[filt] = {}
             for metric in self.metrics:
-                if p.joinpath(f'{filt}_{metric}_visits.parq').exists():
-                    df = dd.read_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow')
-                else:
-                    df = None
-                self.visits_by_metric_df[filt][metric] = df
-
-    def to_parquet(self, path):
-        p = Path(path)
-        for table in ['analysisCoaddTable_forced', 'analysisCoaddTable_unforced']:
-            self.tables_df[table].to_parquet(str(p.joinpath(table)), engine='pyarrow', compression='snappy')
-
-        for filt in self.filters:
-            #self.visits_df[filt].to_parquet(str(p.joinpath(f'{filt}_visits')), engine='pyarrow', compression='snappy')
-            #for tract in self.tracts:
-            #     # parquet columns names must be strings
-            #    self.match_df[filt][tract].to_hdf(str(p.joinpath(f'{filt}_{tract}_matches.h5')), 'data', complevel=9, format='table')
-            for metric in self.metrics:
-                print(f'saving visits for ({filt}, {metric})')
-                self.fetch_visits_by_metric(filt, metric)
-                try:
-                    df = self.visits_by_metric_df[filt][metric].compute()
-                except:
-                    print(f'...unable to save visits for ({filt}, {metric})')
-                    continue
-                with pd.option_context('mode.use_inf_as_na', True):
-                    df = df.dropna(subset=[metric])
-                df.to_parquet(str(p.joinpath(f'{filt}_{metric}_visits.parq')), engine='pyarrow', compression='snappy')
-
-    def load_from_hdf(self):
-        tables = {}
-        visits = {}
-        for f in self.path.glob('*.h5'):
-            filt = f.name.split('.')[0]
-            tables[filt] = {}
-            visits[filt] = {}
-            with pd.HDFStore(f) as hdf:
-                for k in hdf.keys():
-                    if k.endswith('meta'):
-                        continue
-                    table, tract = k.split('/')[-1].rsplit('_', 1)
-                    if table=='visits':
-                        visits[filt][tract] = hdf.select(k)
-                    if table not in tables[filt]:
-                        tables[filt][table] = {}
-                        tables[filt][table][tract] = hdf.select(k)
-
-        self.tables = tables
-        self.visits = visits
+                visit_data = None
+                if metric in self.visits.columns:
+                    visit_data = self.visits[(self.visits.filter==filt)][[metric] + cols] 
+                self.visits_by_metric[filt][metric] = visit_data

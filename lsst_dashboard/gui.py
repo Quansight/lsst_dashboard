@@ -55,7 +55,7 @@ class Store(object):
         self.active_dataset = Dataset('')
 
 
-def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
+def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable'):
 
     global datasets
     global filtered_datasets
@@ -64,7 +64,6 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
 
     d = Dataset(data_repo_path)
     d.connect()
-    d.init_data()
 
     global store
     store.active_dataset = d
@@ -74,8 +73,8 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
     datasets = {}
     filtered_datasets = {}
     for filt in d.filters:
-        dtf = d.tables_df[datastack]
-        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
+        dtf = d.coadd[datastack]
+        dtf = dtf[(dtf.filter == filt)]
         df = dtf.compute()
 
         datasets[filt] = QADataset(df)
@@ -87,12 +86,12 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
         datavisits[filt] = {}
         filtered_datavisits[filt] = {}
         for metric in d.metrics:
-            df = d.visits_by_metric_df[filt][metric]
+            df = d.visits_by_metric[filt][metric]
             filtered_df = None
             if df is not None:
                 df = df
                 filtered_df = df.copy()
-
+    
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
@@ -104,7 +103,6 @@ def summarize_visits_dataframe(data_repo_path):
 
     d = Dataset(data_repo_path)
     d.connect()
-    d.init_data()
 
     dfs = []
     for filt in d.filters:
@@ -139,7 +137,7 @@ def load_data(data_repo_path=None, datastack = 'forced'):
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    datastack = 'analysisCoaddTable_' + datastack
+    datastack = 'qaDashboardCoaddTable' # + datastack -- disabled forced/unforced for now
     d = init_dataset(data_repo_path, datastack=datastack)
 
     return d
@@ -197,7 +195,7 @@ class QuickLookComponent(Component):
     selected_flag_filters = param.Dict(default={})
 
     view_mode = ['Skyplot View', 'Detail View']
-    data_stack = ['Forced stack', 'Unforced stack']
+    data_stack = ['Forced Coadd', 'Unforced Coadd']
 
     plot_top = None
     plots_list = []
@@ -511,7 +509,7 @@ class QuickLookComponent(Component):
         patchs = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
-            patchs = patchs.union(set(dset.df['patchId'].unique()))
+            patchs = patchs.union(set(dset.df['patch'].unique()))
         return len(patchs)
 
     def get_tract_count(self):
