@@ -8,18 +8,20 @@ channels:
 dependencies:
     - python>=3.7
     - param
-    - panel
+    - panel>=0.6.3
     - holoviews
     - hvplot
     - geoviews
     - numpy
     - pandas
     - dask
+    - distributed
+    - dask-jobqueue
     - datashader
     - colorcet
     - jupyterlab
     - fastparquet
-    - pytables
+    - python-snappy
     - pyarrow
     - sphinx
     - scikit-learn
