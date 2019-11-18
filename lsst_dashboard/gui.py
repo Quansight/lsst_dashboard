@@ -51,14 +51,14 @@ class Store(object):
         self.active_dataset = Dataset('')
 
 
-def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable'):
+def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
     global datasets
     global filtered_datasets
     global datavisits
     global filtered_datavisits
 
-    d = Dataset(data_repo_path)
+    d = Dataset(data_repo_path, **kwargs)
     d.connect()
 
     global store
