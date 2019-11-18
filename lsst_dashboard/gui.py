@@ -43,7 +43,7 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
-sample_data_directory = '/project/tmorton/tickets/DM-21335/'
+sample_data_directory = '/project/tmorton/tickets/DM-21335/w38'
 
 class Store(object):
 
