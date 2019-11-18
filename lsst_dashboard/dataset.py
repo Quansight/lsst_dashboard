@@ -17,18 +17,18 @@ class Dataset():
         d.connect()
         d.init_data()
     """
-    def __init__(self, path, tracts=None):
+    def __init__(self, path, tracts=None, filters=None):
         self.conn = None
         self.path = Path(path)
         self.coadd = {}
         self.visits = None
         self.visits_by_metric = {}
         self.metadata = {}
-        self.filters = []
         self.metrics = []
         self.failures = {}
         self.flags = []
         self.tracts = tracts
+        self.filters = filters if filters is not None else []
 
     def connect(self):
         # search for metadata.yaml file
@@ -46,9 +46,11 @@ class Dataset():
                 self.conn = Butler(str(self.path))
                 self.metadata = self.conn.get('qaDashboard_metadata')
                 self.failures = self.metadata.get('failures', [])
-                self.filters = list(self.metadata['visits'].keys())
-                all_tracts = [list(self.metadata['visits'][filt].keys()) for filt in self.filters]
-                self.tracts = list(set([int(y) for x in all_tracts for y in x]))
+                if self.filters is None:
+                    self.filters = list(self.metadata['visits'].keys())
+                if self.tracts is None:
+                    all_tracts = [list(self.metadata['visits'][filt].keys()) for filt in self.filters]
+                    self.tracts = list(set([int(y) for x in all_tracts for y in x]))
             except:
                 print(f'{self.path} is not available in Butler attempting to read parquet files instead')
         else:
