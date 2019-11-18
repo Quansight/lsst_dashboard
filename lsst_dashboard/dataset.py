@@ -87,13 +87,8 @@ class Dataset():
         else:
             filenames = [str(self.path.joinpath(f'{table}-{t}.parq')) for t in self.tracts]
 
-        # workaround for tract not reliably being in file:
-        dfs = []
-        for tract, f in zip(self.tracts, filenames):
-            df = dd.read_parquet(f, npartitions=4).rename(columns={'patchId': 'patch'})
-            df['tract'] = tract
-            dfs.append(df)
-        self.coadd[table] = dd.concat(dfs)
+        column_map = {'patchId': 'patch', 'tractId': 'tract'}
+        self.coadd[table] = dd.read_parquet(filenames).rename(columns=column_map)
 
     def fetch_visits(self):
         table = 'qaDashboardVisitTable'
