@@ -48,7 +48,7 @@ class Dataset():
                 self.failures = self.metadata.get('failures', [])
                 self.filters = list(self.metadata['visits'].keys())
                 all_tracts = [list(self.metadata['visits'][filt].keys()) for filt in self.filters]
-                self.tracts = list(set([y for x in all_tracts for y in x]))
+                self.tracts = list(set([int(y) for x in all_tracts for y in x]))
             except:
                 print(f'{self.path} is not available in Butler attempting to read parquet files instead')
         else:
@@ -72,9 +72,9 @@ class Dataset():
         self.flags = df.columns[df.dtypes == bool].to_list()
         if not Butler:
             self.filters = df['filter'].unique().compute().to_list() # this takes some time, mightbe better to read from metadata file
-        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag', 'ra', 'filter', 'dataset', 'tract'])
+        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag', 
+                                                                         'ra', 'filter', 'dataset', 'dir0', 'tract'])
         print('-- read visit data --')
-        self.fetch_visits()
         self.fetch_visits_by_metric()
         print('-- done with reads --')
 
@@ -96,18 +96,21 @@ class Dataset():
     def fetch_visits(self):
         table = 'qaDashboardVisitTable'
         if self.conn:
-            filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
+            pass
+            # filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
         else:
             filenames = [str(self.path.joinpath(f'{table}-{t}.parq')) for t in self.tracts]
         
         self.visits = dd.read_parquet(filenames, npartitions=16).rename(columns={'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'})
 
     def fetch_visits_by_metric(self):
-        cols = self.visits.columns[self.visits.dtypes == bool].to_list() + ['dec', 'label', 'psfMag', 'ra', 'filter', 'tract', 'visit']
         for filt in self.filters:
             self.visits_by_metric[filt] = {}
             for metric in self.metrics:
-                visit_data = None
-                if metric in self.visits.columns:
-                    visit_data = self.visits[(self.visits.filter==filt)][[metric] + cols] 
-                self.visits_by_metric[filt][metric] = visit_data
+                if self.conn:
+                    filenames = [self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename 
+                                    for t in self.tracts]
+                    column_map = {'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'}
+                    self.visits_by_metric[filt][metric] = dd.read_parquet(filenames).rename(columns=column_map)              
+                else:
+                    raise NotImplementedError('Need butler datasets to run this.')
