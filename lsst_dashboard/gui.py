@@ -327,7 +327,7 @@ class QuickLookComponent(Component):
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
-        self.status_message_queue.append(msg_args)
+        self.status_message_queue.append(msg_args)  # to work with panel 0.7
         self.param.trigger('status_message_queue')
         # Drop message in terminal/logger too
         try:
@@ -495,7 +495,7 @@ class QuickLookComponent(Component):
 
     def execute_js_script(self, js_body):
         script = '<script>(function() { ' + js_body +  '})()</script>'
-        self.adhoc_js.object = script
+        # self.adhoc_js.object = script  # to work with panel 0.7
 
     def get_patch_count(self):
         return 1
