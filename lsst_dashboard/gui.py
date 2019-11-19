@@ -494,8 +494,9 @@ class QuickLookComponent(Component):
         self.status_message.object = '<ul style="{}">{}</ul>'.format(queue_css, html)
 
     def execute_js_script(self, js_body):
-        script = '<script>(function() { ' + js_body +  '})()</script>'
-        # self.adhoc_js.object = script  # to work with panel 0.7
+        # script = '<script>(function() { ' + js_body +  '})()</script>'  # to work with panel 0.7
+        # self.adhoc_js.object = script  
+        self.adhoc_js.object = js_body
 
     def get_patch_count(self):
         return 1
