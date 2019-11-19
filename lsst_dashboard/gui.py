@@ -328,7 +328,7 @@ class QuickLookComponent(Component):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
         self.status_message_queue.append(msg_args)  
-        # self.param.trigger('status_message_queue')  # to work with panel 0.7
+        self.param.trigger('status_message_queue')  # to work with panel 0.7
         # Drop message in terminal/logger too
         try:
             # temporary try/except until 'level' values are all checked
@@ -495,7 +495,7 @@ class QuickLookComponent(Component):
 
     def execute_js_script(self, js_body):
         script = '<script>(function() { ' + js_body +  '})()</script>'  # to work with panel 0.7
-        # self.adhoc_js.object = script  
+        self.adhoc_js.object = script  
 
     def get_patch_count(self):
         return 1
