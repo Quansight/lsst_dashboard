@@ -45,7 +45,7 @@ class Dataset():
                 print('-- connect to butler --')
                 self.conn = Butler(str(self.path))
                 self.metadata = self.conn.get('qaDashboard_metadata')
-                self.failures = self.metadata.get('failures', [])
+                self.failures = self.metadata.get('failures', {})
                 if not self.filters:
                     self.filters = list(self.metadata['visits'].keys())
                 if not self.tracts:
