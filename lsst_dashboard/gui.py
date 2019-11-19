@@ -497,6 +497,7 @@ class QuickLookComponent(Component):
         self.adhoc_js.object = script
 
     def get_patch_count(self):
+        return 1
         patchs = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
@@ -504,6 +505,7 @@ class QuickLookComponent(Component):
         return len(patchs)
 
     def get_tract_count(self):
+        return 1
         tracts = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
@@ -511,6 +513,7 @@ class QuickLookComponent(Component):
         return len(tracts)
 
     def get_visit_count(self):
+        return 1
         dvisits = self.get_datavisits()
         visits = set()
         for filt,metrics in self.selected_metrics_by_filter.items():
