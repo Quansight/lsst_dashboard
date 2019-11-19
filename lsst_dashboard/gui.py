@@ -69,9 +69,10 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
     datasets = {}
     filtered_datasets = {}
     dtf = d.coadd[datastack]
+
     dtf = dtf.set_index('filter')
     for filt in d.filters:
-        df = dtf.loc[filt].compute()
+        df = dtf.loc[filt]
         datasets[filt] = QADataset(df)
         filtered_datasets[filt] = QADataset(df.copy())
 
