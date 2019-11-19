@@ -46,9 +46,9 @@ class Dataset():
                 self.conn = Butler(str(self.path))
                 self.metadata = self.conn.get('qaDashboard_metadata')
                 self.failures = self.metadata.get('failures', [])
-                if self.filters is None:
+                if not self.filters:
                     self.filters = list(self.metadata['visits'].keys())
-                if self.tracts is None:
+                if not self.tracts:
                     all_tracts = [list(self.metadata['visits'][filt].keys()) for filt in self.filters]
                     self.tracts = list(set([int(y) for x in all_tracts for y in x]))
             except:
