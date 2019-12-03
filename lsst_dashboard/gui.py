@@ -43,7 +43,7 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
-sample_data_directory = '/project/tmorton/tickets/DM-21335/'
+sample_data_directory = '/project/tmorton/tickets/DM-21335/w38'
 
 class Store(object):
 
@@ -51,14 +51,14 @@ class Store(object):
         self.active_dataset = Dataset('')
 
 
-def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable'):
+def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
     global datasets
     global filtered_datasets
     global datavisits
     global filtered_datavisits
 
-    d = Dataset(data_repo_path)
+    d = Dataset(data_repo_path, **kwargs)
     d.connect()
 
     global store
@@ -69,9 +69,10 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable'):
     datasets = {}
     filtered_datasets = {}
     dtf = d.coadd[datastack]
+
     dtf = dtf.set_index('filter')
     for filt in d.filters:
-        df = dtf.loc[filt].compute()
+        df = dtf.loc[filt]
         datasets[filt] = QADataset(df)
         filtered_datasets[filt] = QADataset(df.copy())
 
@@ -326,8 +327,8 @@ class QuickLookComponent(Component):
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
-        self.status_message_queue.append(msg_args)
-        self.param.trigger('status_message_queue')
+        self.status_message_queue.append(msg_args)  
+        self.param.trigger('status_message_queue')  # to work with panel 0.7
         # Drop message in terminal/logger too
         try:
             # temporary try/except until 'level' values are all checked
@@ -493,10 +494,11 @@ class QuickLookComponent(Component):
         self.status_message.object = '<ul style="{}">{}</ul>'.format(queue_css, html)
 
     def execute_js_script(self, js_body):
-        script = '<script>(function() { ' + js_body +  '})()</script>'
-        self.adhoc_js.object = script
+        script = '<script>(function() { ' + js_body +  '})()</script>'  # to work with panel 0.7
+        self.adhoc_js.object = script  
 
     def get_patch_count(self):
+        return 1
         patchs = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
@@ -504,6 +506,7 @@ class QuickLookComponent(Component):
         return len(patchs)
 
     def get_tract_count(self):
+        return 1
         tracts = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
@@ -511,6 +514,7 @@ class QuickLookComponent(Component):
         return len(tracts)
 
     def get_visit_count(self):
+        return 1
         dvisits = self.get_datavisits()
         visits = set()
         for filt,metrics in self.selected_metrics_by_filter.items():
