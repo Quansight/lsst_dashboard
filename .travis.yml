@@ -44,7 +44,6 @@ script:
   - set -e
   - pip install doctr
   - chmod 777 build.sh
-  - ./build.sh
-  - yes | doctr deploy . --built-docs ./docs/_build/html/ 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./build.sh; fi
 
       
