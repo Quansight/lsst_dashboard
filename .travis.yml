@@ -43,12 +43,7 @@ script:
   - python -m pytest
   - set -e
   - pip install doctr
-  - pwd
-  - ls
-  - cd /Users/travis/build/Quansight/lsst_dashboard/docs
-  - make clean
-  - make html
-  - cd ..
+  - build.sh
   - doctr deploy . --built-docs ./docs/_build/html/ 
 
       
