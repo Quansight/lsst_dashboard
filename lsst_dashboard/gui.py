@@ -266,7 +266,6 @@ class QuickLookComponent(Component):
     def _on_load_data_repository(self, event):
 
         global datasets
-        global filtered_datasets
         global datavisits
         global filtered_datavisits
 
@@ -681,17 +680,7 @@ class QuickLookComponent(Component):
 
 
     def linked_tab_plots(self):
-        linked = None
-        tabs = []
-        for name, plot in self.skyplot_list:
-            if not linked:
-                linked = pn.panel(plot)
-                tabs.append((name, linked))
-            else:
-                plot_panel = pn.panel(plot)
-                linked.jslink(plot_panel, x_range='x_range')
-                linked.jslink(plot_panel, y_range='y_range')
-                tabs.append((name, plot_panel))
+        tabs = [(name, pn.panel(plot)) for name, plot in self.skyplot_list]
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
     def attempt_to_clear(self, obj):
