@@ -33,12 +33,6 @@ logger.addHandler(logging.FileHandler('dashboard.log'))
 current_directory = os.path.dirname(os.path.abspath(__file__))
 root_directory = os.path.split(current_directory)[0]
 
-
-sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                       os.path.join(root_directory,
-                                                    'examples',
-                                                    'RC2_w18'))
-
 with open(os.path.join(current_directory, 'dashboard.html')) as template_file:
     dashboard_html_template = template_file.read()
 
@@ -49,22 +43,23 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
+sample_data_directory = '/project/tmorton/tickets/DM-21335/w38'
+
 class Store(object):
 
     def __init__(self):
         self.active_dataset = Dataset('')
 
 
-def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
+def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
     global datasets
     global filtered_datasets
     global datavisits
     global filtered_datavisits
 
-    d = Dataset(data_repo_path)
+    d = Dataset(data_repo_path, **kwargs)
     d.connect()
-    d.init_data()
 
     global store
     store.active_dataset = d
@@ -73,11 +68,11 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
 
     datasets = {}
     filtered_datasets = {}
-    for filt in d.filters:
-        dtf = d.tables_df[datastack]
-        dtf = dtf[(dtf.filter == filt) & (dtf.tract == d.tracts[-1])]
-        df = dtf.compute()
+    dtf = d.coadd[datastack]
 
+    dtf = dtf.set_index('filter')
+    for filt in d.filters:
+        df = dtf.loc[filt]
         datasets[filt] = QADataset(df)
         filtered_datasets[filt] = QADataset(df.copy())
 
@@ -87,12 +82,12 @@ def init_dataset(data_repo_path, datastack='analysisCoaddTable_forced'):
         datavisits[filt] = {}
         filtered_datavisits[filt] = {}
         for metric in d.metrics:
-            df = d.visits_by_metric_df[filt][metric]
+            df = d.visits_by_metric[filt][metric]
             filtered_df = None
             if df is not None:
                 df = df
                 filtered_df = df.copy()
-
+    
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
@@ -104,7 +99,6 @@ def summarize_visits_dataframe(data_repo_path):
 
     d = Dataset(data_repo_path)
     d.connect()
-    d.init_data()
 
     dfs = []
     for filt in d.filters:
@@ -128,18 +122,14 @@ def summarize_visits_dataframe(data_repo_path):
 def load_data(data_repo_path=None, datastack = 'forced'):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory = os.path.split(current_directory)[0]
-    sample_data_directory = os.environ.get('LSST_SAMPLE_DATA',
-                                           os.path.join(root_directory,
-                                                        'examples',
-                                                        'RC2_w18'))
+
     if not data_repo_path:
         data_repo_path = sample_data_directory
-
 
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    datastack = 'analysisCoaddTable_' + datastack
+    datastack = 'qaDashboardCoaddTable' # + datastack -- disabled forced/unforced for now
     d = init_dataset(data_repo_path, datastack=datastack)
 
     return d
@@ -197,7 +187,7 @@ class QuickLookComponent(Component):
     selected_flag_filters = param.Dict(default={})
 
     view_mode = ['Skyplot View', 'Detail View']
-    data_stack = ['Forced stack', 'Unforced stack']
+    data_stack = ['Forced Coadd', 'Unforced Coadd']
 
     plot_top = None
     plots_list = []
@@ -337,8 +327,8 @@ class QuickLookComponent(Component):
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
-        self.status_message_queue.append(msg_args)
-        self.param.trigger('status_message_queue')
+        self.status_message_queue.append(msg_args)  
+        self.param.trigger('status_message_queue')  # to work with panel 0.7
         # Drop message in terminal/logger too
         try:
             # temporary try/except until 'level' values are all checked
@@ -504,17 +494,19 @@ class QuickLookComponent(Component):
         self.status_message.object = '<ul style="{}">{}</ul>'.format(queue_css, html)
 
     def execute_js_script(self, js_body):
-        script = '<script>(function() { ' + js_body +  '})()</script>'
-        self.adhoc_js.object = script
+        script = '<script>(function() { ' + js_body +  '})()</script>'  # to work with panel 0.7
+        self.adhoc_js.object = script  
 
     def get_patch_count(self):
+        return 1
         patchs = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
-            patchs = patchs.union(set(dset.df['patchId'].unique()))
+            patchs = patchs.union(set(dset.df['patch'].unique()))
         return len(patchs)
 
     def get_tract_count(self):
+        return 1
         tracts = set()
         for filt,_ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
@@ -522,6 +514,7 @@ class QuickLookComponent(Component):
         return len(tracts)
 
     def get_visit_count(self):
+        return 1
         dvisits = self.get_datavisits()
         visits = set()
         for filt,metrics in self.selected_metrics_by_filter.items():

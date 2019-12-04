@@ -46,7 +46,7 @@ class QADataset(object):
 
     """
 
-    _idNames = ('patchId', 'tractId')
+    _idNames = ('patch', 'tract')
     _kdims = ('ra', 'dec', 'psfMag', 'label')
 
     def __init__(self, df, vdims='all'):

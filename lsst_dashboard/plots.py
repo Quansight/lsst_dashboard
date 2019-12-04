@@ -470,6 +470,9 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     for filt, metrics in filters_to_metrics.items():
         for metric in metrics:
             df = dsets_visits[filt][metric].compute()
+            # drop inf/nan values
+            with pd.option_context('mode.use_inf_as_na', True):
+                df = df.dropna(subset = [metric])
             label = '{} - {}'.format(filt, metric)
             df[label] = minmax_scale(df[metric])
             df = df.groupby('visit')
