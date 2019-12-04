@@ -8,7 +8,7 @@ try:
 except:
     Butler = None
 
-METADATA_FILENAME = 'metadata.yaml'
+METADATA_FILENAME = 'dashboard_metadata.yaml'
 
 class Dataset():
     """
@@ -61,9 +61,9 @@ class Dataset():
 
             with self.metadata_path.open('r') as f:
                 self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
-                self.failures = self.metadata.get('failures')
+                self.failures = self.metadata.get('failures', {})
                 if self.tracts is None:
-                    self.tracts = self.metadata.get('tracts')
+                    self.tracts = list(set(x for v in self.metadata['visits'].values() for x in v.keys())) 
 
 
         print('-- read coadd table --')
@@ -73,7 +73,7 @@ class Dataset():
         df = self.coadd['qaDashboardCoaddTable']
         self.flags = df.columns[df.dtypes == bool].to_list()
         if not Butler:
-            self.filters = df['filter'].unique().compute().to_list() # this takes some time, mightbe better to read from metadata file
+            self.filters = list(self.metadata['visits'].keys()) 
         self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag', 
                                                                          'ra', 'filter', 'dataset', 'dir0', 'tract'])
         print('-- read visit data --')
@@ -106,8 +106,9 @@ class Dataset():
             for metric in self.metrics:
                 if self.conn:
                     filenames = [self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename 
-                                    for t in self.tracts]
-                    column_map = {'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'}
-                    self.visits_by_metric[filt][metric] = dd.read_parquet(filenames).rename(columns=column_map)              
+                                    for t in self.tracts]                  
                 else:
-                    raise NotImplementedError('Need butler datasets to run this.')
+                    filenames =  list(self.path.glob(f'./*{filt}*{metric}.parq'))
+                    
+                column_map = {'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'}
+                self.visits_by_metric[filt][metric] = dd.read_parquet(filenames).rename(columns=column_map)
