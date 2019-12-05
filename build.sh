@@ -2,4 +2,4 @@
 cd docs
 make html
 cd ..
-yes | doctr deploy . --built-docs ./docs/_build/html/ --force --branch-whitelist gh-pages --no-require-master
+yes | doctr deploy . --built-docs ./docs/_build/html/ --no-require-master
