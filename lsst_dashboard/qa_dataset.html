@@ -221,18 +221,16 @@ that of <cite>lsst.qa.explorer.catalog.MatchedCatalog</cite>).</p></li>
 containing some catalog-style data (e.g., the result of a postprocessing
 analysis) as a Holoviews <cite>Dataset</cite> object.  This involves the following:</p>
 <ul class="simple">
-<li><p>defining which columns are “key dimensions” (“kdims”) or “value dimensions”</p></li>
-</ul>
-<p>(“vdims”).  The <cite>_idNames</cite> and <cite>_kdims</cite> attributes define what columns
+<li><p>Defining which columns are “key dimensions” (“kdims”) or “value dimensions”
+(“vdims”).  The <cite>_idNames</cite> and <cite>_kdims</cite> attributes define what columns
 get automatically categorized as “kdims” (such as RA, Dec, label, etc.); also, any
 flags (identified as boolean columns by inspection) are also kdims.  By default,
 everything else is a “vdim” (meaning, an quantity whose value is interesting).
 Otherwise, specific ‘vdims’ may be noted, in which case some columns will be
-unused by the <cite>hv.Dataset</cite>.</p>
-<ul class="simple">
-<li><p>Defining the <cite>hv.Dataset</cite> object, which beyond defining the dimensions</p></li>
+unused by the <cite>hv.Dataset</cite>.</p></li>
+<li><p>Defining the <cite>hv.Dataset</cite> object, which beyond defining the dimensions
+also necessitates getting rid of infs/nans in the data.</p></li>
 </ul>
-<p>also necessitates getting rid of infs/nans in the data.</p>
 <p>Some subclasses of <cite>QADataset</cite> may also choose to defer creation of the <cite>.df</cite>
 attribute, which in this main object is passed as a parameter at initialization.
 Such a subclass will then need to define a <cite>_makeDataFrame</cite> method

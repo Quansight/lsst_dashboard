@@ -163,30 +163,26 @@
 <dl class="function">
 <dt id="lsst_dashboard.match.match_lists">
 <code class="sig-prename descclassname">lsst_dashboard.match.</code><code class="sig-name descname">match_lists</code><span class="sig-paren">(</span><em class="sig-param">ra1</em>, <em class="sig-param">dec1</em>, <em class="sig-param">ra2</em>, <em class="sig-param">dec2</em>, <em class="sig-param">dist</em>, <em class="sig-param">numNei=1</em><span class="sig-paren">)</span><a class="headerlink" href="#lsst_dashboard.match.match_lists" title="Permalink to this definition">¶</a></dt>
-<dd><p>crossmatches the list of objects (ra1,dec1) with
-another list of objects (ra2,dec2) with the matching radius “dist”
-The routines searches for up to numNei closest neighbors
-the routine returns the distance to the neighbor and the list
+<dd><p>Crossmatches the list of objects (ra1, dec1) with
+another list of objects (ra2, dec2) with the matching radius “dist”.
+The routine searches for up to numNei closest neighbors
+the routine, returns the distance to the neighbor and the list
 of indices of the neighbor. Everything is in degrees.
-if no match is found the distance is NaN.
-Example:
-&gt; dist, ind = match_lists(ra1,dec1,ra2,dec2, 1./3600)
-&gt; goodmatch_ind = numpy.isfinite(dist)
-&gt; plot(ra1[goodmatch_ind],ra2[ind[goodmatch_ind]])
-Another example:
-&gt; print match_lists( [1,1], [2,3], [1.1,1.2,6,], [2.1,2.2,10], 0.3,numNei=2)</p>
-<blockquote>
-<div><dl>
-<dt>(array([[ 0.1413761 ,  0.28274768],</dt><dd><blockquote>
-<div><p>[        inf,         inf]]),</p>
-</div></blockquote>
-<dl class="simple">
-<dt>array([[0, 1],</dt><dd><p>[3, 3]]))</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
+If no match is found, the distance is NaN.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">match_lists</span><span class="p">(</span><span class="n">ra1</span><span class="p">,</span><span class="n">dec1</span><span class="p">,</span><span class="n">ra2</span><span class="p">,</span><span class="n">dec2</span><span class="p">,</span> <span class="mf">1.</span><span class="o">/</span><span class="mi">3600</span><span class="p">)</span>
+<span class="n">goodmatch_ind</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">ra1</span><span class="p">[</span><span class="n">goodmatch_ind</span><span class="p">],</span><span class="n">ra2</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">goodmatch_ind</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>Another example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="n">match_lists</span><span class="p">(</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.1</span><span class="p">,</span><span class="mf">1.2</span><span class="p">,</span><span class="mi">6</span><span class="p">,],</span> <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span><span class="mf">2.2</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span> <span class="mf">0.3</span><span class="p">,</span><span class="n">numNei</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+ <span class="p">(</span><span class="n">array</span><span class="p">([[</span> <span class="mf">0.1413761</span> <span class="p">,</span>  <span class="mf">0.28274768</span><span class="p">],</span>
+         <span class="p">[</span>        <span class="n">inf</span><span class="p">,</span>         <span class="n">inf</span><span class="p">]]),</span>
+  <span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+         <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]))</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>
