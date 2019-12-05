@@ -41,8 +41,6 @@ install:
 
 script:
   - python -m pytest
-
-after_success:
   - set -e
   - pip install doctr
   - chmod 777 build.sh
