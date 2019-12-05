@@ -1,4 +1,4 @@
-Welcome to lsst-panel's documentation!
+Welcome to the LSST Dashboard documentation!
 ======================================
     
 .. toctree::
