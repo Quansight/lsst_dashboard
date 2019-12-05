@@ -18,7 +18,7 @@ matrix:
 env:
   global:
   # Doctr deploy key for Quansight/lsst_dashboard
-    - secure: "DC2Pci72yP6l69pQDLP6yXoF5ili/x3YSly46z3E/SD3ocuOMys3bNMBP/izEV1bFEWQuSowgudU3wLc1E9hEMJUnQPTaLCyXyyQ9yVSatz0aE7qekF8ejkYJ/hggDHWIjKQSeR966nwwakVJhDe5ohlcQyZl/vY75X2XakM9WBWcCaxjcbfyuXXUNFq3ZSx04irX24g7eJb0BHPclOi1EF41F2flIkZ7ev9zsy8T/dcvBripnjRGgg/nD2IlAckup0FU7hkIhxZhvWuy2JiitesOH2qr6Z0y2/U7Oki/yRC/RAOG9wmGPWUQshDfqAymbm/ogGfR4LYLjRNQMVu8IDvpZoIQTj+shpH+qfAWqXvQgiGsvncEWP0/QkEAPzeJ8gLo7hnuY3N9hM/zjKR4D3lqvMghNU4pahiikBuAS1AJUP5Kn8tsL7g7uX8KQlC1JOoOqd5PlavbXAb9XM4Ym/rK9o7QvDmTl4nBQqWntZZo/smZCCDItOIXbBo8aSc8yutvi7PviC3Ihf9QjOidXH6fOOg40BvGdR1z0gjlrXrpeHXLRTBMqXIHw76AVMiUa0qGH6+OfI3UW7cleIwk7JEMukqcH/Ti31wrIchbta7l1J69nmfAjbz41cEJVRaBG5DdrktWSNmLuPS++Ih6soWN/fY81I7IN571IBGh60="
+  - secure: "AyxY3j8ogAIsf0ZBy8wl7QurzeMmd5NAuPvBNj9vRnkAMCIa0z/yuaJtp+pfmb/ilCIz7lV77eZ+jaJJcCAwlNdDQgFKOA/rStto5PXAP/Ys6+dOz+43urHeKfhlVoPcYo4mTWr+8hKqmk6ywj0KqHzCt3wGuHaT24Yfd8Srjn2OfUMqQ6D0F9p4FGO4vMoHA/pEh7OY8L5Y7YmLkLGkzlFqSFbbuTSSg8LJi6qd9ca1R4yrJDZhrpaAwh7br42bN0gawf2iXcGev+aB0L6+15TlGYSSQLAEO1HAgQzHyGrBxybEqXn7OVtiiMmYVs9Yd37ISHkuxeozTFz4m7cf1uxN4++RaZnZvztbHUC0pv/I8Q6o499EnIpkFikw+4fQLQI0F1iEvgUgxEpjhFLuom+EjEAkjUE0o9w1zt2mwY79aP2vrLVU24BDFaCFn31Sg/5XUnO/ZmT4Jxz6NTbrNH4CNelBIGuNzh2fySqY5SDgcjKSH4L3GY5aEnT/2WFJ7BQd9TW0aA+5Lj3ifEm1D0oRlTIARFQByNNVLca/0UodpmSIPV/nTAa69Oc1JcTlT4vlQznImqUj7XO/3Dp8e81JMpuleg01iO6ginLCJlKS3ERn1JTa0eRuYeoR9xbncmUkWzS1ws9s2YFRWU6sp3wgW5RnP8i1wmAG6xSl/BY="
 
 before_install:
   # install conda
@@ -46,4 +46,3 @@ script:
   - chmod 777 build.sh
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./build.sh; fi
 
-      

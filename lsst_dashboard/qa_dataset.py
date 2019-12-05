@@ -17,16 +17,16 @@ class QADataset(object):
     containing some catalog-style data (e.g., the result of a postprocessing
     analysis) as a Holoviews `Dataset` object.  This involves the following:
 
-    * defining which columns are "key dimensions" ("kdims") or "value dimensions"
-    ("vdims").  The `_idNames` and `_kdims` attributes define what columns
-    get automatically categorized as "kdims" (such as RA, Dec, label, etc.); also, any
-    flags (identified as boolean columns by inspection) are also kdims.  By default,
-    everything else is a "vdim" (meaning, an quantity whose value is interesting).
-    Otherwise, specific 'vdims' may be noted, in which case some columns will be
-    unused by the `hv.Dataset`.
+    * Defining which columns are "key dimensions" ("kdims") or "value dimensions"
+      ("vdims").  The `_idNames` and `_kdims` attributes define what columns
+      get automatically categorized as "kdims" (such as RA, Dec, label, etc.); also, any
+      flags (identified as boolean columns by inspection) are also kdims.  By default,
+      everything else is a "vdim" (meaning, an quantity whose value is interesting).
+      Otherwise, specific 'vdims' may be noted, in which case some columns will be
+      unused by the `hv.Dataset`.
 
     * Defining the `hv.Dataset` object, which beyond defining the dimensions
-    also necessitates getting rid of infs/nans in the data.
+      also necessitates getting rid of infs/nans in the data.
 
     Some subclasses of `QADataset` may also choose to defer creation of the `.df`
     attribute, which in this main object is passed as a parameter at initialization.
