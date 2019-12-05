@@ -43,8 +43,6 @@ script:
   - python -m pytest
   - set -e
   - pip install doctr
-  - cd docs
-  - make html
-  - cd ..
-  - yes | doctr deploy . --built-docs ./docs/_build/html/ --no-require-master
+  - chmod 777 build.sh
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./build.sh; fi
 
