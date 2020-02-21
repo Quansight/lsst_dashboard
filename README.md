@@ -7,15 +7,8 @@
 1. Download and Extract sample dataset from here:
 https://quansight.nyc3.digitaloceanspaces.com/datasets/RC2_w18.tar.gz
 
-```
-wget https://quansight.nyc3.digitaloceanspaces.com/datasets/RC2_w18.tar.gz
-tar -xzf RC2_w18.tar.gz
-LSST_SAMPLE_DATA="${PWD}/RC2_w18"
-```
-
 **OR**
 Simply use the `download_sample_data.sh` to download smaller subsets.
-Set `LSST_SAMPLE_DATA` accordingly.
 
 2. Setup and activate conda environment with Python 3.7 and PyViz stack
 ```
@@ -26,7 +19,7 @@ python setup.py develop
 
 3. To launch dashboard in dev mode (server will restart, whenever files change):
 ```
-LSST_SAMPLE_DATA="$LSST_SAMPLE_DATA" panel serve dashboard.py --dev lsst_dashboard --show --port 5005
+panel serve dashboard.py --dev lsst_dashboard --show --port 5005
 ```
 
 
