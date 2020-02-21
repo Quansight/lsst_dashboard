@@ -87,7 +87,7 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
             if df is not None:
                 df = df
                 filtered_df = df.copy()
-    
+
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
@@ -326,7 +326,7 @@ class QuickLookComponent(Component):
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
-        self.status_message_queue.append(msg_args)  
+        self.status_message_queue.append(msg_args)
         self.param.trigger('status_message_queue')  # to work with panel 0.7
         # Drop message in terminal/logger too
         try:
@@ -494,7 +494,7 @@ class QuickLookComponent(Component):
 
     def execute_js_script(self, js_body):
         script = '<script>(function() { ' + js_body +  '})()</script>'  # to work with panel 0.7
-        self.adhoc_js.object = script  
+        self.adhoc_js.object = script
 
     def get_patch_count(self):
         return 1

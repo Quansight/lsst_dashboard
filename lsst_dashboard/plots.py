@@ -387,7 +387,6 @@ class skyplot(ParameterizedFunction):
         elif self.p.aggregator == 'count':
             aggregator = ds.count()
 
-
         decimate_opts = dict(plot={'tools': ['hover',
                                              'box_select']},
                              style={'alpha': 0,
@@ -400,8 +399,9 @@ class skyplot(ParameterizedFunction):
         sky_shaded = shade(raster_, cmap=viridis)
 
         plot = dynspread(sky_shaded) * decimated * color_gadget
-
+        
         return plot.options(bgcolor="black", responsive=True, min_height=100)
+
 
 class skyplot_layout(ParameterizedFunction):
     """Layout of skyplots with linked crosshair
