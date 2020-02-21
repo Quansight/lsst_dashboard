@@ -234,6 +234,9 @@ class QuickLookComponent(Component):
             name='Run Query Filter', width=100, align='end')
         self.query_filter_submit.on_click(self.on_run_query_filter_click)
 
+        self.query_filter_active = pn.widgets.Select(
+            name='Active Query Filters', width=250)
+
         self.query_filter_clear = pn.widgets.Button(
             name='Clear', width=50, align='end')
         self.query_filter_clear.on_click(self.on_query_filter_clear)
@@ -764,8 +767,9 @@ class QuickLookComponent(Component):
                                 pn.Row(self.flag_filter_selected),
                                 pn.Row(self.flag_remove))),
             ('query_filter', pn.Column(query_filter_widget,
-                                       pn.Row(self.query_filter_submit,
-                                              self.query_filter_clear)),),
+                                       pn.Row(self.query_filter_submit),
+                                       pn.Row(self.query_filter_active),
+                                       pn.Row(self.query_filter_clear))),
             ('new_column', pn.Column(new_column_widget,
                                      pn.Row(self.new_column_submit)),),
         ]
