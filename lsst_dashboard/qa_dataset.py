@@ -10,6 +10,7 @@ import holoviews as hv
 # from lsst.qa.explorer.plots import filter_dset, FilterStream
 from .plots import filter_dset, FilterStream
 
+
 class QADataset(object):
     """Convenience wrapper of holoviews Dataset for catalog-type data
 
@@ -123,9 +124,9 @@ class QADataset(object):
 
     def _makeDataset(self):
         kdims, vdims = self._getDims()
-
-        df = self.df.replace([np.inf, -np.inf], np.nan).dropna(how='any')
-        ds = hv.Dataset(df, kdims=kdims, vdims=vdims)
+        df = self.df.replace(np.inf, np.nan).dropna(how='any')
+        df = df.replace(-np.inf, np.nan).dropna(how='any')
+        ds = hv.Dataset(self.df, kdims=kdims, vdims=vdims)
         self._ds = ds
 
     def skyPoints(self, vdim, maxMag, label='star', magCol='psfMag',

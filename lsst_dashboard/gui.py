@@ -87,7 +87,7 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
             if df is not None:
                 df = df
                 filtered_df = df.copy()
-    
+
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
@@ -326,7 +326,7 @@ class QuickLookComponent(Component):
     def add_status_message(self, title, body, level='info', duration=5):
         msg = {'title': title, 'body': body}
         msg_args = dict(msg=msg, level=level, duration=duration)
-        self.status_message_queue.append(msg_args)  
+        self.status_message_queue.append(msg_args)
         self.param.trigger('status_message_queue')  # to work with panel 0.7
         # Drop message in terminal/logger too
         try:
@@ -427,7 +427,6 @@ class QuickLookComponent(Component):
         #                                  self.unique_object_count)
         self._info.object = '<ul class="list-group list-group-horizontal" style="list-style: none;">{}</ul>'.format(html)
 
-
     def create_status_message(self, msg, level='info', duration=5):
 
         import uuid
@@ -494,7 +493,7 @@ class QuickLookComponent(Component):
 
     def execute_js_script(self, js_body):
         script = '<script>(function() { ' + js_body +  '})()</script>'  # to work with panel 0.7
-        self.adhoc_js.object = script  
+        self.adhoc_js.object = script
 
     def get_patch_count(self):
         return 1
@@ -547,7 +546,7 @@ class QuickLookComponent(Component):
     @param.depends('selected_flag_filters', watch=True)
     def _update_selected_flags(self):
         selected_flags = ['{} : {}'.format(f,v)
-                            for f,v in self.selected_flag_filters.items()]
+                          for f,v in self.selected_flag_filters.items()]
         self.flag_filter_selected.options = selected_flags
         self.filter_main_dataframe()
 
@@ -591,8 +590,8 @@ class QuickLookComponent(Component):
         query_expr = ''
 
         flags_query = []
-        for flag,state in self.selected_flag_filters.items():
-            flags_query.append('{}=={}'.format(flag,state))
+        for flag, state in self.selected_flag_filters.items():
+            flags_query.append('{}=={}'.format(flag, state))
         if flags_query:
             query_expr += ' & '.join(flags_query)
 
@@ -670,14 +669,13 @@ class QuickLookComponent(Component):
                                       ydim=p,
                                       filter_stream=filter_stream_scatter)
                 plot = plots_ss
-                plots_list.append((p,plot))
+                plots_list.append((p, plot))
 
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
 
         self.update_display()
         self._switch_view_mode()
-
 
     def linked_tab_plots(self):
         tabs = [(name, pn.panel(plot)) for name, plot in self.skyplot_list]
@@ -699,7 +697,6 @@ class QuickLookComponent(Component):
         self._on_clear_metrics(event=None)
         self._on_load_data_repository(None)
 
-
     def _switch_view_mode(self, *events):
         # clear existing plot layouts
         self.attempt_to_clear(self._plot_top)
@@ -718,7 +715,6 @@ class QuickLookComponent(Component):
             for i, p in self.plots_list:
                 self.list_layout.append(p)
             self._plot_layout.append(self.list_layout)
-
 
     def jinja(self):
         from ._jinja2_templates import quicklook
@@ -769,11 +765,9 @@ class QuickLookComponent(Component):
                                 pn.Row(self.flag_remove))),
             ('query_filter', pn.Column(query_filter_widget,
                                        pn.Row(self.query_filter_submit,
-                                              self.query_filter_clear)),
-            ),
+                                              self.query_filter_clear)),),
             ('new_column', pn.Column(new_column_widget,
-                                       pn.Row(self.new_column_submit)),
-            ),
+                                     pn.Row(self.new_column_submit)),),
         ]
 
         for l, c in components:
@@ -815,7 +809,7 @@ class MetricPanel(param.Parameterized):
                                  'metrics')
         widget_kwargs = dict(metrics=pn.widgets.CheckBoxGroup)
         widg = pn.panel(chkbox_group.param, widgets=widget_kwargs,
-                         show_name=False)
+                        show_name=False)
         widg.css_classes = [filt + '-checkboxes']
         return widg
 
@@ -838,7 +832,7 @@ class MetricCheckboxGroup(param.Parameterized):
     metrics = param.ListSelector(default=[])
 
     def __init__(self, available_metrics, **kwargs):
-        self.param.metrics.objects = available_metrics
+        self.param.metrics.objects = sorted(available_metrics)
         super().__init__(**kwargs)
 
 
