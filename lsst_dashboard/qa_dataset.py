@@ -126,7 +126,7 @@ class QADataset(object):
         kdims, vdims = self._getDims()
         df = self.df.replace(np.inf, np.nan).dropna(how='any')
         df = df.replace(-np.inf, np.nan).dropna(how='any')
-        ds = hv.Dataset(self.df, kdims=kdims, vdims=vdims)
+        ds = hv.Dataset(df, kdims=kdims, vdims=vdims)
         self._ds = ds
 
     def skyPoints(self, vdim, maxMag, label='star', magCol='psfMag',
