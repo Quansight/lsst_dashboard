@@ -164,6 +164,8 @@ class QuickLookComponent(Component):
 
     query_filter = param.String(label="Query Expression")
 
+    query_filter_active = param.String(label="Active Query Filter", default='')
+
     new_column_expr = param.String(label="Data Column Expression")
 
     tract_count = param.Number(default=0)
@@ -233,9 +235,6 @@ class QuickLookComponent(Component):
         self.query_filter_submit = pn.widgets.Button(
             name='Run Query Filter', width=100, align='end')
         self.query_filter_submit.on_click(self.on_run_query_filter_click)
-
-        self.query_filter_active = pn.widgets.Select(
-            name='Active Query Filters', width=250)
 
         self.query_filter_clear = pn.widgets.Button(
             name='Clear', width=50, align='end')
@@ -354,22 +353,19 @@ class QuickLookComponent(Component):
         self.add_status_message('Removed Flag Filter',
                                 flag_name, level='info')
 
-    def _on_clear_metrics(self, event):
-
-        for k in self.selected_metrics_by_filter.keys():
-            self.selected_metrics_by_filter[k] = []
-
-        self.param.trigger('selected_metrics_by_filter')
-
-        code = '''$("input[type='checkbox']").prop("checked", false);'''
-        self.execute_js_script(code)
-
     def on_run_query_filter_click(self, event):
-        pass
+        self.query_filter_active = self.query_filter
+        self.query_filter = ''
 
     def on_query_filter_clear(self, event):
-        self.query_filter = ''
-        pass
+        self.query_filter_active = ''
+
+    def _on_clear_metrics(self, event):
+        for k in self.selected_metrics_by_filter.keys():
+            self.selected_metrics_by_filter[k] = []
+        self.param.trigger('selected_metrics_by_filter')
+        code = '''$("input[type='checkbox']").prop("checked", false);'''
+        self.execute_js_script(code)
 
     def on_define_new_column_click(self, event):
         new_column_expr = self.new_column_expr
@@ -431,7 +427,6 @@ class QuickLookComponent(Component):
         self._info.object = '<ul class="list-group list-group-horizontal" style="list-style: none;">{}</ul>'.format(html)
 
     def create_status_message(self, msg, level='info', duration=5):
-
         import uuid
         msg_id = str(uuid.uuid1())
         color_levels = dict(info='rgba(0,191,255, .8)',
@@ -461,15 +456,12 @@ class QuickLookComponent(Component):
                 '</lil>').format(msg_id, remove_msg_func, text)
 
     def gen_clear_func(self, msg):
-
         async def clear_message():
-
             try:
                 if msg in self.status_message_queue:
                     self.status_message_queue.remove(msg)
             except ValueError:
                 pass
-
         return clear_message
 
     @param.depends('status_message_queue', watch=True)
@@ -542,7 +534,7 @@ class QuickLookComponent(Component):
         self._metric_layout.objects = [p.panel() for p in panels]
         self.update_display()
 
-    @param.depends('query_filter', watch=True)
+    @param.depends('query_filter_active', watch=True)
     def _update_query_filter(self):
         self.filter_main_dataframe()
 
@@ -556,35 +548,27 @@ class QuickLookComponent(Component):
     def filter_main_dataframe(self):
         global filtered_datasets
         global datasets
-
         for filt, qa_dataset in datasets.items():
             try:
                 query_expr = self._assemble_query_expression()
-
                 if query_expr:
                     filtered_datasets[filt] = QADataset(datasets[filt].df.query(query_expr))
-
             except Exception as e:
                 self.add_message_from_error('Filtering Error', '', e)
                 raise
                 return
-
         #self.filter_visits_dataframe()
-
         self._update_selected_metrics_by_filter()
 
     def filter_visits_dataframe(self):
         global filtered_datavisits
         global datavisits
-
         for filt, metrics in datavisits.items():
             for metric, df in metrics.items():
-
                 try:
                     query_expr = self._assemble_query_expression(ignore_query_expr=True)
                     if query_expr and datavisits[filt][metric] is not None:
                         filtered_datavisits[filt][metric] = datavisits[filt][metric].query(query_expr)
-
                 except Exception as e:
                     self.add_message_from_error('Filtering Visits Error', '', e)
                     return
@@ -735,6 +719,9 @@ class QuickLookComponent(Component):
         query_filter_widget = pn.panel(self.param.query_filter)
         query_filter_widget.width = 260
 
+        query_filter_active_widget = pn.panel(self.param.query_filter_active)
+        query_filter_active_widget.width = 260
+
         new_column_widget = pn.panel(self.param.new_column_expr)
         new_column_widget.width = 260
 
@@ -768,8 +755,8 @@ class QuickLookComponent(Component):
                                 pn.Row(self.flag_remove))),
             ('query_filter', pn.Column(query_filter_widget,
                                        pn.Row(self.query_filter_submit),
-                                       pn.Row(self.query_filter_active),
-                                       pn.Row(self.query_filter_clear))),
+                                       query_filter_active_widget,
+                                       pn.Row(self.query_filter_clear), css_classes=['readonly-string'])),
             ('new_column', pn.Column(new_column_widget,
                                      pn.Row(self.new_column_submit)),),
         ]
