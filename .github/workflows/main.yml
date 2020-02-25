@@ -27,4 +27,4 @@ jobs:
         run: conda list
       - name: pytest
         shell: bash -l {0}
-        run: pytest --cov-report term-missing --cov=lsst-panel tests/
+        run: pytest --cov-report term-missing --cov=lsst_dashboard tests/

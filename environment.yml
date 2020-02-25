@@ -31,3 +31,5 @@ dependencies:
     # testing
     - pytest
     - pytest-cov
+    pip:
+      - -e .
