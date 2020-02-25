@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goanpeca/setup-miniconda@v1
         with:
-           activate-environment: datum
+           activate-environment: lsst-panel
            environment-file: environment.yml
            python-version: ${{ matrix.python-version }}
            auto-activate-base: false
@@ -27,4 +27,4 @@ jobs:
         run: conda list
       - name: pytest
         shell: bash -l {0}
-        run: pytest --cov-report term-missing --cov=datum tests/
+        run: pytest --cov-report term-missing --cov=lsst-panel tests/
