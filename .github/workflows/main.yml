@@ -34,4 +34,4 @@ jobs:
           ls
       - name: pytest
         shell: bash -l {0}
-        run: pytest --cov-report term-missing --cov=lsst_dashboard tests/
+        run: pytest -v --cov-report term-missing --cov=lsst_dashboard tests/
