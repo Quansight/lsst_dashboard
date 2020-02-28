@@ -28,4 +28,9 @@ dependencies:
     - nbsite
     - recommonmark
     - sphinx_rtd_theme
-    
+    # testing
+    - pytest
+    - pytest-cov
+    - pip
+    - pip:
+        - -e .

@@ -1,0 +1,37 @@
+name: pytest
+
+on:
+  pull_request:
+    branches:
+    - '*'
+
+jobs:
+  test_suite:
+    name: Pytest on ${{ matrix.python-version }}, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest']
+        python-version: [3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goanpeca/setup-miniconda@v1
+        with:
+           activate-environment: lsst-panel
+           environment-file: environment.yml
+           python-version: ${{ matrix.python-version }}
+           auto-activate-base: false
+      - name: conda list
+        shell: bash -l {0}
+        run: conda list
+      - name: download data
+        shell: bash -l {0}
+        run: |
+          ./download_sample_data.sh
+          cd sample_data
+          tar -xzf *
+          ls
+      - name: pytest
+        shell: bash -l {0}
+        run: pytest -v --cov-report term-missing --cov=lsst_dashboard tests/
