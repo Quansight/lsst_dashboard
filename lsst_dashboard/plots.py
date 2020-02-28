@@ -1,6 +1,7 @@
 from functools import partial
 
 import param
+import panel as pn
 import numpy as np
 import pandas as pd
 import holoviews as hv
@@ -399,7 +400,7 @@ class skyplot(ParameterizedFunction):
         sky_shaded = shade(raster_, cmap=viridis)
 
         plot = dynspread(sky_shaded) * decimated * color_gadget
-        
+
         return plot.options(bgcolor="black", responsive=True, min_height=100)
 
 
@@ -464,17 +465,20 @@ class skyshade(Operation):
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
 
     if not summarized_visits:
+        # What is this?!
         pass
 
-    plot = None
-    dfc = None
+    plots = {}
     for filt, metrics in filters_to_metrics.items():
+        dfc = None
+        dset_filt = dsets_visits[filt]
         for metric in metrics:
-            df = dsets_visits[filt][metric].compute()
+            df = dset_filt[metric].compute()
             # drop inf/nan values
             with pd.option_context('mode.use_inf_as_na', True):
-                df = df.dropna(subset = [metric])
-            label = '{} - {}'.format(filt, metric)
+                df = df.dropna(subset=[metric])
+            # label = '{} - {}'.format(filt, metric)
+            label = '{!s}'.format(metric)
             df[label] = minmax_scale(df[metric])
             df = df.groupby('visit')
             df = df[label].median().reset_index()
@@ -482,29 +486,33 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
                 dfc = df.set_index('visit')
             else:
                 dfc = dfc.merge(df.set_index('visit'), on='visit',
-                        how='outer', sort=True)
+                                how='outer', sort=True)
 
-    dfc = dfc.stack(dropna=False, level=-1).reset_index()
-    dfc = dfc.rename(columns={'level_1':'filters', 0:'median'})
-    dfc['visit'] = dfc['visit'].astype(str)
-    ds = hv.Dataset(dfc, kdims=['visit','filters'], vdims=['median'])
+        try:
+            dfc = dfc.stack(dropna=False, level=-1).reset_index()
+        except:
+            continue
+        dfc = dfc.rename(columns={'level_1': 'metrics', 0: 'median'})
+        dfc['visit'] = dfc['visit'].astype(str)
+        ds = hv.Dataset(dfc, kdims=['visit', 'metrics'], vdims=['median'])
 
-    plot = ds.to(hv.Curve, 'visit', 'median').overlay('filters')
-    plot = plot.opts(hv.opts.Curve(tools=['hover']))
+        plot = ds.to(hv.Curve, 'visit', 'median').overlay('metrics')
+        plot = plot.opts(hv.opts.Curve(tools=['hover']))
 
-    plot = plot.redim(y=hv.Dimension('median', range=(-1,1)))
+        plot = plot.redim(y=hv.Dimension('median', range=(-1, 1)))
 
-    # Now we rename the axis
-    xlabel = 'visit'
-    ylabel = 'normalized median'
+        # Now we rename the axis
+        xlabel = 'visit'
+        ylabel = 'normalized median'
 
-    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-#
-#    return plot.options(responsive=True, height=200, show_grid=True,
-#                        xlabel=xlabel, ylabel=ylabel,
-#                        xrotation=45, bgcolor="black", gridstyle=grid_style)
-    return plot.opts(show_legend=False, show_grid=True,
-                     gridstyle=grid_style,
-                     xlabel=xlabel, ylabel=ylabel,
-                     responsive=True, aspect=5,
-                     bgcolor='black', xrotation=45)
+        grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+        plot = plot.opts(show_legend=False, show_grid=True,
+                         gridstyle=grid_style,
+                         xlabel=xlabel, ylabel=ylabel,
+                         responsive=True, aspect=5,
+                         bgcolor='black', xrotation=45)
+        plots[filt] = plot
+
+    filters = sorted(plots.keys())
+    tabs = [(filt, pn.panel(plots[filt])) for filt in filters]
+    return pn.Tabs(*tabs, sizing_mode='stretch_both')
