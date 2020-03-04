@@ -12,6 +12,11 @@ import holoviews as hv
 import numpy as np
 import pandas as pd
 import sklearn.preprocessing
+# from shapely.geometry import Point
+# from holoviews.streams import Selection1D
+# from holoviews import opts
+# from holoviews import streams
+import geopandas as gpd
 
 from holoviews.plotting.bokeh.element import ElementPlot
 
@@ -825,6 +830,131 @@ class MetricCheckboxGroup(param.Parameterized):
     def __init__(self, available_metrics, **kwargs):
         self.param.metrics.objects = sorted(available_metrics)
         super().__init__(**kwargs)
+
+
+class SummaryView(param.Parameterized):
+    
+    metrics_path = param.String('default/path/to/metrics')
+    skymap_path = param.String('default/path/to/skymap')
+    
+    metric = param.ObjectSelector()
+    filter_ = param.ObjectSelector()
+    
+    selected_tract_str = param.String(default='', label='Selected tracts (comma delim)')
+    
+    plot_width = param.Integer(default=600, bounds=(1, None))
+    plot_height = param.Integer(default=300, bounds=(1, None))
+    
+    def __init__(self, **params):
+        super().__init__(**params)
+
+        self.gdf = gpd.GeoDataFrame()
+        self.load_data()
+        
+    @param.output()
+    def output(self):
+        """output list of selected tracts"""
+        # return an empty list if no tracts selected
+        if self.stream.index == ['']:
+            return list()
+        
+        tract_list = [t['tract'] for t in self.polys.iloc[self.stream.index].data]
+#       # TODO uncomment the following line for geoviews version
+#         tract_list = list(self.polys.iloc[self.stream.index].data.tract)
+        return tract_list
+        
+    def load_data(self):
+        """load in the source files, reorganize data, and set up widget options"""
+        # load the data
+        self.metrics_df = pd.read_parquet(self.metrics_path)
+        self.skymap = gpd.read_file(self.skymap_path)
+        
+        # combine the metrics with the skymap geometry
+        geometry = [self.skymap.loc[t].geometry for f, t in self.metrics_df.index]
+        self.gdf = gpd.GeoDataFrame(data=self.metrics_df, index=self.metrics_df.index, geometry=geometry)
+        self.gdf = self.gdf.reset_index().rename(columns={'level_0': 'filter', 'level_1': 'tract'})
+        
+        # get the available metrics
+        metrics = [c for c in self.metrics_df.columns if '_unit' not in c and c != 'geometry']
+        # set up the metric widget
+        self.param.metric.objects = metrics
+        self.metric = metrics[0]
+        
+        # set up the filter widget
+        self.param.filter_.objects = list(set(self.gdf['filter']))
+        self.filter_ = self.param.filter_.objects[0]
+         
+    @param.depends('selected_tract_str', watch=True)
+    def selected_tract_list(self):
+        """When tracts are added to the widget, select them on the screen"""
+        selected_list = self.selected_tract_str.replace(' ', '').split(',')
+        self.stream.event(index=list([x if x=='' else int(x) for x in selected_list]))
+        
+
+#     @param.depends('stream.index', watch=True)  # this doesn't trigger because stream gets recreated with every draw
+    def update_tract_str(self):
+        """When tracts are selected on the map, display the tract numbers in the widget"""
+        self.selected_tract_str = ','.join([str(x) for x in self.stream.index])
+        
+    @param.depends('metric', 'filter_')
+    def plot(self):
+        """plot pane"""
+        # extract the filter from the original data
+        self.gdf_filter = self.gdf.query(f'filter=="{self.filter_}"')
+        # extract only the provided metric
+        self.gdf_extracted = self.gdf_filter[['tract','geometry', self.metric]]
+        # rename the metric column (necessary abstraction for plotting)
+        self.gdf_extracted = self.gdf_extracted.rename(columns={self.metric: 'metric'})
+        
+        if self.gdf.empty:
+            return pn.Spacer()
+        else:
+
+            def create_dict(row):
+                """create a dictionary representation of a df row"""
+                d = {('x','y'): np.array(row.geometry.exterior.coords),
+                     'tract': row['tract'],
+                     'metric': row['metric']
+                    }
+                return d
+            # create a dictionary reprresentation of the dataframe
+            data = list(self.gdf_extracted.apply(create_dict, axis=1))
+            # declare polygons
+            self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
+                tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
+                line_width=0, active_tools=['wheel_zoom', 'tap'],
+                colorbar=True, title=self.metric, color_index='metric')
+            
+#             # TODO uncomment the following block for geoviews version:
+#             self.polys = gv.Polygons(self.gdf_extracted, vdims=['metric', 'tract']).opts(
+#                 tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
+#                 line_width=0, active_tools=['wheel_zoom', 'tap'],
+#                 colorbar=True, title=self.metric, color_index='metric')
+
+            # Declare Tap stream with polys as source and initial values
+            self.stream = hv.streams.Selection1D(source=self.polys, index=[])
+            
+            # Define function to compute selection based on tap location
+            def tap_histogram(index):
+                # if nothing is selected
+                if index == list():
+                    # select all
+                    index = list(self.gdf_extracted.index)
+                return self.polys.iloc[index]
+            tap_dmap = hv.DynamicMap(tap_histogram, streams=[self.stream])
+
+            self.selected_tract_list()
+            return self.polys
+    
+    def panel(self):
+        return pn.Row(
+            pn.Column(
+                self.param.metric, 
+                self.param.filter_,
+#                 self.param.selected_tract_str
+            ),
+            self.plot
+        )
 
 
 hv.extension('bokeh')
