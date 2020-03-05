@@ -23,6 +23,7 @@ dependencies:
     - fastparquet
     - python-snappy
     - pyarrow
+    - kartothek
     - sphinx
     - scikit-learn
     - nbsite

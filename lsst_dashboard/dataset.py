@@ -1,6 +1,9 @@
 import yaml
 from pathlib import Path
 import dask.dataframe as dd
+from kartothek.io.dask.dataframe import update_dataset_from_ddf, read_dataset_as_ddf
+from storefact import get_store_from_url
+from functools import partial
 import os
 
 try:
@@ -112,3 +115,46 @@ class Dataset():
                     
                 column_map = {'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'}
                 self.visits_by_metric[filt][metric] = dd.read_parquet(filenames).rename(columns=column_map)
+
+
+def repartition_dataset(coadd_df, visits_df, output_path):
+    """Repartition dataset using kartothek
+    """    
+    store_factory = partial(get_store_from_url, 'hfs://' + output_path)
+
+    # remove problematic 'label' column
+    if 'label' in coadd_df.columns:
+        del coadd_df.drop('label', axis=1)['label']
+
+    if 'label' in visits_df.columns:
+        del visits_df['label']
+
+    # convert to categories to save space and make queries more efficient
+    coadd_df = coadd_df.categorize(columns=['filter', 'tractId', 'dataset'])
+    visits_df = visits_df.categorize(columns=['filter', 'tractId'])
+
+    #rename columns to what the dashboard expects
+    coadd_df = coadd_df.rename({'patchId': 'patch', 'tractId': 'tract'})
+    visits_df = visits_df.rename({'tractId': 'tract', 'visitId': 'visit'})
+
+    graph = update_dataset_from_ddf(
+        coadd_df,
+        dataset_uuid="coadds",
+        store=store_factory,
+        table='table',
+        shuffle=True,
+        partition_on=['dataset', 'filter', 'tractId'],
+    )
+    graph.compute()
+
+    graph = update_dataset_from_ddf(
+        visits_df,
+        dataset_uuid="visits",
+        store=store_factory,
+        table='table',
+        shuffle=True,
+        partition_on=['filter', 'tractId'],
+    )
+    graph.compute()
+    
+    return store_factory
