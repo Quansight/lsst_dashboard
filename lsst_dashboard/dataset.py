@@ -17,7 +17,6 @@ class Dataset():
     """
     USAGE:
         d = Dataset(path)
-        d.connect()
     """
     def __init__(self, path, tracts=None, filters=None):
         self.conn = None
