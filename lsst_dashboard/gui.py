@@ -14,7 +14,7 @@ import pandas as pd
 import sklearn.preprocessing
 # from shapely.geometry import Point
 # from holoviews.streams import Selection1D
-# from holoviews import opts
+from holoviews import opts
 # from holoviews import streams
 import geopandas as gpd
 
@@ -850,6 +850,8 @@ class SummaryView(param.Parameterized):
 
         self.gdf = gpd.GeoDataFrame()
         self.load_data()
+    
+        self.rangexy = hv.streams.RangeXY()
         
     @param.output()
     def output(self):
@@ -933,18 +935,31 @@ class SummaryView(param.Parameterized):
 
             # Declare Tap stream with polys as source and initial values
             self.stream = hv.streams.Selection1D(source=self.polys, index=[])
+
+            # Define a RangeXY stream linked to the image (preserving ranges from the previous image) 
+            self.rangexy = hv.streams.RangeXY(
+                source=self.polys, 
+                x_range=self.rangexy.x_range, 
+                y_range=self.rangexy.y_range,
+            )
             
             # Define function to compute selection based on tap location
-            def tap_histogram(index):
+            def tap_histogram(index, x_range, y_range):
+                (x0, x1), (y0, y1) = x_range, y_range
                 # if nothing is selected
                 if index == list():
                     # select all
                     index = list(self.gdf_extracted.index)
-                return self.polys.iloc[index]
-            tap_dmap = hv.DynamicMap(tap_histogram, streams=[self.stream])
-
+                return self.polys.iloc[index].opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
+            tap_dmap = hv.DynamicMap(tap_histogram, streams=[self.stream, self.rangexy])
+            
+            # set up the plot to match the range stream
+            if not self.rangexy.x_range and not self.rangexy.y_range:
+                (x0, x1, y0, y1) = (None, None, None, None)
+            else:
+                (x0, x1), (y0, y1) = self.rangexy.x_range, self.rangexy.y_range
             self.selected_tract_list()
-            return self.polys
+            return self.polys.opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
     
     def panel(self):
         return pn.Row(
