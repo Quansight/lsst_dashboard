@@ -470,6 +470,7 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
 
     plots = {}
     for filt, metrics in filters_to_metrics.items():
+        plot = None
         dfc = None
         dset_filt = dsets_visits[filt]
         for metric in metrics:

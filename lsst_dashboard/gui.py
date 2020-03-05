@@ -358,6 +358,7 @@ class QuickLookComponent(Component):
         self.query_filter = ''
 
     def on_query_filter_clear(self, event):
+        self.query_filter = ''
         self.query_filter_active = ''
 
     def _on_clear_metrics(self, event):
@@ -721,6 +722,7 @@ class QuickLookComponent(Component):
 
         query_filter_active_widget = pn.panel(self.param.query_filter_active)
         query_filter_active_widget.width = 260
+        query_filter_active_widget.disabled = True
 
         new_column_widget = pn.panel(self.param.new_column_expr)
         new_column_widget.width = 260
@@ -740,7 +742,6 @@ class QuickLookComponent(Component):
             ('adhoc_js', self.adhoc_js),
 
             ('infobar', self._info),
-#            ('view_switcher', switcher_row),
             ('stack_switcher', datastack_switcher),
             ('view_switcher', view_switcher),
 
@@ -754,9 +755,9 @@ class QuickLookComponent(Component):
                                 pn.Row(self.flag_filter_selected),
                                 pn.Row(self.flag_remove))),
             ('query_filter', pn.Column(query_filter_widget,
-                                       pn.Row(self.query_filter_submit),
                                        query_filter_active_widget,
-                                       pn.Row(self.query_filter_clear), css_classes=['readonly-string'])),
+                                       pn.Row(self.query_filter_clear,
+                                              self.query_filter_submit))),
             ('new_column', pn.Column(new_column_widget,
                                      pn.Row(self.new_column_submit)),),
         ]
