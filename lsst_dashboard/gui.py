@@ -846,13 +846,16 @@ class SummaryView(param.Parameterized):
     plot_height = param.Integer(default=300, bounds=(1, None))
     
     def __init__(self, **params):
+        # Declare Tap stream (source polygon element to be defined later)
+        self.stream = hv.streams.Selection1D()
+        
         super().__init__(**params)
 
         self.gdf = gpd.GeoDataFrame()
         self.load_data()
     
         self.rangexy = hv.streams.RangeXY()
-        
+
     @param.output()
     def output(self):
         """output list of selected tracts"""
@@ -878,25 +881,41 @@ class SummaryView(param.Parameterized):
         
         # get the available metrics
         metrics = [c for c in self.metrics_df.columns if '_unit' not in c and c != 'geometry']
+        metrics.sort()
         # set up the metric widget
         self.param.metric.objects = metrics
         self.metric = metrics[0]
         
         # set up the filter widget
-        self.param.filter_.objects = list(set(self.gdf['filter']))
+        filters = list(set(self.gdf['filter']))
+        filters.sort()
+        self.param.filter_.objects = filters
         self.filter_ = self.param.filter_.objects[0]
          
-    @param.depends('selected_tract_str', watch=True)
-    def selected_tract_list(self):
+    def selected_tract_list(self, event):
         """When tracts are added to the widget, select them on the screen"""
-        selected_list = self.selected_tract_str.replace(' ', '').split(',')
-        self.stream.event(index=list([x if x=='' else int(x) for x in selected_list]))
-        
+        print('herre')
+#         selected_list = self.selected_tract_str.replace(' ', '').split(',')
+#         self.stream.event(index=list([x if x=='' else int(x) for x in selected_list]))
 
-#     @param.depends('stream.index', watch=True)  # this doesn't trigger because stream gets recreated with every draw
+        # create a dataframe of the polygon data (for easy indexing)
+        df = pd.DataFrame(self.polys.data)
+        # get the selected tract strings
+        selected_list = self.selected_tract_str.replace(' ', '').split(',')
+        # convert tracts to list of ints
+        tract_list = list([x if x=='' else int(x) for x in selected_list])
+        # convert tracts to poly element indices
+        poly_indices = list(df[df.apply(lambda x: True if x['tract'] in tract_list else False, axis=1)].index)
+        # select the polygons in the plot
+        self.stream.event(index=poly_indices)
+        
+    @param.depends('stream.index', watch=True)
     def update_tract_str(self):
         """When tracts are selected on the map, display the tract numbers in the widget"""
-        self.selected_tract_str = ','.join([str(x) for x in self.stream.index])
+#         self.selected_tract_str = ','.join([str(x) for x in self.stream.index])
+
+        # get the selected polygons, convert to tract strings
+        self.selected_tract_str = ','.join([str(t['tract']) for t in self.polys.iloc[self.stream.index].data])
         
     @param.depends('metric', 'filter_')
     def plot(self):
@@ -934,7 +953,7 @@ class SummaryView(param.Parameterized):
 #                 colorbar=True, title=self.metric, color_index='metric')
 
             # Declare Tap stream with polys as source and initial values
-            self.stream = hv.streams.Selection1D(source=self.polys, index=[])
+            self.stream.source = self.polys
 
             # Define a RangeXY stream linked to the image (preserving ranges from the previous image) 
             self.rangexy = hv.streams.RangeXY(
@@ -958,15 +977,21 @@ class SummaryView(param.Parameterized):
                 (x0, x1, y0, y1) = (None, None, None, None)
             else:
                 (x0, x1), (y0, y1) = self.rangexy.x_range, self.rangexy.y_range
-            self.selected_tract_list()
+
             return self.polys.opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
     
     def panel(self):
+        load_tracts = pn.widgets.Button(name='\u25b6', width=40)
+        load_tracts.on_click(self.selected_tract_list)
+        
         return pn.Row(
             pn.Column(
                 self.param.metric, 
                 self.param.filter_,
-#                 self.param.selected_tract_str
+                pn.Row(
+                    self.param.selected_tract_str,
+#                     pn.Column(pn.Spacer(height=9),load_tracts)),  # pending holoviews release 
+                ),
             ),
             self.plot
         )
