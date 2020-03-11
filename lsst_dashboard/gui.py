@@ -9,12 +9,16 @@ from functools import partial
 import param
 import panel as pn
 import holoviews as hv
-# import geoviews as gv
 import numpy as np
 import pandas as pd
 import sklearn.preprocessing
 from holoviews import opts
 import geopandas as gpd
+from shapely.geometry import box
+
+# for summary view with geoviews:
+import geoviews as gv
+import cartopy.crs as ccrs
 
 from holoviews.plotting.bokeh.element import ElementPlot
 
@@ -850,7 +854,7 @@ class SummaryView(param.Parameterized):
         self.stream = hv.streams.Selection1D()
         super().__init__(**params)
         # set up default empty objects
-        self.gdf = gpd.GeoDataFrame()
+        self.df = pd.DataFrame()
         self.rangexy = hv.streams.RangeXY()
         
         # load the skmap and metrics data
@@ -871,22 +875,23 @@ class SummaryView(param.Parameterized):
         """load in the source files, reorganize data, and set up widget options"""
         # load the data
         self.metrics_df = pd.read_parquet(self.metrics_path)
-        self.skymap = gpd.read_file(self.skymap_path)
-        
+        # load skymap (csv with x0, x1, y0, y1 columns)
+        self.skymap = gpd.read_file(self.skymap_path).astype(float)
+        self.skymap.geometry = self.skymap.apply(lambda x: box(x['x0'], x['y0'], x['x1'], x['y1']), axis=1)
+
         # combine the metrics with the skymap geometry
-        geometry = [self.skymap.loc[t].geometry for f, t in self.metrics_df.index]
-        self.gdf = gpd.GeoDataFrame(data=self.metrics_df, index=self.metrics_df.index, geometry=geometry)
-        self.gdf = self.gdf.reset_index().rename(columns={'level_0': 'filter', 'level_1': 'tract'})
+        self.df = self.metrics_df.reset_index().rename(columns={'level_0': 'filter', 'level_1': 'tract'})
+        self.df = self.df.join(self.skymap, on='tract')
         
         # get the available metrics
-        metrics = [c for c in self.metrics_df.columns if '_unit' not in c and c != 'geometry']
+        metrics = [c for c in self.metrics_df.columns if '_unit' not in c]
         metrics.sort()
         # set up the metric widget
         self.param.metric.objects = metrics
         self.metric = metrics[0]
         
         # set up the filter widget
-        filters = list(set(self.gdf['filter']))
+        filters = list(set(self.df['filter']))
         filters.sort()
         self.param.filter_.objects = filters
         self.filter_ = self.param.filter_.objects[0]
@@ -923,7 +928,7 @@ class SummaryView(param.Parameterized):
         else:
             tract_dict = self.polys.iloc[self.stream.index].data
             self.selected_tract_str = ','.join([str(t['tract']) for t in tract_dict])
-        
+       
     @param.depends('metric', 'filter_')
     def plot(self):
         """plot pane"""
@@ -931,20 +936,20 @@ class SummaryView(param.Parameterized):
         tract_list = self.tracts_in_widget()
         
         # extract the filter from the original data
-        self.gdf_filter = self.gdf.query(f'filter=="{self.filter_}"')
+        self.df_filter = self.df[self.df['filter'] == self.filter_]
         # extract only the provided metric
-        self.gdf_extracted = self.gdf_filter[['tract','geometry', self.metric]]
+        self.df_extracted = self.df_filter[['tract','geometry', self.metric, 'x0','x1','y0','y1']]
         # rename the metric column (necessary abstraction for plotting)
-        self.gdf_extracted = self.gdf_extracted.rename(columns={self.metric: 'metric'})
+        self.df_extracted = self.df_extracted.rename(columns={self.metric: 'metric'})
         
-        if self.gdf.empty:
+        if self.df.empty:
             return pn.Spacer()
         else:
             if self.geoviews:
-                self.polys = gv.Polygons(self.gdf_extracted, vdims=['metric', 'tract']).opts(
+                self.polys = gv.Polygons(gpd.GeoDataFrame(self.df_extracted).set_geometry('geometry'), vdims=['metric', 'tract']).opts(
                     tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
                     line_width=0, active_tools=['wheel_zoom', 'tap'],
-                    colorbar=True, title=self.metric, color_index='metric')
+                    colorbar=True, title=self.metric, color='metric')
             else:
                 
                 def create_dict(row):
@@ -955,12 +960,12 @@ class SummaryView(param.Parameterized):
                         }
                     return d
                 # create a dictionary reprresentation of the dataframe
-                data = list(self.gdf_extracted.apply(create_dict, axis=1))
+                data = list(self.df_extracted.apply(create_dict, axis=1))
                 # declare polygons
                 self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
                     tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
                     line_width=0, active_tools=['wheel_zoom', 'tap'],
-                    colorbar=True, title=self.metric, color_index='metric')
+                    colorbar=True, title=self.metric, color='metric')
             
             # Declare Tap stream with polys as source and initial values
             self.stream.source = self.polys
@@ -971,14 +976,35 @@ class SummaryView(param.Parameterized):
                 x_range=self.rangexy.x_range, 
                 y_range=self.rangexy.y_range,
             )
+            # set padding (degrees)
+            padding = 0 
             
+            # get the limits of the selected filter/metric data 
+            xmin = self.df_extracted.x0.min() - padding
+            xmax = self.df_extracted.x1.max() + padding
+            ymin = self.df_extracted.y0.min() - padding
+            ymax = self.df_extracted.y1.max() + padding
+            
+            # convert to google mercator if using geoviews
+            # TODO this produces reasonable, but incorrect results
+            if self.geoviews:
+                xmin, ymin = ccrs.GOOGLE_MERCATOR.transform_point(xmin, ymin, ccrs.PlateCarree())
+                xmax, ymax = ccrs.GOOGLE_MERCATOR.transform_point(xmax, ymax, ccrs.PlateCarree())
+            
+            # create hook for reseting to full extent
+            def reset_range_hook(plot, element):
+                plot.handles['x_range'].reset_start = xmin
+                plot.handles['x_range'].reset_end = xmax
+                plot.handles['y_range'].reset_start = ymin
+                plot.handles['y_range'].reset_end = ymax
+        
             # Define function to compute selection based on tap location
             def tap_histogram(index, x_range, y_range):
                 (x0, x1), (y0, y1) = x_range, y_range
                 # if nothing is selected
                 if index == list():
                     # select all
-                    index = list(self.gdf_extracted.index)
+                    index = list(self.df_extracted.index)
                 return self.polys.iloc[index].opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
             tap_dmap = hv.DynamicMap(tap_histogram, streams=[self.stream, self.rangexy])
             
@@ -988,7 +1014,7 @@ class SummaryView(param.Parameterized):
             else:
                 (x0, x1), (y0, y1) = self.rangexy.x_range, self.rangexy.y_range
 
-            return self.polys.opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
+            return self.polys.opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1), hooks=[reset_range_hook]))
     
     def panel(self):
         load_tracts = pn.widgets.Button(name='\u25b6', width=40)
