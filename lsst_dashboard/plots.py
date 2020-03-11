@@ -496,7 +496,6 @@ def _visit_plot(df, metric):
         return plot
 
     def init_df(m_array, v_array):
-        import pandas as pd
         df = pd.DataFrame(data={
             'median': m_array,
             'visit': v_array
@@ -507,8 +506,10 @@ def _visit_plot(df, metric):
     visits_array = dask.delayed(np.array)(df['visit'])
     df_ = dask.delayed(init_df)(metric_array_norm, visits_array)
 
-    # df_.compute()
-    return plot_curve(df_.compute().reset_index())
+    df = df_.compute()
+    # with pd.option_context('mode.use_inf_as_na', True):
+    #     df = df.dropna(subset=['median'])
+    return plot_curve(df.reset_index())
 
 
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
@@ -557,7 +558,7 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
         if plot_filt is None:
             continue
         # Now we rename the axis
-        xlabel = 'visit'
+        xlabel = 'visit - {!s}'.format(filt)
         ylabel = 'normalized median'
 
         grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
