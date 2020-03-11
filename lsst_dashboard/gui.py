@@ -640,7 +640,6 @@ class QuickLookComponent(Component):
 
         self.plot_top = top_plot
 
-        filter_stream_scatter = FilterStream()
         for filt, plots in self.selected_metrics_by_filter.items():
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
@@ -655,7 +654,7 @@ class QuickLookComponent(Component):
                 plots_ss = scattersky(dset.ds,
                                       xdim='psfMag',
                                       ydim=p,
-                                      filter_stream=filter_stream_scatter)
+                                      filter_stream=filter_stream)
                 plot = plots_ss
                 plots_list.append((p, plot))
 

@@ -250,7 +250,6 @@ class scattersky(ParameterizedFunction):
         scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
                             norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts,
-                                    # cmap=cc.palette[self.p.scatter_cmap])
                                     cmap=viridis)
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
 
@@ -263,7 +262,6 @@ class scattersky(ParameterizedFunction):
         sky_shaded = rasterize(sky_pts,
                                aggregator=ds.mean(self.p.ydim)).options(colorbar=True,
                                                            responsive=True,
-                                                           # cmap=cc.palette[self.p.sky_cmap])
                                                            cmap=Viridis[256])
         sky = sky_shaded.opts(**sky_opts)
         # sky = dynspread(sky_shaded).opts(**sky_opts)
@@ -462,42 +460,94 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
+def _visit_plot(df, metric):
+    import dask
+
+    def plot_curve(ddf, kdims=None, vdims=None):
+        import holoviews as hv
+
+        dfc = ddf
+        kdims = kdims or ['visit', 'metrics']
+        vdims = vdims or ['median']
+        dfc.sort_values('visit', inplace=True)
+        dfc = dfc.astype({'visit':str})
+
+        ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
+
+        plot = ds.to(hv.Curve, kdims[0], vdims[0])#.overlay(kdims[1])
+        plot = plot.opts(hv.opts.Curve(tools=['hover']))
+
+        plot = plot.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
+
+        # Now we rename the axis
+        xlabel = kdims[0]
+        ylabel = 'normalized {}'.format(vdims[0])
+
+        grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+        plot = plot.opts(show_legend=False, show_grid=True,
+                         gridstyle=grid_style,
+                         xlabel=xlabel, ylabel=ylabel,
+    #                      xticks=100,
+                         responsive=True, aspect=5,
+                         bgcolor='black', xrotation=45)
+        return plot
+
+    def init_df(m_array, v_array):
+        import pandas as pd
+        df = pd.DataFrame(data={
+            'median': m_array,
+            'visit': v_array
+            }).groupby('visit').median()
+        return df
+
+    metric_array_norm = dask.delayed(minmax_scale)(df[metric])
+    visits_array = dask.delayed(np.array)(df['visit'])
+    df_ = dask.delayed(init_df)(metric_array_norm, visits_array)
+
+    # df_.compute()
+    return plot_curve(df_.compute().reset_index())
+
+
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
-
-    if not summarized_visits:
-        # What is this?!
-        pass
-
     plots = {}
     for filt, metrics in filters_to_metrics.items():
         plot = None
         dfc = None
         dset_filt = dsets_visits[filt]
-        for metric in metrics:
-            df = dset_filt[metric].compute()
-            # drop inf/nan values
-            with pd.option_context('mode.use_inf_as_na', True):
-                df = df.dropna(subset=[metric])
-            # label = '{} - {}'.format(filt, metric)
-            label = '{!s}'.format(metric)
-            df[label] = minmax_scale(df[metric])
-            df = df.groupby('visit')
-            df = df[label].median().reset_index()
-            if dfc is None:
-                dfc = df.set_index('visit')
-            else:
-                dfc = dfc.merge(df.set_index('visit'), on='visit',
-                                how='outer', sort=True)
-
-        try:
-            dfc = dfc.stack(dropna=False, level=-1).reset_index()
-        except:
+        # for metric in metrics:
+        #     df = dset_filt[metric].compute()
+        #     df.to_csv('dset_filt-{}.csv'.format(metric))
+        #     # drop inf/nan values
+        #     with pd.option_context('mode.use_inf_as_na', True):
+        #         df = df.dropna(subset=[metric])
+        #     # label = '{} - {}'.format(filt, metric)
+        #     label = '{!s}'.format(metric)
+        #     print("LABEL:",label)
+        #     # df[label] = minmax_scale(df[metric])
+        #     minmax_scale(df[metric])
+        #     print(df)
+        #     df = df.groupby('visit')
+        #     df = df[label].median().reset_index()
+        #     if dfc is None:
+        #         dfc = df.set_index('visit')
+        #     else:
+        #         dfc = dfc.merge(df.set_index('visit'), on='visit',
+        #                         how='outer', sort=True)
+        #
+        # try:
+        #     dfc = dfc.stack(dropna=False, level=-1).reset_index()
+        # except:
+        #     continue
+        # dfc = dfc.rename(columns={'level_1': 'metrics', 0: 'median'})
+        # dfc['visit'] = dfc['visit'].astype(str)
+        # ds = hv.Dataset(dfc, kdims=['visit', 'metrics'], vdims=['median'])
+        #
+        # plot = ds.to(hv.Curve, 'visit', 'median').overlay('metrics')
+        if len(metrics):
+            metric = metrics[0]
+        else:
             continue
-        dfc = dfc.rename(columns={'level_1': 'metrics', 0: 'median'})
-        dfc['visit'] = dfc['visit'].astype(str)
-        ds = hv.Dataset(dfc, kdims=['visit', 'metrics'], vdims=['median'])
-
-        plot = ds.to(hv.Curve, 'visit', 'median').overlay('metrics')
+        plot = _visit_plot(dset_filt[metric], metric)
         plot = plot.opts(hv.opts.Curve(tools=['hover']))
 
         plot = plot.redim(y=hv.Dimension('median', range=(-1, 1)))
