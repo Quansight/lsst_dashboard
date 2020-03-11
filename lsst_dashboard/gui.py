@@ -9,13 +9,11 @@ from functools import partial
 import param
 import panel as pn
 import holoviews as hv
+# import geoviews as gv
 import numpy as np
 import pandas as pd
 import sklearn.preprocessing
-# from shapely.geometry import Point
-# from holoviews.streams import Selection1D
 from holoviews import opts
-# from holoviews import streams
 import geopandas as gpd
 
 from holoviews.plotting.bokeh.element import ElementPlot
@@ -845,28 +843,29 @@ class SummaryView(param.Parameterized):
     plot_width = param.Integer(default=600, bounds=(1, None))
     plot_height = param.Integer(default=300, bounds=(1, None))
     
+    geoviews = param.Boolean(default=False)
+    
     def __init__(self, **params):
         # Declare Tap stream (source polygon element to be defined later)
         self.stream = hv.streams.Selection1D()
-        
         super().__init__(**params)
-
+        # set up default empty objects
         self.gdf = gpd.GeoDataFrame()
-        self.load_data()
-    
         self.rangexy = hv.streams.RangeXY()
+        
+        # load the skmap and metrics data
+        self.load_data()
 
+            
     @param.output()
     def output(self):
         """output list of selected tracts"""
         # return an empty list if no tracts selected
         if self.stream.index == ['']:
             return list()
-        
-        tract_list = [t['tract'] for t in self.polys.iloc[self.stream.index].data]
-#       # TODO uncomment the following line for geoviews version
-#         tract_list = list(self.polys.iloc[self.stream.index].data.tract)
-        return tract_list
+        else:
+            # return the tract list from the widget (which matches the selection)
+            return self.tracts_in_widget()
         
     def load_data(self):
         """load in the source files, reorganize data, and set up widget options"""
@@ -892,34 +891,45 @@ class SummaryView(param.Parameterized):
         self.param.filter_.objects = filters
         self.filter_ = self.param.filter_.objects[0]
          
-    def selected_tract_list(self, event):
+    def update_tract_selection(self, event):
         """When tracts are added to the widget, select them on the screen"""
-        print('herre')
-#         selected_list = self.selected_tract_str.replace(' ', '').split(',')
-#         self.stream.event(index=list([x if x=='' else int(x) for x in selected_list]))
-
         # create a dataframe of the polygon data (for easy indexing)
-        df = pd.DataFrame(self.polys.data)
-        # get the selected tract strings
-        selected_list = self.selected_tract_str.replace(' ', '').split(',')
-        # convert tracts to list of ints
-        tract_list = list([x if x=='' else int(x) for x in selected_list])
+        if geoviews:
+            df = self.polys.data
+        else:
+            df = pd.DataFrame(self.polys.data)
+        # get the selected tracts as list of ints
+        tract_list = self.tracts_in_widget()
         # convert tracts to poly element indices
         poly_indices = list(df[df.apply(lambda x: True if x['tract'] in tract_list else False, axis=1)].index)
         # select the polygons in the plot
         self.stream.event(index=poly_indices)
         
+    def tracts_in_widget(self):
+        """convert the tracts in the widget to a list of ints"""
+        # get the selected tract strings
+        selected_list = self.selected_tract_str.replace(' ', '').split(',')
+        # convert tracts to list of ints
+        tract_list = list([x if x=='' else int(x) for x in selected_list])
+        return tract_list
+        
     @param.depends('stream.index', watch=True)
-    def update_tract_str(self):
+    def update_tract_widget(self):
         """When tracts are selected on the map, display the tract numbers in the widget"""
-#         self.selected_tract_str = ','.join([str(x) for x in self.stream.index])
-
         # get the selected polygons, convert to tract strings
-        self.selected_tract_str = ','.join([str(t['tract']) for t in self.polys.iloc[self.stream.index].data])
+        if self.geoviews:
+            tract_list = list(self.polys.iloc[self.stream.index].data.tract)
+            self.selected_tract_str = ','.join([str(t) for t in tract_list])
+        else:
+            tract_dict = self.polys.iloc[self.stream.index].data
+            self.selected_tract_str = ','.join([str(t['tract']) for t in tract_dict])
         
     @param.depends('metric', 'filter_')
     def plot(self):
         """plot pane"""
+        # get the tract list
+        tract_list = self.tracts_in_widget()
+        
         # extract the filter from the original data
         self.gdf_filter = self.gdf.query(f'filter=="{self.filter_}"')
         # extract only the provided metric
@@ -930,28 +940,28 @@ class SummaryView(param.Parameterized):
         if self.gdf.empty:
             return pn.Spacer()
         else:
-
-            def create_dict(row):
-                """create a dictionary representation of a df row"""
-                d = {('x','y'): np.array(row.geometry.exterior.coords),
-                     'tract': row['tract'],
-                     'metric': row['metric']
-                    }
-                return d
-            # create a dictionary reprresentation of the dataframe
-            data = list(self.gdf_extracted.apply(create_dict, axis=1))
-            # declare polygons
-            self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
-                tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
-                line_width=0, active_tools=['wheel_zoom', 'tap'],
-                colorbar=True, title=self.metric, color_index='metric')
+            if self.geoviews:
+                self.polys = gv.Polygons(self.gdf_extracted, vdims=['metric', 'tract']).opts(
+                    tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
+                    line_width=0, active_tools=['wheel_zoom', 'tap'],
+                    colorbar=True, title=self.metric, color_index='metric')
+            else:
+                
+                def create_dict(row):
+                    """create a dictionary representation of a df row"""
+                    d = {('x','y'): np.array(row.geometry.exterior.coords),
+                         'tract': row['tract'],
+                         'metric': row['metric']
+                        }
+                    return d
+                # create a dictionary reprresentation of the dataframe
+                data = list(self.gdf_extracted.apply(create_dict, axis=1))
+                # declare polygons
+                self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
+                    tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
+                    line_width=0, active_tools=['wheel_zoom', 'tap'],
+                    colorbar=True, title=self.metric, color_index='metric')
             
-#             # TODO uncomment the following block for geoviews version:
-#             self.polys = gv.Polygons(self.gdf_extracted, vdims=['metric', 'tract']).opts(
-#                 tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
-#                 line_width=0, active_tools=['wheel_zoom', 'tap'],
-#                 colorbar=True, title=self.metric, color_index='metric')
-
             # Declare Tap stream with polys as source and initial values
             self.stream.source = self.polys
 
@@ -982,7 +992,7 @@ class SummaryView(param.Parameterized):
     
     def panel(self):
         load_tracts = pn.widgets.Button(name='\u25b6', width=40)
-        load_tracts.on_click(self.selected_tract_list)
+        load_tracts.on_click(self.update_tract_selection)
         
         return pn.Row(
             pn.Column(
@@ -990,7 +1000,7 @@ class SummaryView(param.Parameterized):
                 self.param.filter_,
                 pn.Row(
                     self.param.selected_tract_str,
-#                     pn.Column(pn.Spacer(height=9),load_tracts)),  # pending holoviews release 
+                    pn.Column(pn.Spacer(height=9),load_tracts)  # pending holoviews release 
                 ),
             ),
             self.plot
