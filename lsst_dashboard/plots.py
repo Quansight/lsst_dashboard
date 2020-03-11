@@ -461,25 +461,19 @@ class skyshade(Operation):
 
 
 def _visit_plot(df, metric):
-    import dask
-
-    def plot_curve(ddf, kdims=None, vdims=None):
+    def plot_curve_dask(ddf, kdims=None, vdims=None):
         import holoviews as hv
 
         dfc = ddf
         kdims = kdims or ['visit', 'metrics']
         vdims = vdims or ['median']
-     
-        # we could probably just use a set_index call
-        #  ...or check if 'visit' is in the index
-        dfc.sort_values('visit', inplace=True)
+    #     dfc.sort_values('visit', inplace=True)
         dfc = dfc.astype({'visit':str})
 
         ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
 
         curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
-        points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0])
-        points = points.opts(size=8, line_color='white')
+        points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0]).opts(size=8, line_color='white')
 
         plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
 
@@ -493,36 +487,17 @@ def _visit_plot(df, metric):
         plot = plot.opts(show_legend=False, show_grid=True,
                          gridstyle=grid_style,
                          xlabel=xlabel, ylabel=ylabel,
-                         # xticks=100,
+    #                      xticks=100,
                          responsive=True, aspect=5,
                          bgcolor='black', xrotation=45)
         return plot
 
-    def init_df(m_array, v_array):
-        df = pd.DataFrame(data={
-            'median': m_array,
-            'visit': v_array
-            }).groupby('visit').median()
-        return df
+    visit_stats = (df.map_partitions(lambda _df:_df.assign(result=minmax_scale(_df[metric])))
+                     .groupby('visit')
+                     .result.apply(pd.Series.median, meta=('median',float))
+                     .reset_index())
 
-
-    # expensive / suffle - could this be set earlier in the processing?
-    # ddf.set_index('visits', inplace=True)
-
-    # visit_stats = (ddf.map_partitions(minmax_scale)
-    #                   .groupby()
-    #                   .agg('median')
-    #                   .reset_index(inplace=True)).compute()
-
-
-    metric_array_norm = dask.delayed(minmax_scale)(df[metric])
-    visits_array = dask.delayed(np.array)(df['visit'])
-    df_ = dask.delayed(init_df)(metric_array_norm, visits_array)
-
-    df = df_.compute()
-    # with pd.option_context('mode.use_inf_as_na', True):
-    #     df = df.dropna(subset=['median'])
-    return plot_curve(df.reset_index())
+    return plot_curve_dask(visit_stats.compute())
 
 
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
