@@ -16,9 +16,9 @@ from holoviews import opts
 import geopandas as gpd
 from shapely.geometry import box
 
-# for summary view with geoviews:
-import geoviews as gv
-import cartopy.crs as ccrs
+# # for summary view with geoviews:
+# import geoviews as gv
+# import cartopy.crs as ccrs
 
 from holoviews.plotting.bokeh.element import ElementPlot
 
