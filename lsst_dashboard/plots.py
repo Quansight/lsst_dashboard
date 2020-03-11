@@ -474,10 +474,13 @@ def _visit_plot(df, metric):
 
         ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
 
-        plot = ds.to(hv.Curve, kdims[0], vdims[0])#.overlay(kdims[1])
-        plot = plot.opts(hv.opts.Curve(tools=['hover']))
+        curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
+        points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0])
+        points = points.opts(size=8, line_color='white')
 
-        plot = plot.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
+        plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
+
+        curve = curve.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
 
         # Now we rename the axis
         xlabel = kdims[0]
@@ -487,7 +490,7 @@ def _visit_plot(df, metric):
         plot = plot.opts(show_legend=False, show_grid=True,
                          gridstyle=grid_style,
                          xlabel=xlabel, ylabel=ylabel,
-    #                      xticks=100,
+                         # xticks=100,
                          responsive=True, aspect=5,
                          bgcolor='black', xrotation=45)
         return plot
@@ -511,10 +514,10 @@ def _visit_plot(df, metric):
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     plots = {}
     for filt, metrics in filters_to_metrics.items():
-        plot = None
-        dfc = None
+        plot_filt = None
+        # dfc = None
         dset_filt = dsets_visits[filt]
-        # for metric in metrics:
+        for metric in metrics:
         #     df = dset_filt[metric].compute()
         #     df.to_csv('dset_filt-{}.csv'.format(metric))
         #     # drop inf/nan values
@@ -543,26 +546,27 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
         # ds = hv.Dataset(dfc, kdims=['visit', 'metrics'], vdims=['median'])
         #
         # plot = ds.to(hv.Curve, 'visit', 'median').overlay('metrics')
-        if len(metrics):
-            metric = metrics[0]
-        else:
+            plot_metric = _visit_plot(dset_filt[metric], metric)
+            if plot_filt is None:
+                plot_filt = plot_metric
+            else:
+                plot_filt = plot_filt * plot_metric
+        # plot = plot.opts(hv.opts.Curve(tools=['hover']))
+
+        # plot = plot.redim(y=hv.Dimension('median', range=(-1, 1)))
+        if plot_filt is None:
             continue
-        plot = _visit_plot(dset_filt[metric], metric)
-        plot = plot.opts(hv.opts.Curve(tools=['hover']))
-
-        plot = plot.redim(y=hv.Dimension('median', range=(-1, 1)))
-
         # Now we rename the axis
         xlabel = 'visit'
         ylabel = 'normalized median'
 
         grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-        plot = plot.opts(show_legend=False, show_grid=True,
+        plot_filt = plot_filt.opts(show_legend=False, show_grid=True,
                          gridstyle=grid_style,
                          xlabel=xlabel, ylabel=ylabel,
                          responsive=True, aspect=5,
                          bgcolor='black', xrotation=45)
-        plots[filt] = plot
+        plots[filt] = plot_filt
 
     filters = sorted(plots.keys())
     tabs = [(filt, pn.panel(plots[filt])) for filt in filters]
