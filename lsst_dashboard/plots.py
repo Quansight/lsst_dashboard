@@ -469,6 +469,9 @@ def _visit_plot(df, metric):
         dfc = ddf
         kdims = kdims or ['visit', 'metrics']
         vdims = vdims or ['median']
+     
+        # we could probably just use a set_index call
+        #  ...or check if 'visit' is in the index
         dfc.sort_values('visit', inplace=True)
         dfc = dfc.astype({'visit':str})
 
@@ -501,6 +504,16 @@ def _visit_plot(df, metric):
             'visit': v_array
             }).groupby('visit').median()
         return df
+
+
+    # expensive / suffle - could this be set earlier in the processing?
+    # ddf.set_index('visits', inplace=True)
+
+    # visit_stats = (ddf.map_partitions(minmax_scale)
+    #                   .groupby()
+    #                   .agg('median')
+    #                   .reset_index(inplace=True)).compute()
+
 
     metric_array_norm = dask.delayed(minmax_scale)(df[metric])
     visits_array = dask.delayed(np.array)(df['visit'])
