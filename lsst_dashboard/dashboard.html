@@ -97,6 +97,11 @@ body {
   height: 100%;
 }
 
+.overview-plot-area {
+  width: 100%;
+  height: 100%;
+}
+
 </style>
 
 {% endblock %}
@@ -197,6 +202,10 @@ body {
 
         <div class="skyplot-plot-area">
             {{ embed(roots.skyplot_metrics_plots) }}
+        </div>
+
+        <div class="overview-plot-area">
+            {{ embed(roots.overview_plots) }}
         </div>
 
         {{ embed(roots.status_message_queue) }}

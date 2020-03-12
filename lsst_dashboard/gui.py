@@ -26,6 +26,9 @@ from .qa_dataset import QADataset
 
 from .utils import set_timeout
 
+
+# from .overview import overview_plots
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
@@ -188,7 +191,7 @@ class QuickLookComponent(Component):
 
     selected_flag_filters = param.Dict(default={})
 
-    view_mode = ['Skyplot View', 'Detail View']
+    view_mode = ['Skyplot View', 'Detail View', 'Overview']
     data_stack = ['Forced Coadd', 'Unforced Coadd']
 
     plot_top = None
@@ -259,7 +262,7 @@ class QuickLookComponent(Component):
                                       margin=(10, 10, 10, 10))
 
         self.skyplot_layout = pn.Column(sizing_mode='stretch_width',
-                                      margin=(10, 10, 10, 10))
+                                        margin=(10, 10, 10, 10))
 
         self.list_layout = pn.Column(sizing_mode='stretch_width')
 
@@ -685,6 +688,7 @@ class QuickLookComponent(Component):
         self._on_load_data_repository(None)
 
     def _switch_view_mode(self, *events):
+
         # clear existing plot layouts
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
@@ -692,11 +696,30 @@ class QuickLookComponent(Component):
         self.attempt_to_clear(self.list_layout)
 
         if self._switch_view.value == 'Skyplot View':
-            self.execute_js_script('''$( ".skyplot-plot-area" ).show(); $( ".metrics-plot-area" ).hide();''')
+
+            cmd = ('''$( ".skyplot-plot-area" ).show();'''
+                   '''$( ".metrics-plot-area" ).hide();'''
+                   '''$( ".overview-plot-area" ).hide();''')
+
+            self.execute_js_script(cmd)
             self.skyplot_layout.append(self.linked_tab_plots())
 
+        elif self._switch_view.value == 'Overview':
+
+            cmd = ('''$( ".skyplot-plot-area" ).hide();'''
+                   '''$( ".metrics-plot-area" ).hide();'''
+                   '''$( ".overview-plot-area" ).show();''')
+
+            self.execute_js_script(cmd)
+
         else:
-            self.execute_js_script('''$( ".skyplot-plot-area" ).hide(); $( ".metrics-plot-area" ).show();''')
+
+            cmd = ('''$( ".skyplot-plot-area" ).hide();'''
+                   '''$( ".metrics-plot-area" ).show();'''
+                   '''$( ".overview-plot-area" ).hide();''')
+
+            self.execute_js_script(cmd)
+
             logger.info(self.plot_top)
             self._plot_top.append(self.plot_top)
             for i, p in self.plots_list:
@@ -747,6 +770,7 @@ class QuickLookComponent(Component):
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
             ('skyplot_metrics_plots', self.skyplot_layout),
+            ('overview_plots', pn.Column()),
             ('plot_top', self._plot_top),
             ('flags', pn.Column(pn.Row(self.flag_filter_select,
                                        self.flag_state_select),
