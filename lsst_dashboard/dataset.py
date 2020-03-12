@@ -5,6 +5,7 @@ import os
 
 try:
     from lsst.daf.persistence import Butler
+    from lsst.daf.persistence.butlerExceptions import NoResults
 except:
     Butler = None
 
@@ -52,6 +53,7 @@ class Dataset():
                     all_tracts = [list(self.metadata['visits'][filt].keys()) for filt in self.filters]
                     self.tracts = list(set([int(y) for x in all_tracts for y in x]))
             except:
+                raise
                 print(f'{self.path} is not available in Butler attempting to read parquet files instead')
         else:
             if self.path.joinpath(METADATA_FILENAME).exists():
@@ -105,8 +107,12 @@ class Dataset():
             self.visits_by_metric[filt] = {}
             for metric in self.metrics:
                 if self.conn:
-                    filenames = [self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename 
-                                    for t in self.tracts]                  
+                    filenames = []
+                    for t in self.tracts:
+                        try:
+                            filenames.append(self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename)
+                        except NoResults:
+                            continue
                 else:
                     filenames =  list(self.path.glob(f'./*{filt}*{metric}.parq'))
                     
