@@ -36,7 +36,7 @@ class Dataset():
         # 2. Look for datafolder in current directory i.e. './RC2_w18/metadata.yaml'
         # 3. Look for datafolder in dir specified in LSST_META env variable i.e. /user/name/lsst_meta/RC2_w18/metadata.yaml'
         #    when LSST_META='/user/name/lsst_meta'
-      
+
         print('-- read metadata file --')
 
         # if Butler is available use it to connect. If not available we are reading from disk
@@ -63,7 +63,7 @@ class Dataset():
                 self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
                 self.failures = self.metadata.get('failures', {})
                 if self.tracts is None:
-                    self.tracts = list(set(x for v in self.metadata['visits'].values() for x in v.keys())) 
+                    self.tracts = list(set(x for v in self.metadata['visits'].values() for x in v.keys()))
 
 
         print('-- read coadd table --')
@@ -73,8 +73,8 @@ class Dataset():
         df = self.coadd['qaDashboardCoaddTable']
         self.flags = df.columns[df.dtypes == bool].to_list()
         if not Butler:
-            self.filters = list(self.metadata['visits'].keys()) 
-        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag', 
+            self.filters = list(self.metadata['visits'].keys())
+        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag',
                                                                          'ra', 'filter', 'dataset', 'dir0', 'tract'])
         print('-- read visit data --')
         self.fetch_visits_by_metric()
@@ -97,7 +97,7 @@ class Dataset():
             # filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
         else:
             filenames = [str(self.path.joinpath(f'{table}-{t}.parq')) for t in self.tracts]
-        
+
         self.visits = dd.read_parquet(filenames, npartitions=16).rename(columns={'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'})
 
     def fetch_visits_by_metric(self):
@@ -105,10 +105,10 @@ class Dataset():
             self.visits_by_metric[filt] = {}
             for metric in self.metrics:
                 if self.conn:
-                    filenames = [self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename 
-                                    for t in self.tracts]                  
+                    filenames = [self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename
+                                    for t in self.tracts]
                 else:
                     filenames =  list(self.path.glob(f'./*{filt}*{metric}.parq'))
-                    
+
                 column_map = {'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'}
                 self.visits_by_metric[filt][metric] = dd.read_parquet(filenames).rename(columns=column_map)

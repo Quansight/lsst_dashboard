@@ -1,9 +1,10 @@
+# from profilehooks import profile
+
 import traceback
 import json
 import logging
 import os
 
-from collections import defaultdict
 from functools import partial
 
 import param
@@ -12,8 +13,6 @@ import holoviews as hv
 import numpy as np
 import pandas as pd
 import sklearn.preprocessing
-
-from holoviews.plotting.bokeh.element import ElementPlot
 
 from .base import Application
 from .base import Component
@@ -45,8 +44,8 @@ filtered_datavisits = []
 
 sample_data_directory = 'sample_data'
 
-class Store(object):
 
+class Store(object):
     def __init__(self):
         self.active_dataset = Dataset('')
 
@@ -64,7 +63,7 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
     global store
     store.active_dataset = d
 
-    flags = d.flags
+    # flags = d.flags
 
     datasets = {}
     filtered_datasets = {}
@@ -85,43 +84,22 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
             df = d.visits_by_metric[filt][metric]
             filtered_df = None
             if df is not None:
-                df = df
                 filtered_df = df.copy()
 
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
+    # print("datasets",datasets)
+    # print("filtered_datasets",filtered_datasets)
+    # print("datavisits",datavisits)
+    # print("filtered_datavisits",filtered_datavisits)
+
     return d
 
 
-# TODO: build and cache summarized visits dataframe
-def summarize_visits_dataframe(data_repo_path):
-
-    d = Dataset(data_repo_path)
-    d.connect()
-
-    dfs = []
-    for filt in d.filters:
-        for metric in d.metrics:
-            if metric in datavisits[filt].columns:
-                df = datavisits[filt][metric].reset_index(-1)
-                df = pd.DataFrame(getattr(sklearn.preprocessing,
-                                          'minmax_scale',
-                                          lambda x: x)(df),
-                                  index=df.index,
-                                  columns=df.columns).groupby(df.index)
-
-                values = df[metric].median().values
-                df = pd.DataFrame(dict(median_norm=values, filter_type=filt,
-                                       metric=metric))
-                dfs.append(df)
-
-    return pd.concat(dfs, ignore_index=True)
-
-
 def load_data(data_repo_path=None, datastack = 'forced'):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    root_directory = os.path.split(current_directory)[0]
+    # current_directory = os.path.dirname(os.path.abspath(__file__))
+    # root_directory = os.path.split(current_directory)[0]
 
     if not data_repo_path:
         data_repo_path = sample_data_directory
@@ -136,7 +114,6 @@ def load_data(data_repo_path=None, datastack = 'forced'):
 
 
 store = Store()
-#store.active_dataset = load_data()
 
 
 def get_available_metrics(filt):
@@ -165,6 +142,9 @@ class QuickLookComponent(Component):
     query_filter = param.String(label="Query Expression")
 
     query_filter_active = param.String(label="Active Query Filter", default='')
+
+    active_query_by_filter = param.Dict(
+        default={f: '' for f in store.active_dataset.filters})
 
     new_column_expr = param.String(label="Data Column Expression")
 
@@ -307,6 +287,7 @@ class QuickLookComponent(Component):
 
         for f in self.store.active_dataset.filters:
             self.selected_metrics_by_filter[f] = []
+            self.active_query_by_filter[f] = ''
 
         self._load_metrics()
         self._switch_view_mode()
@@ -494,7 +475,7 @@ class QuickLookComponent(Component):
     def get_patch_count(self):
         return 1
         patchs = set()
-        for filt,_ in self.selected_metrics_by_filter.items():
+        for filt, _ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
             patchs = patchs.union(set(dset.df['patch'].unique()))
         return len(patchs)
@@ -502,7 +483,7 @@ class QuickLookComponent(Component):
     def get_tract_count(self):
         return 1
         tracts = set()
-        for filt,_ in self.selected_metrics_by_filter.items():
+        for filt, _ in self.selected_metrics_by_filter.items():
             dset = self.get_dataset_by_filter(filt)
             tracts = tracts.union(set(dset.df['tract'].unique()))
         return len(tracts)
@@ -511,7 +492,7 @@ class QuickLookComponent(Component):
         return 1
         dvisits = self.get_datavisits()
         visits = set()
-        for filt,metrics in self.selected_metrics_by_filter.items():
+        for filt, metrics in self.selected_metrics_by_filter.items():
             for metric in metrics:
                 df = dvisits[filt][metric].compute()
                 visits = visits.union(set(df['visit'].unique()))
@@ -541,8 +522,8 @@ class QuickLookComponent(Component):
 
     @param.depends('selected_flag_filters', watch=True)
     def _update_selected_flags(self):
-        selected_flags = ['{} : {}'.format(f,v)
-                          for f,v in self.selected_flag_filters.items()]
+        selected_flags = ['{} : {}'.format(f, v)
+                          for f, v in self.selected_flag_filters.items()]
         self.flag_filter_selected.options = selected_flags
         self.filter_main_dataframe()
 
@@ -558,21 +539,21 @@ class QuickLookComponent(Component):
                 self.add_message_from_error('Filtering Error', '', e)
                 raise
                 return
-        #self.filter_visits_dataframe()
         self._update_selected_metrics_by_filter()
 
-    def filter_visits_dataframe(self):
-        global filtered_datavisits
-        global datavisits
-        for filt, metrics in datavisits.items():
-            for metric, df in metrics.items():
-                try:
-                    query_expr = self._assemble_query_expression(ignore_query_expr=True)
-                    if query_expr and datavisits[filt][metric] is not None:
-                        filtered_datavisits[filt][metric] = datavisits[filt][metric].query(query_expr)
-                except Exception as e:
-                    self.add_message_from_error('Filtering Visits Error', '', e)
-                    return
+    # def filter_visits_dataframe(self):
+    #     assert False
+    #     global filtered_datavisits
+    #     global datavisits
+    #     for filt, metrics in datavisits.items():
+    #         for metric, df in metrics.items():
+    #             try:
+    #                 query_expr = self._assemble_query_expression(ignore_query_expr=True)
+    #                 if query_expr and datavisits[filt][metric] is not None:
+    #                     filtered_datavisits[filt][metric] = datavisits[filt][metric].query(query_expr)
+    #             except Exception as e:
+    #                 self.add_message_from_error('Filtering Visits Error', '', e)
+    #                 return
 
     def _assemble_query_expression(self, ignore_query_expr=False):
         query_expr = ''
@@ -624,10 +605,12 @@ class QuickLookComponent(Component):
                                 msg_body, level=level, duration=10)
 
     @param.depends('selected_metrics_by_filter', watch=True)
+    # @profile(immediate=True)
     def _update_selected_metrics_by_filter(self):
 
         plots_list = []
         skyplot_list = []
+        detail_plots = {}
 
         top_plot = None
 
@@ -640,32 +623,39 @@ class QuickLookComponent(Component):
 
         self.plot_top = top_plot
 
-        for filt, plots in self.selected_metrics_by_filter.items():
+        for filt, metrics in self.selected_metrics_by_filter.items():
+            if not metrics:
+                continue
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt)
-            for i, p in enumerate(plots):
-                # skyplots
+            for i, metric in enumerate(metrics):
+                # Sky plots
                 plot_sky = skyplot(dset.ds,
                                    filter_stream=filter_stream,
-                                   vdim=p)
+                                   vdim=metric)
+                skyplot_list.append((filt + ' - ' + metric, plot_sky))
 
-                skyplot_list.append((filt + ' - ' + p, plot_sky))
-
+                # Detail plots
                 plots_ss = scattersky(dset.ds,
                                       xdim='psfMag',
-                                      ydim=p,
+                                      ydim=metric,
                                       filter_stream=filter_stream)
-                plot = plots_ss
-                plots_list.append((p, plot))
+                plots_list.append((metric, plots_ss))
+            detail_plots[filt] = [plots_list]
 
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
+        self.detail_plots = detail_plots
 
         self.update_display()
         self._switch_view_mode()
 
     def linked_tab_plots(self):
         tabs = [(name, pn.panel(plot)) for name, plot in self.skyplot_list]
+        return pn.Tabs(*tabs, sizing_mode='stretch_both')
+
+    def linked_tab_detail_plots(self):
+        tabs = [(filt, pn.panel(plots)) for filt, plots in self.detail_plots]
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
     def attempt_to_clear(self, obj):
@@ -702,6 +692,7 @@ class QuickLookComponent(Component):
             for i, p in self.plots_list:
                 self.list_layout.append(p)
             self._plot_layout.append(self.list_layout)
+            # self._plot_layout.append(self.linked_tab_detail_plots())
 
     def jinja(self):
         from ._jinja2_templates import quicklook

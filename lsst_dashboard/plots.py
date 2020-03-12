@@ -1,3 +1,4 @@
+# from profilehooks import profile
 from functools import partial
 
 import param
@@ -163,6 +164,7 @@ class filterpoints(Operation):
             pts = pts.relabel(title)
         return pts
 
+
 class summary_table(Operation):
     ydim = param.String(default=None)
     filter_range = param.Dict(default={}, doc="""
@@ -234,7 +236,9 @@ class scattersky(ParameterizedFunction):
     show_table = param.Boolean(default=False, doc="""
         Whether to show the table next to the plots.""")
 
+    # @profile(immediate=True)
     def __call__(self, dset, **params):
+        # print("SCATTERSKY", dset)
         self.p = ParamOverrides(self, params)
         if self.p.xdim not in dset.dimensions():
             raise ValueError('{} not in Dataset.'.format(self.p.xdim))
@@ -367,8 +371,9 @@ class skyplot(ParameterizedFunction):
     bad_flags = param.List(default=[], doc="""
         Flags to ignore""")
 
+    # @profile(immediate=True)
     def __call__(self, dset, **params):
-
+        # print("SKYPLOT", dset)
         self.p = ParamOverrides(self, params)
 
         if self.p.vdim is None:
@@ -460,6 +465,7 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
+# @profile(immediate=True)
 def _visit_plot(df, metric):
     def plot_curve_dask(ddf, kdims=None, vdims=None):
         import holoviews as hv
@@ -494,11 +500,13 @@ def _visit_plot(df, metric):
     visit_stats = (df.map_partitions(lambda _df:_df.assign(result=minmax_scale(_df[metric])))
                      .groupby('visit')
                      .result.apply(pd.Series.median, meta=('median',float))
-                     .reset_index())
+                     .reset_index().rename(columns={'index':'visit'}))
 
-    return plot_curve_dask(visit_stats.compute())
+    # return plot_curve_dask(visit_stats.compute())
+    return plot_curve_dask(visit_stats)
 
 
+# @profile(immediate=True)
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     plots = {}
     for filt, metrics in filters_to_metrics.items():
