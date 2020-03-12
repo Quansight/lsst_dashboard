@@ -502,7 +502,6 @@ def _visit_plot(df, metric):
                      .result.apply(pd.Series.median, meta=('median',float))
                      .reset_index().rename(columns={'index':'visit'}))
 
-    # return plot_curve_dask(visit_stats.compute())
     return plot_curve_dask(visit_stats)
 
 
