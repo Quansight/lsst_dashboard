@@ -26,8 +26,7 @@ from .qa_dataset import QADataset
 
 from .utils import set_timeout
 
-
-# from .overview import overview_plots
+from .overview import overview
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -770,7 +769,7 @@ class QuickLookComponent(Component):
             ('metrics_selectors', self._metric_layout),
             ('metrics_plots', self._plot_layout),
             ('skyplot_metrics_plots', self.skyplot_layout),
-            ('overview_plots', pn.Column()),
+            ('overview_plots', overview),
             ('plot_top', self._plot_top),
             ('flags', pn.Column(pn.Row(self.flag_filter_select,
                                        self.flag_state_select),
