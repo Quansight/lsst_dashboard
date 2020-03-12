@@ -141,7 +141,7 @@ class OverviewApp(param.Parameterized):
                 data = list(self.df_extracted.apply(create_dict, axis=1))
                 # declare polygons
                 self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
-                    tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height, 
+                    tools=['hover', 'tap'], 
                     line_width=0, active_tools=['wheel_zoom', 'tap'],
                     colorbar=True, title=self.metric, color='metric')
             
@@ -212,7 +212,8 @@ class OverviewApp(param.Parameterized):
         
         return pn.Row(
             self.left_pane,
-            self.plot,
+            pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max'),
+            sizing_mode='stretch_both'
         )
     
 overview = OverviewApp().panel()
