@@ -170,7 +170,7 @@ class QuickLookComponent(Component):
 
     selected_flag_filters = param.Dict(default={})
 
-    view_mode = ['Skyplot View', 'Detail View', 'Overview']
+    view_mode = ['Overview', 'Skyplot View', 'Detail View']
     data_stack = ['Forced Coadd', 'Unforced Coadd']
 
     plot_top = None
