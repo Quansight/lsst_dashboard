@@ -467,7 +467,6 @@ def _visit_plot(df, metric):
         dfc = ddf
         kdims = kdims or ['visit', 'metrics']
         vdims = vdims or ['median']
-    #     dfc.sort_values('visit', inplace=True)
         dfc = dfc.astype({'visit':str})
 
         ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
@@ -487,7 +486,7 @@ def _visit_plot(df, metric):
         plot = plot.opts(show_legend=False, show_grid=True,
                          gridstyle=grid_style,
                          xlabel=xlabel, ylabel=ylabel,
-    #                      xticks=100,
+                         # xticks=100,
                          responsive=True, aspect=5,
                          bgcolor='black', xrotation=45)
         return plot
@@ -507,54 +506,14 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
         # dfc = None
         dset_filt = dsets_visits[filt]
         for metric in metrics:
-        #     df = dset_filt[metric].compute()
-        #     df.to_csv('dset_filt-{}.csv'.format(metric))
-        #     # drop inf/nan values
-        #     with pd.option_context('mode.use_inf_as_na', True):
-        #         df = df.dropna(subset=[metric])
-        #     # label = '{} - {}'.format(filt, metric)
-        #     label = '{!s}'.format(metric)
-        #     print("LABEL:",label)
-        #     # df[label] = minmax_scale(df[metric])
-        #     minmax_scale(df[metric])
-        #     print(df)
-        #     df = df.groupby('visit')
-        #     df = df[label].median().reset_index()
-        #     if dfc is None:
-        #         dfc = df.set_index('visit')
-        #     else:
-        #         dfc = dfc.merge(df.set_index('visit'), on='visit',
-        #                         how='outer', sort=True)
-        #
-        # try:
-        #     dfc = dfc.stack(dropna=False, level=-1).reset_index()
-        # except:
-        #     continue
-        # dfc = dfc.rename(columns={'level_1': 'metrics', 0: 'median'})
-        # dfc['visit'] = dfc['visit'].astype(str)
-        # ds = hv.Dataset(dfc, kdims=['visit', 'metrics'], vdims=['median'])
-        #
-        # plot = ds.to(hv.Curve, 'visit', 'median').overlay('metrics')
             plot_metric = _visit_plot(dset_filt[metric], metric)
             if plot_filt is None:
                 plot_filt = plot_metric
             else:
                 plot_filt = plot_filt * plot_metric
-        # plot = plot.opts(hv.opts.Curve(tools=['hover']))
 
-        # plot = plot.redim(y=hv.Dimension('median', range=(-1, 1)))
         if plot_filt is None:
             continue
-        # Now we rename the axis
-        xlabel = 'visit - {!s}'.format(filt)
-        ylabel = 'normalized median'
-
-        grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-        plot_filt = plot_filt.opts(show_legend=False, show_grid=True,
-                         gridstyle=grid_style,
-                         xlabel=xlabel, ylabel=ylabel,
-                         responsive=True, aspect=5,
-                         bgcolor='black', xrotation=45)
         plots[filt] = plot_filt
 
     filters = sorted(plots.keys())
