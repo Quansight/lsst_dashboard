@@ -33,7 +33,6 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
 from datashader.colors import viridis
-from bokeh.palettes import Viridis
 
 decimate.max_samples = 5000
 
@@ -253,8 +252,7 @@ class scattersky(ParameterizedFunction):
                                       streams=[self.p.filter_stream])
         scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
                             norm=dict(axiswise=True))
-        scatter_shaded = datashade(scatter_pts,
-                                    cmap=viridis)
+        scatter_shaded = datashade(scatter_pts, cmap=viridis)
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
 
         # Set up sky plot
@@ -263,10 +261,8 @@ class scattersky(ParameterizedFunction):
                                   streams=[self.p.filter_stream])
         sky_opts = dict(plot={'height': self.p.height, 'responsive': True},  # cmap width?
                         norm=dict(axiswise=True))
-        sky_shaded = rasterize(sky_pts,
-                               aggregator=ds.mean(self.p.ydim)).options(colorbar=True,
-                                                           responsive=True,
-                                                           cmap=Viridis[256])
+        sky_shaded = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).options(
+            colorbar=True, responsive=True, cmap='viridis')
         sky = sky_shaded.opts(**sky_opts)
         # sky = dynspread(sky_shaded).opts(**sky_opts)
 
@@ -290,12 +286,12 @@ class scattersky(ParameterizedFunction):
         reset = Reset(source=scatter)
         reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
 
-        raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
+        raw_scatter = datashade(scatter_filterpoints(dset), cmap=list(Greys9[::-1][:5]))
 
         scatter_p = (raw_scatter*scatter).options(bgcolor="black")
 
         if self.p.show_rawsky:
-            raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
+            raw_sky = datashade(sky_filterpoints(dset), cmap=list(Greys9[::-1][:5]))
             sky_p = raw_sky*sky
         else:
             sky_p = sky
@@ -399,8 +395,8 @@ class skyplot(ParameterizedFunction):
 
         decimated = decimate(pts).opts(**decimate_opts)
         raster_ = rasterize(pts, aggregator=aggregator)
-        color_gadget = raster_.opts(cmap=Viridis[256], colorbar=True, alpha=0)
-        sky_shaded = shade(raster_, cmap=viridis)
+        color_gadget = raster_.opts(cmap='viridis', colorbar=True, alpha=0)
+        sky_shaded = shade(raster_, cmap=list(viridis))
 
         plot = dynspread(sky_shaded) * decimated * color_gadget
 
@@ -452,7 +448,7 @@ class skyshade(Operation):
         elif self.p.aggregator == 'count':
             aggregator = ds.count()
 
-        kwargs = dict(cmap=cc.palette[self.p.cmap],
+        kwargs = dict(cmap=list(cc.palette[self.p.cmap]),
                       aggregator=aggregator)
 
         datashaded = dynspread(datashade(element, **kwargs))
