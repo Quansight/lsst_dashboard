@@ -493,18 +493,23 @@ def _visit_plot(df, metric):
                          bgcolor='black', xrotation=45)
         return plot
 
-    def _minmax_(vec):
+    def transform_scale(df, metric):
         with pd.option_context('mode.use_inf_as_na', True):
-            return minmax_scale(vec.dropna())
+            df = df.dropna(subset=[metric])
+            df['result'] = minmax_scale(df[metric])
+        return df
+
+    _meta = df.dtypes.to_dict()
+    _meta.update({'result': float})
 
     visit_stats = (df
-                    .map_partitions(lambda _df:_df.assign(result=_minmax_(_df[metric])))
+                    .map_partitions(lambda _df:transform_scale(_df,metric),
+                        meta=_meta)
                     .groupby('visit')
                     .result.apply(pd.Series.median, meta=('median',float))
                     .reset_index().rename(columns={'index':'visit'}))
 
     return plot_curve_dask(visit_stats)
-
 
 # @profile(immediate=True)
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
