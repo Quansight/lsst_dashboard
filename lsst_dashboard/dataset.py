@@ -89,9 +89,9 @@ class Dataset():
 
         column_map = {'patchId': 'patch', 'tractId': 'tract'}
         self.coadd[table] = (dd.read_parquet(filenames, npartitions=16)
-                               .rename(columns=column_map)
-                               .repartition(npartitions=48)
-                               .persist())
+                               .rename(columns=column_map).compute())
+                               # .repartition(npartitions=48)
+                               # .persist())
 
     def fetch_visits(self):
         table = 'qaDashboardVisitTable'
