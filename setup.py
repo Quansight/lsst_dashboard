@@ -12,7 +12,9 @@ __name__ == "__main__" and setuptools.setup(**dict(
     install_requires=[],
     include_package_data=True,
     packages=setuptools.find_packages(),
-    entry_points = {'pytest11': [],})
+    entry_points={
+          'console_scripts': [
+              'lsst_data_explorer = lsst_dashboard.__main__:main'
+          ]
+    })
 )
-
-"""A minimal "setup.py" file for the `lsst_dashboard` project then include notebooks in the source with `importnb`; we'll mature into python scripts as the tooling stabilizes.""";
