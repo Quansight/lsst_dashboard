@@ -462,37 +462,37 @@ class skyshade(Operation):
 
 
 # @profile(immediate=True)
+def plot_curve_dask(ddf, kdims=None, vdims=None):
+    import holoviews as hv
+
+    dfc = ddf
+    kdims = kdims or ['visit', 'metrics']
+    vdims = vdims or ['median']
+    dfc = dfc.astype({'visit':str})
+
+    ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
+
+    curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
+    points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0]).opts(size=8, line_color='white')
+
+    plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
+
+    curve = curve.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
+
+    # Now we rename the axis
+    xlabel = kdims[0]
+    ylabel = 'normalized {}'.format(vdims[0])
+
+    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+    plot = plot.opts(show_legend=False, show_grid=True,
+                     gridstyle=grid_style,
+                     xlabel=xlabel, ylabel=ylabel,
+                     # xticks=100,
+                     responsive=True, aspect=5,
+                     bgcolor='black', xrotation=45)
+    return plot
+
 def _visit_plot(df, metric):
-    def plot_curve_dask(ddf, kdims=None, vdims=None):
-        import holoviews as hv
-
-        dfc = ddf
-        kdims = kdims or ['visit', 'metrics']
-        vdims = vdims or ['median']
-        dfc = dfc.astype({'visit':str})
-
-        ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
-
-        curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
-        points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0]).opts(size=8, line_color='white')
-
-        plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
-
-        curve = curve.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
-
-        # Now we rename the axis
-        xlabel = kdims[0]
-        ylabel = 'normalized {}'.format(vdims[0])
-
-        grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-        plot = plot.opts(show_legend=False, show_grid=True,
-                         gridstyle=grid_style,
-                         xlabel=xlabel, ylabel=ylabel,
-                         # xticks=100,
-                         responsive=True, aspect=5,
-                         bgcolor='black', xrotation=45)
-        return plot
-
     def transform_scale(df, metric):
         with pd.option_context('mode.use_inf_as_na', True):
             df = df.dropna(subset=[metric])
@@ -511,15 +511,26 @@ def _visit_plot(df, metric):
 
     return plot_curve_dask(visit_stats)
 
+def _visit_plot_pandas(df, metric):
+    # drop inf/nan values
+    with pd.option_context('mode.use_inf_as_na', True):
+        df = df.dropna(subset=[metric])
+    label = '{!s}'.format(metric)
+    df[label] = minmax_scale(df[metric])
+    df = df.groupby('visit')
+    df = df[label].median().reset_index()
+    df.head().to_csv('bla.csv')
+    return plot_curve_dask(df.rename(columns={metric:'median'}))
+
 # @profile(immediate=True)
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     plots = {}
     for filt, metrics in filters_to_metrics.items():
         plot_filt = None
-        # dfc = None
         dset_filt = dsets_visits[filt]
         for metric in metrics:
-            plot_metric = _visit_plot(dset_filt[metric], metric)
+            # plot_metric = _visit_plot(dset_filt[metric], metric)
+            plot_metric = _visit_plot_pandas(dset_filt[metric].compute(), metric)
             if plot_filt is None:
                 plot_filt = plot_metric
             else:
