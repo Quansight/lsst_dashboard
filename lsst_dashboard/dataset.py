@@ -88,7 +88,10 @@ class Dataset():
             filenames = [str(self.path.joinpath(f'{table}-{t}.parq')) for t in self.tracts]
 
         column_map = {'patchId': 'patch', 'tractId': 'tract'}
-        self.coadd[table] = dd.read_parquet(filenames, npartitions=16).rename(columns=column_map).compute()
+        self.coadd[table] = (dd.read_parquet(filenames, npartitions=16)
+                               .rename(columns=column_map)
+                               .repartition(npartitions=48)
+                               .persist())
 
     def fetch_visits(self):
         table = 'qaDashboardVisitTable'
