@@ -66,6 +66,9 @@ def normalize_df(df, sample_frac=None):
     """
     append ra, dec, psfMag to dataframe and cleanup
     """
+
+    # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
+
     if sample_frac:
         df = df.sample(frac=sample_frac)
     df = df.assign(
