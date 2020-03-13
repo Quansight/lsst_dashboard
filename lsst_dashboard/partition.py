@@ -67,8 +67,7 @@ def normalize_df(df, sample_frac=None):
     append ra, dec, psfMag to dataframe and cleanup
     """
     if sample_frac:
-        df = df.sample(frac=sample_frac))
-        
+        df = df.sample(frac=sample_frac)
     df = df.assign(
         ra = da.rad2deg(df.coord_ra),
         dec = da.rad2deg(df.coord_dec),
@@ -124,7 +123,7 @@ def ktk_repartition(src, dst, sample_frac=None):
         df = delayed(pd.read_parquet)(f, columns=coadd_cols)
         df = delayed(pd.DataFrame.assign)(df, filter=filt, tract=tract)
         dfs.append(df)
-    dfs = normalize_df(dd.from_delayed(dfs), sample_frac))
+    dfs = normalize_df(dd.from_delayed(dfs), sample_frac)
     repartition_dataset(store_factory, dfs, 'coadd_unforced', 'patch')
     del dfs
 
@@ -138,7 +137,7 @@ def ktk_repartition(src, dst, sample_frac=None):
         dfs.append(df)
     dfs = dd.from_delayed(dfs)
     dfs = dfs[list(set(visit_cols).intersection(dfs.columns))] # not all visits have all cols
-    dfs = normalize_df(dfs, sample_frac))
+    dfs = normalize_df(dfs, sample_frac)
     repartition_dataset(store_factory, dfs, 'visits', 'ccd')
     del dfs
 
