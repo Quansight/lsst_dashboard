@@ -1,3 +1,4 @@
+# from profilehooks import profile
 from functools import partial
 
 import param
@@ -32,7 +33,6 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
 from datashader.colors import viridis
-from bokeh.palettes import Viridis
 
 decimate.max_samples = 5000
 
@@ -163,6 +163,7 @@ class filterpoints(Operation):
             pts = pts.relabel(title)
         return pts
 
+
 class summary_table(Operation):
     ydim = param.String(default=None)
     filter_range = param.Dict(default={}, doc="""
@@ -234,7 +235,9 @@ class scattersky(ParameterizedFunction):
     show_table = param.Boolean(default=False, doc="""
         Whether to show the table next to the plots.""")
 
+    # @profile(immediate=True)
     def __call__(self, dset, **params):
+        # print("SCATTERSKY", dset)
         self.p = ParamOverrides(self, params)
         if self.p.xdim not in dset.dimensions():
             raise ValueError('{} not in Dataset.'.format(self.p.xdim))
@@ -249,8 +252,7 @@ class scattersky(ParameterizedFunction):
                                       streams=[self.p.filter_stream])
         scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
                             norm=dict(axiswise=True))
-        scatter_shaded = datashade(scatter_pts,
-                                    cmap=viridis)
+        scatter_shaded = datashade(scatter_pts, cmap=viridis)
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
 
         # Set up sky plot
@@ -259,10 +261,8 @@ class scattersky(ParameterizedFunction):
                                   streams=[self.p.filter_stream])
         sky_opts = dict(plot={'height': self.p.height, 'responsive': True},  # cmap width?
                         norm=dict(axiswise=True))
-        sky_shaded = rasterize(sky_pts,
-                               aggregator=ds.mean(self.p.ydim)).options(colorbar=True,
-                                                           responsive=True,
-                                                           cmap=Viridis[256])
+        sky_shaded = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).options(
+            colorbar=True, responsive=True, cmap='viridis')
         sky = sky_shaded.opts(**sky_opts)
         # sky = dynspread(sky_shaded).opts(**sky_opts)
 
@@ -286,12 +286,12 @@ class scattersky(ParameterizedFunction):
         reset = Reset(source=scatter)
         reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
 
-        raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
+        raw_scatter = datashade(scatter_filterpoints(dset), cmap=list(Greys9[::-1][:5]))
 
         scatter_p = (raw_scatter*scatter).options(bgcolor="black")
 
         if self.p.show_rawsky:
-            raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
+            raw_sky = datashade(sky_filterpoints(dset), cmap=list(Greys9[::-1][:5]))
             sky_p = raw_sky*sky
         else:
             sky_p = sky
@@ -367,8 +367,9 @@ class skyplot(ParameterizedFunction):
     bad_flags = param.List(default=[], doc="""
         Flags to ignore""")
 
+    # @profile(immediate=True)
     def __call__(self, dset, **params):
-
+        # print("SKYPLOT", dset)
         self.p = ParamOverrides(self, params)
 
         if self.p.vdim is None:
@@ -394,8 +395,8 @@ class skyplot(ParameterizedFunction):
 
         decimated = decimate(pts).opts(**decimate_opts)
         raster_ = rasterize(pts, aggregator=aggregator)
-        color_gadget = raster_.opts(cmap=Viridis[256], colorbar=True, alpha=0)
-        sky_shaded = shade(raster_, cmap=viridis)
+        color_gadget = raster_.opts(cmap='viridis', colorbar=True, alpha=0)
+        sky_shaded = shade(raster_, cmap=list(viridis))
 
         plot = dynspread(sky_shaded) * decimated * color_gadget
 
@@ -447,7 +448,7 @@ class skyshade(Operation):
         elif self.p.aggregator == 'count':
             aggregator = ds.count()
 
-        kwargs = dict(cmap=cc.palette[self.p.cmap],
+        kwargs = dict(cmap=list(cc.palette[self.p.cmap]),
                       aggregator=aggregator)
 
         datashaded = dynspread(datashade(element, **kwargs))
@@ -460,23 +461,20 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
+# @profile(immediate=True)
 def _visit_plot(df, metric):
-    import dask
-
-    def plot_curve(ddf, kdims=None, vdims=None):
+    def plot_curve_dask(ddf, kdims=None, vdims=None):
         import holoviews as hv
 
         dfc = ddf
         kdims = kdims or ['visit', 'metrics']
         vdims = vdims or ['median']
-        dfc.sort_values('visit', inplace=True)
         dfc = dfc.astype({'visit':str})
 
         ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
 
         curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
-        points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0])
-        points = points.opts(size=8, line_color='white')
+        points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0]).opts(size=8, line_color='white')
 
         plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
 
@@ -495,23 +493,15 @@ def _visit_plot(df, metric):
                          bgcolor='black', xrotation=45)
         return plot
 
-    def init_df(m_array, v_array):
-        df = pd.DataFrame(data={
-            'median': m_array,
-            'visit': v_array
-            }).groupby('visit').median()
-        return df
+    visit_stats = (df.map_partitions(lambda _df:_df.assign(result=minmax_scale(_df[metric])))
+                     .groupby('visit')
+                     .result.apply(pd.Series.median, meta=('median',float))
+                     .reset_index().rename(columns={'index':'visit'}))
 
-    metric_array_norm = dask.delayed(minmax_scale)(df[metric])
-    visits_array = dask.delayed(np.array)(df['visit'])
-    df_ = dask.delayed(init_df)(metric_array_norm, visits_array)
-
-    df = df_.compute()
-    # with pd.option_context('mode.use_inf_as_na', True):
-    #     df = df.dropna(subset=['median'])
-    return plot_curve(df.reset_index())
+    return plot_curve_dask(visit_stats)
 
 
+# @profile(immediate=True)
 def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
     plots = {}
     for filt, metrics in filters_to_metrics.items():
@@ -519,54 +509,14 @@ def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
         # dfc = None
         dset_filt = dsets_visits[filt]
         for metric in metrics:
-        #     df = dset_filt[metric].compute()
-        #     df.to_csv('dset_filt-{}.csv'.format(metric))
-        #     # drop inf/nan values
-        #     with pd.option_context('mode.use_inf_as_na', True):
-        #         df = df.dropna(subset=[metric])
-        #     # label = '{} - {}'.format(filt, metric)
-        #     label = '{!s}'.format(metric)
-        #     print("LABEL:",label)
-        #     # df[label] = minmax_scale(df[metric])
-        #     minmax_scale(df[metric])
-        #     print(df)
-        #     df = df.groupby('visit')
-        #     df = df[label].median().reset_index()
-        #     if dfc is None:
-        #         dfc = df.set_index('visit')
-        #     else:
-        #         dfc = dfc.merge(df.set_index('visit'), on='visit',
-        #                         how='outer', sort=True)
-        #
-        # try:
-        #     dfc = dfc.stack(dropna=False, level=-1).reset_index()
-        # except:
-        #     continue
-        # dfc = dfc.rename(columns={'level_1': 'metrics', 0: 'median'})
-        # dfc['visit'] = dfc['visit'].astype(str)
-        # ds = hv.Dataset(dfc, kdims=['visit', 'metrics'], vdims=['median'])
-        #
-        # plot = ds.to(hv.Curve, 'visit', 'median').overlay('metrics')
             plot_metric = _visit_plot(dset_filt[metric], metric)
             if plot_filt is None:
                 plot_filt = plot_metric
             else:
                 plot_filt = plot_filt * plot_metric
-        # plot = plot.opts(hv.opts.Curve(tools=['hover']))
 
-        # plot = plot.redim(y=hv.Dimension('median', range=(-1, 1)))
         if plot_filt is None:
             continue
-        # Now we rename the axis
-        xlabel = 'visit - {!s}'.format(filt)
-        ylabel = 'normalized median'
-
-        grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-        plot_filt = plot_filt.opts(show_legend=False, show_grid=True,
-                         gridstyle=grid_style,
-                         xlabel=xlabel, ylabel=ylabel,
-                         responsive=True, aspect=5,
-                         bgcolor='black', xrotation=45)
         plots[filt] = plot_filt
 
     filters = sorted(plots.keys())
