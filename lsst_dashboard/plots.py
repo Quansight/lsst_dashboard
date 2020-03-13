@@ -493,7 +493,9 @@ def _visit_plot(df, metric):
                          bgcolor='black', xrotation=45)
         return plot
 
-    visit_stats = (df.map_partitions(lambda _df:_df.assign(result=minmax_scale(_df[metric])))
+    with pd.option_context('mode.use_inf_as_na', True):
+        visit_stats = (df.dropna(subset=[metric])
+                     .map_partitions(lambda _df:_df.assign(result=minmax_scale(_df[metric])))
                      .groupby('visit')
                      .result.apply(pd.Series.median, meta=('median',float))
                      .reset_index().rename(columns={'index':'visit'}))
