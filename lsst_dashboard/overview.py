@@ -14,8 +14,8 @@ pn.extension()
 
 class OverviewApp(param.Parameterized):
     
-    metrics_path = param.String('data/PDR2_metrics.parq')
-    skymap_path = param.String('data/deepCoadd_skyMap.csv')
+    metrics_path = param.String('/project/kcpevey/PDR2_metrics.parq')
+    skymap_path = param.String('/project/kcpevey/deepCoadd_skyMap.csv')
     
     metric = param.ObjectSelector()
     filter_ = param.ObjectSelector()
