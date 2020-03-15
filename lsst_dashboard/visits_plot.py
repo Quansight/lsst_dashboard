@@ -30,7 +30,7 @@ def visits_plot_per_filter(dsets_filter, metrics, filt):
                             'cscaled': col_scaled},
                    inplace=True)
         plot_metric = visits_plot_per_metric(dfp, 'visit',  col_scaled,
-                                             [col_median],
+                                             [col_median, 'visit'],
                                              filt=filt)
         plot_all = plot_all * plot_metric if plot_all else plot_metric
 
