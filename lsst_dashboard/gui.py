@@ -21,7 +21,10 @@ from .plots import visits_plot
 from .plots import scattersky, FilterStream, skyplot
 
 from .dataset import Dataset
+from .dataset import KartothekDataset
 from .qa_dataset import QADataset
+
+
 
 from .utils import set_timeout
 
@@ -44,12 +47,12 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
-sample_data_directory = 'sample_data'
+sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 
 
 class Store(object):
     def __init__(self):
-        self.active_dataset = Dataset('')
+        self.active_dataset = KartothekDataset('')
 
 
 def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
@@ -59,7 +62,7 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
     global datavisits
     global filtered_datavisits
 
-    d = Dataset(data_repo_path, **kwargs)
+    d = KartothekDataset(data_repo_path, **kwargs)
     d.connect()
 
     global store
@@ -91,15 +94,10 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
             datavisits[filt][metric] = df
             filtered_datavisits[filt][metric] = filtered_df
 
-    # print("datasets",datasets)
-    # print("filtered_datasets",filtered_datasets)
-    # print("datavisits",datavisits)
-    # print("filtered_datavisits",filtered_datavisits)
-
     return d
 
 
-def load_data(data_repo_path=None, datastack = 'forced'):
+def load_data(data_repo_path=None, datastack='forced'):
     # current_directory = os.path.dirname(os.path.abspath(__file__))
     # root_directory = os.path.split(current_directory)[0]
 
@@ -109,7 +107,7 @@ def load_data(data_repo_path=None, datastack = 'forced'):
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    datastack = 'qaDashboardCoaddTable' # + datastack -- disabled forced/unforced for now
+    datastack = 'qaDashboardCoaddTable'  # + datastack -- disabled forced/unforced for now
     d = init_dataset(data_repo_path, datastack=datastack)
 
     return d
@@ -249,11 +247,12 @@ class QuickLookComponent(Component):
 
     def _on_load_data_repository(self, event):
 
+        # Setup Variables
         global datasets
         global datavisits
         global filtered_datavisits
 
-        self.store.active_dataset = Dataset('')
+        self.store.active_dataset = KartothekDataset('')
         self.skyplot_list = []
         self.plots_list = []
         self.plot_top = None
@@ -263,28 +262,32 @@ class QuickLookComponent(Component):
         datavisits = {}
         filtered_datavisits = {}
 
-        self._load_metrics()
+
+        # Setup UI
         self._switch_view_mode()
         self.update_display()
 
-        data_repo_path = self.data_repository
-        self.add_status_message('Load Data Start...', data_repo_path,
+
+        # Load Data
+        self.add_status_message('Load Data Start...', self.data_repository,
                                 level='info')
 
         dstack_switch_val = self._switch_stack.value.lower()
         datastack = 'unforced' if 'unforced' in dstack_switch_val else 'forced'
         try:
-            self.store.active_dataset = load_data(data_repo_path, datastack)
+            self.store.active_dataset = load_data(self.data_repository,
+                                                  datastack)
 
         except Exception as e:
             self.update_display()
             self.add_message_from_error('Data Loading Error',
-                                        data_repo_path, e)
+                                        self.data_repository, e)
             raise
 
-        self.add_status_message('Data Ready', data_repo_path,
+        self.add_status_message('Data Ready', self.data_repository,
                                 level='success', duration=3)
-        # update ui
+
+        # Update UI
         self.flag_filter_select.options = self.store.active_dataset.flags
 
         for f in self.store.active_dataset.filters:
@@ -295,8 +298,10 @@ class QuickLookComponent(Component):
         self._switch_view_mode()
         self.update_display()
 
+
     def update_display(self):
         self.set_checkbox_style()
+
 
     def set_checkbox_style(self):
         code = '''$("input[type='checkbox']").addClass("metric-checkbox");'''
@@ -543,19 +548,6 @@ class QuickLookComponent(Component):
                 return
         self._update_selected_metrics_by_filter()
 
-    # def filter_visits_dataframe(self):
-    #     assert False
-    #     global filtered_datavisits
-    #     global datavisits
-    #     for filt, metrics in datavisits.items():
-    #         for metric, df in metrics.items():
-    #             try:
-    #                 query_expr = self._assemble_query_expression(ignore_query_expr=True)
-    #                 if query_expr and datavisits[filt][metric] is not None:
-    #                     filtered_datavisits[filt][metric] = datavisits[filt][metric].query(query_expr)
-    #             except Exception as e:
-    #                 self.add_message_from_error('Filtering Visits Error', '', e)
-    #                 return
 
     def _assemble_query_expression(self, ignore_query_expr=False):
         query_expr = ''
@@ -717,15 +709,12 @@ class QuickLookComponent(Component):
             # self._plot_layout.append(self.linked_tab_detail_plots())
 
     def jinja(self):
-        from ._jinja2_templates import quicklook
-        import holoviews as hv
+
         tmpl = pn.Template(dashboard_html_template)
 
         data_repo_widget = pn.panel(self.param.data_repository,
                                     show_labels=False)
         data_repo_widget.width = 300
-#        data_repo_row = pn.Row(pn.panel('Data Repository', align='end'),
-#                               data_repo_widget, self._submit_repository)
         data_repo_row = pn.Row(data_repo_widget, self._submit_repository)
         data_repo_row.css_classes = ['data-repo-input']
 
