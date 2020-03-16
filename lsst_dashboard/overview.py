@@ -6,6 +6,7 @@ import pandas as pd
 from holoviews import opts
 import geopandas as gpd
 from shapely.geometry import box
+from importlib import resources
 
 # # for overview with geoviews:
 # import geoviews as gv
@@ -14,13 +15,13 @@ pn.extension()
 
 class OverviewApp(param.Parameterized):
 
-    metrics_path = param.String('data/PDR2_metrics.parq')
-    skymap_path = param.String('data/deepCoadd_skyMap.csv')
+    metrics_path = param.String('PDR2_metrics.parq')
+    skymap_path = param.String('deepCoadd_skyMap.csv')
 
     metric = param.ObjectSelector()
     filter_ = param.ObjectSelector()
 
-    selected_tract_str = param.String(default='', label='Selected tracts (comma delim)')
+    selected_tract_str = param.String(default='', label='Selected tracts')
 
     plot_width = param.Integer(default=800, bounds=(1, None))
     plot_height = param.Integer(default=400, bounds=(1, None))
@@ -38,7 +39,6 @@ class OverviewApp(param.Parameterized):
         # load the skmap and metrics data
         self.load_data()
 
-
     @param.output()
     def output(self):
         """output list of selected tracts"""
@@ -51,10 +51,15 @@ class OverviewApp(param.Parameterized):
 
     def load_data(self):
         """load in the source files, reorganize data, and set up widget options"""
-        # load the data
-        self.metrics_df = pd.read_parquet(self.metrics_path)
+        data_package = 'lsst_dashboard.data'
+        # load the metrics data
+        with resources.path(data_package, self.metrics_path) as path:
+            self.metrics_df = pd.read_parquet(path)
+
         # load skymap (csv with x0, x1, y0, y1 columns)
-        self.skymap = gpd.read_file(self.skymap_path).astype(float)
+        with resources.path(data_package, self.skymap_path) as path:
+            self.skymap = gpd.read_file(path).astype(float)
+
         self.skymap.geometry = self.skymap.apply(lambda x: box(x['x0'], x['y0'], x['x1'], x['y1']), axis=1)
 
         # combine the metrics with the skymap geometry
