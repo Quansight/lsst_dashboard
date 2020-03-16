@@ -171,18 +171,23 @@ class KartothekDataset():
         print('-- done with reads --')
 
     def get_coadd_ddf_by_filter_metric(self, filter_name, metrics,
-                                       tracts, coadd_version='unforced'):
+                                       tracts, coadd_version='unforced',
+                                       warnings=[]):
 
         for t in tracts:
             if t not in self.tracts:
-                print('WARNING: Selected tract {} missing in data'.format(t))
+                msg = 'Selected tract {} missing in data'.format(t)
+                print('WARNING: {}'.format(msg))
+                warnings.append(msg)
 
         # filter out any tracts not in data
         valid_tracts = list(set(self.tracts).intersection(set(tracts)))
 
         if not valid_tracts:
-            print('WARNING: No Valid tracts selected...using all tracts'.format(t))
+            msg = 'No Valid tracts selected...using all tracts'
+            print('WARNING: {}'.format(msg))
             valid_tracts = self.tracts
+            warnings.append(msg)
 
         predicates = [[('tract', 'in', valid_tracts),
                        ('filter', '==', filter_name)]]

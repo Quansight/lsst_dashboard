@@ -582,11 +582,17 @@ class QuickLookComponent(Component):
         global datasets
         global filtered_datasets
 
+        warnings = []
         ddf = (self.store
                    .active_dataset
                    .get_coadd_ddf_by_filter_metric(filter_type,
                                                    metrics=metrics,
-                                                   tracts=self.store.active_tracts))
+                                                   tracts=self.store.active_tracts,
+                                                   warnings=warnings))
+        if warnings:
+            msg = ';'.join(warnings)
+            self.add_status_message('Selected Tracts Warning',
+                                    msg, level='error')
 
 
         datasets[filter_type] = ddf
