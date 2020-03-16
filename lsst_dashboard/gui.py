@@ -187,6 +187,7 @@ class QuickLookComponent(Component):
     plot_top = None
     plots_list = []
     skyplot_list = []
+    detail_plots = {}
 
     label = param.String(default='Quick Look')
 
@@ -633,7 +634,6 @@ class QuickLookComponent(Component):
             top_plot = None
             try:
                 top_plot = visits_plot(dvisits, self.selected_metrics_by_filter, filt)
-                logger.info(repr(top_plot))
             except Exception as e:
                 self.add_message_from_error('Visits Plot Error',
                                             '', e)
