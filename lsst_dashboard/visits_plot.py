@@ -92,7 +92,7 @@ def visits_plot_per_metric(df, x, y, hover_columns=None, filt=0):
 
     points = hv.Scatter(df, [x_renamed, y], hover_columns)
     points = points.opts(size=8, line_color='white',
-                         tools=[hover])
+                         tools=[hover], toolbar='above')
 
     plot = curve * points
     plot = plot.redim(y=hv.Dimension(y, range=(-1, 1)))
