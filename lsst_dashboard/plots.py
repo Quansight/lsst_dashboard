@@ -250,26 +250,21 @@ class scattersky(ParameterizedFunction):
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
                                       streams=[self.p.filter_stream])
-        scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
-                            norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts, cmap=viridis)
-        scatter = dynspread(scatter_shaded).opts(**scatter_opts)
+        scatter = dynspread(scatter_shaded).opts(height=self.p.height, responsive=True)
 
         # Set up sky plot
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height': self.p.height, 'responsive': True},  # cmap width?
-                        norm=dict(axiswise=True))
-        sky_shaded = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).options(
-            colorbar=True, responsive=True, cmap='viridis')
-        sky = sky_shaded.opts(**sky_opts)
-        # sky = dynspread(sky_shaded).opts(**sky_opts)
+        sky = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).opts(
+            colorbar=True, cmap='viridis', height=self.p.height, responsive=True)
+        # sky = dynspread(sky_shaded) # Add once supported in Datashader
 
         # Set up summary table
         table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
                                 streams=[self.p.filter_stream])
-        table = table.opts(plot={'width': 200})
+        table = table.opts(width=200)
 
         # Set up BoundsXY streams to listen to box_select events and notify FilterStream
         scatter_select = BoundsXY(source=scatter)
@@ -300,7 +295,7 @@ class scattersky(ParameterizedFunction):
         if self.p.show_table:
             return (table + scatter_p + sky_p)
         else:
-            return (scatter_p + sky_p).options(sizing_mode='stretch_width')
+            return (scatter_p + sky_p).opts(sizing_mode='stretch_width')
 
 
 class multi_scattersky(ParameterizedFunction):
