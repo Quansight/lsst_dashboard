@@ -197,6 +197,8 @@ class QuickLookComponent(Component):
 
         self.store = store
 
+        self.overview = create_overview(self.on_tracts_updated)
+
         self._clear_metrics_button = pn.widgets.Button(
             name='Clear', width=30, align='end')
         self._clear_metrics_button.on_click(self._on_clear_metrics)
@@ -779,7 +781,6 @@ class QuickLookComponent(Component):
 
         clear_button_row = pn.Row(self._clear_metrics_button)
 
-        overview = create_overview(self.on_tracts_updated)
 
         components = [
             ('metrics_clear_button', clear_button_row),
@@ -799,7 +800,7 @@ class QuickLookComponent(Component):
             ('metrics_plots', self.detail_plots_layout),
 
             ('skyplot_metrics_plots', self.skyplot_layout),
-            ('overview_plots', overview),
+            ('overview_plots', self.overview),
             ('flags', pn.Column(pn.Row(self.flag_filter_select,
                                        self.flag_state_select),
                                 pn.Row(self.flag_submit),
