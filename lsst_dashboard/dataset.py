@@ -50,7 +50,7 @@ class Dataset():
             if self.tracts is None:
                 self.tracts = list(set(x for v in self.metadata['visits'].values() for x in v.keys()))
 
-    def parse_metadata_from_bulter(self):
+    def parse_metadata_from_butler(self):
         try:
             print('-- connect to butler --')
             self.conn = Butler(str(self.path))
@@ -69,7 +69,7 @@ class Dataset():
 
         print('-- read metadata file --')
         if Butler:
-            self.parse_metadata_from_bulter()
+            self.parse_metadata_from_butler()
         else:
             self.parse_metadata_from_file()
 
@@ -170,6 +170,67 @@ class KartothekDataset():
 
         print('-- done with reads --')
 
+    def get_coadd_ddf_by_filter_metric(self, filter_name, metrics,
+                                       tracts=None, coadd_version='unforced'):
+
+        if not tracts:
+            tracts = self.tracts
+
+        predicates = [[('tract', 'in', self.tracts),
+                       ('filter', '==', filter_name)]]
+
+        dataset = "coadd_{}".format(coadd_version)
+
+        columns = metrics + self.flags + ['ra', 'dec', 'filter',
+                                          'psfMag', 'patch']
+
+        store = partial(get_store_from_url, 'hfs://' + str(self.path))
+
+        coadd_df = read_dataset_as_ddf(predicates=predicates,
+                                       dataset_uuid=dataset,
+                                       columns=columns,
+                                       store=store,
+                                       table='table').compute()
+
+        # hack label in ...
+        coadd_df['label'] = 'star'
+        coadd_df.set_index('filter', inplace=True)
+
+        return coadd_df
+
+    def get_patch_count(self, filters, tracts, coadd_version='unforced'):
+
+        return 1
+
+        predicates = []
+
+        if filters:
+            predicates.append(('filter', 'in', filters))
+
+        if tracts:
+            predicates.append(('tract', 'in', tracts))
+
+        dataset = "coadd_{}".format(coadd_version)
+
+        columns = ['patch']
+
+        store = partial(get_store_from_url, 'hfs://' + str(self.path))
+
+        if predicates:
+
+            coadd_df = read_dataset_as_ddf(predicates=[predicates],
+                                           dataset_uuid=dataset,
+                                           columns=columns,
+                                           store=store,
+                                           table='table')
+        else:
+            coadd_df = read_dataset_as_ddf(dataset_uuid=dataset,
+                                           columns=columns,
+                                           store=store,
+                                           table='table')
+
+
+        return coadd_df.drop_duplicates().count().compute()['patch']
 
     def parse_metadata_from_file(self):
         if self.path.joinpath(METADATA_FILENAME).exists():
@@ -193,7 +254,7 @@ class KartothekDataset():
         coadd_df = read_dataset_as_ddf(predicates=predicates,
                                        dataset_uuid=dataset,
                                        store=store,
-                                       table='table').compute()
+                                       table='table')
 
         # hack label in ...
         coadd_df['label'] = 'star'

@@ -22,13 +22,10 @@ from .plots import scattersky, FilterStream, skyplot
 
 from .dataset import Dataset
 from .dataset import KartothekDataset
-from .qa_dataset import QADataset
-
-
 
 from .utils import set_timeout
 
-from .overview import overview
+from .overview import create_overview
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,10 +47,33 @@ filtered_datavisits = []
 sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 
 
+def create_hv_dataset(ddf):
+
+    _idNames = ('patch', 'tract')
+    _kdims = ('ra', 'dec', 'psfMag', 'label')
+    _flags = [c for c in ddf.columns if ddf[c].dtype == np.dtype('bool')]
+
+    kdims = []
+    vdims = []
+    for c in ddf.columns:
+        if (c in _kdims or
+                c in _idNames or
+                c in _flags):
+            kdims.append(c)
+        else:
+            vdims.append(c)
+
+    df = (ddf.replace(np.inf, np.nan)
+             .replace(-np.inf, np.nan)
+             .dropna(how='any'))
+
+    return hv.Dataset(df, kdims=kdims, vdims=vdims)
+
+
 class Store(object):
     def __init__(self):
         self.active_dataset = KartothekDataset('')
-
+        self.active_tracts = []
 
 def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
@@ -74,11 +94,6 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
     filtered_datasets = {}
     dtf = d.coadd[datastack]
 
-    dtf = dtf.set_index('filter')
-    for filt in d.filters:
-        df = dtf.loc[filt]
-        datasets[filt] = QADataset(df)
-        filtered_datasets[filt] = QADataset(df.copy())
 
     datavisits = {}
     filtered_datavisits = {}
@@ -245,7 +260,7 @@ class QuickLookComponent(Component):
 
         self._update(None)
 
-    def _on_load_data_repository(self, event):
+    def _on_load_data_repository(self, event, load_metrics=True):
 
         # Setup Variables
         global datasets
@@ -262,11 +277,9 @@ class QuickLookComponent(Component):
         datavisits = {}
         filtered_datavisits = {}
 
-
         # Setup UI
         self._switch_view_mode()
         self.update_display()
-
 
         # Load Data
         self.add_status_message('Load Data Start...', self.data_repository,
@@ -294,7 +307,9 @@ class QuickLookComponent(Component):
             self.selected_metrics_by_filter[f] = []
             self.active_query_by_filter[f] = ''
 
-        self._load_metrics()
+        if load_metrics:
+            self._load_metrics()
+
         self._switch_view_mode()
         self.update_display()
 
@@ -480,20 +495,11 @@ class QuickLookComponent(Component):
         self.adhoc_js.object = script
 
     def get_patch_count(self):
-        return 1
-        patchs = set()
-        for filt, _ in self.selected_metrics_by_filter.items():
-            dset = self.get_dataset_by_filter(filt)
-            patchs = patchs.union(set(dset.df['patch'].unique()))
-        return len(patchs)
+        filters = self.selected_metrics_by_filter.keys()
+        return self.store.active_dataset.get_patch_count(filters, self.store.active_tracts)
 
     def get_tract_count(self):
-        return 1
-        tracts = set()
-        for filt, _ in self.selected_metrics_by_filter.items():
-            dset = self.get_dataset_by_filter(filt)
-            tracts = tracts.union(set(dset.df['tract'].unique()))
-        return len(tracts)
+        return len(self.store.active_tracts)
 
     def get_visit_count(self):
         return 1
@@ -502,7 +508,7 @@ class QuickLookComponent(Component):
         for filt, metrics in self.selected_metrics_by_filter.items():
             for metric in metrics:
                 df = dvisits[filt][metric]
-                visits = visits.union(set(df['visit'].unique()))
+                visits = visits.union(set(df['visit']))
         return len(visits)
 
     def update_info_counts(self):
@@ -541,7 +547,7 @@ class QuickLookComponent(Component):
             try:
                 query_expr = self._assemble_query_expression()
                 if query_expr:
-                    filtered_datasets[filt] = QADataset(datasets[filt].df.query(query_expr))
+                    filtered_datasets[filt] = datasets[filt].query(query_expr)
             except Exception as e:
                 self.add_message_from_error('Filtering Error', '', e)
                 raise
@@ -570,13 +576,29 @@ class QuickLookComponent(Component):
 
         return query_expr
 
-    def get_dataset_by_filter(self, filter_type):
+    def get_dataset_by_filter(self, filter_type, metrics):
         global datasets
         global filtered_datasets
-        if self.query_filter == '' and len(self.selected_flag_filters) == 0:
-            return datasets[filter_type]
-        else:
-            return filtered_datasets[filter_type]
+
+        ddf = (self.store
+                   .active_dataset
+                   .get_coadd_ddf_by_filter_metric(filter_type,
+                                                   metrics=metrics,
+                                                   tracts=self.store.active_tracts))
+
+
+        datasets[filter_type] = ddf
+        filtered_datasets[filter_type] = ddf
+
+        if self.query_filter or len(self.selected_flag_filters) > 0:
+
+            query_expr = self._assemble_query_expression()
+
+            if query_expr:
+                ddf = ddf.query(query_expr)
+                filtered_datasets[filter_type] = ddf
+
+        return create_hv_dataset(ddf)
 
     def get_datavisits(self):
         global datavisits
@@ -609,6 +631,7 @@ class QuickLookComponent(Component):
         top_plot = None
 
         dvisits = self.get_datavisits()
+
         try:
             top_plot = visits_plot(dvisits, self.selected_metrics_by_filter)
         except Exception as e:
@@ -621,16 +644,17 @@ class QuickLookComponent(Component):
             if not metrics:
                 continue
             filter_stream = FilterStream()
-            dset = self.get_dataset_by_filter(filt)
+            dset = self.get_dataset_by_filter(filt, metrics=metrics)
             for i, metric in enumerate(metrics):
                 # Sky plots
-                plot_sky = skyplot(dset.ds,
+                plot_sky = skyplot(dset,
                                    filter_stream=filter_stream,
                                    vdim=metric)
+                
                 skyplot_list.append((filt + ' - ' + metric, plot_sky))
 
                 # Detail plots
-                plots_ss = scattersky(dset.ds,
+                plots_ss = scattersky(dset,
                                       xdim='psfMag',
                                       ydim=metric,
                                       filter_stream=filter_stream)
@@ -645,6 +669,7 @@ class QuickLookComponent(Component):
         self._switch_view_mode()
 
     def linked_tab_plots(self):
+        print('>>>>>>>>> SKYPLOT LIST: {}'.format(self.skyplot_list))
         tabs = [(name, pn.panel(plot)) for name, plot in self.skyplot_list]
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
@@ -679,8 +704,7 @@ class QuickLookComponent(Component):
         if self._switch_view.value == 'Skyplot View':
 
             cmd = ('''$( ".skyplot-plot-area" ).show();'''
-                   '''$( ".metrics-plot-area" ).hide();'''
-                   '''$( ".overview-plot-area" ).hide();''')
+                   '''$( ".metrics-plot-area" ).hide();''')
 
             self.execute_js_script(cmd)
             self.skyplot_layout.append(self.linked_tab_plots())
@@ -707,6 +731,19 @@ class QuickLookComponent(Component):
                 self.list_layout.append(p)
             self._plot_layout.append(self.list_layout)
             # self._plot_layout.append(self.linked_tab_detail_plots())
+
+    def on_tracts_updated(self, tracts):
+
+        if self.store.active_tracts != tracts:
+            self.store.active_tracts = tracts
+            self.attempt_to_clear(self._plot_top)
+            self.attempt_to_clear(self._plot_layout)
+            self.attempt_to_clear(self.skyplot_layout)
+            self.attempt_to_clear(self.list_layout)
+
+            self._on_load_data_repository(None, load_metrics=False)
+            self.update_info_counts()
+            print('TRACTS UPDATED!!!!!! {}'.format(tracts))
 
     def jinja(self):
 
@@ -735,6 +772,8 @@ class QuickLookComponent(Component):
         view_switcher.css_classes = ['view-switcher']
 
         clear_button_row = pn.Row(self._clear_metrics_button)
+
+        overview = create_overview(self.on_tracts_updated)
 
         components = [
             ('metrics_clear_button', clear_button_row),
