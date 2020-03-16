@@ -3,10 +3,10 @@ import numpy as np
 import holoviews as hv
 
 
-def visits_plot(dsets_visits, filters_to_metrics, filt):
+def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[]):
     metrics = filters_to_metrics[filt]
     dset_filt = dsets_visits[filt]
-    plot_filt = visits_plot_per_filter(dset_filt, metrics, filt)
+    plot_filt = visits_plot_per_filter(dset_filt, metrics, filt, errors=errors)
     return plot_filt
 
 
@@ -16,30 +16,36 @@ def visits_plot_layout(plots):
     return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
 
-def visits_plot_per_filter(dsets_filter, metrics, filt):
+def visits_plot_per_filter(dsets_filter, metrics, filt, errors=[]):
     '''
     * dsets_filter: a dictionary pointing to metrics dataframes
     '''
     plot_all = None
     for metric in metrics:
-        df = dsets_filter[metric]
-        dfp = process_metric_visits(df.compute(), metric)
-        col_median = '{}_median'.format(metric)
-        col_scaled = '{}_scaled'.format(metric)
-        dfp.rename(columns={'cmedian': col_median,
-                            'cscaled': col_scaled},
-                   inplace=True)
-        plot_metric = visits_plot_per_metric(dfp, 'visit',  col_scaled,
-                                             [col_median, 'visit'],
-                                             filt=filt)
-        plot_all = plot_all * plot_metric if plot_all else plot_metric
+        try:
+            df = dsets_filter[metric]
+            dfp = process_metric_visits(df.compute(), metric)
+            col_median = '{}_median'.format(metric)
+            col_scaled = '{}_scaled'.format(metric)
+            dfp.rename(columns={'cmedian': col_median,
+                                'cscaled': col_scaled},
+                       inplace=True)
+            plot_metric = visits_plot_per_metric(dfp, 'visit',  col_scaled,
+                                                 [col_median, 'visit'],
+                                                 filt=filt)
+            plot_all = plot_all * plot_metric if plot_all else plot_metric
+        except:
+            errors.append(metric)
 
-    return plot_all.opts(show_legend=False, show_grid=True,
-                     gridstyle={'grid_line_color': 'white',
-                                'grid_line_alpha': 0.2},
-                     responsive=True, aspect=5,
-                     ylabel="normalized/metric",
-                     bgcolor='black', xrotation=45)
+    if plot_all:
+        return plot_all.opts(show_legend=False, show_grid=True,
+                             gridstyle={'grid_line_color': 'white',
+                                        'grid_line_alpha': 0.2},
+                             responsive=True, aspect=5,
+                             ylabel="normalized/metric",
+                             bgcolor='black', xrotation=45)
+    else:
+        return None
 
 
 def process_metric_visits(dfc, metric):
@@ -67,9 +73,10 @@ def visits_plot_per_metric(df, x, y, hover_columns=None, filt=0):
     * hover_columns: list of column names for hover information
     '''
     from bokeh.models import HoverTool
+    from holoviews.core.util import dimension_sanitizer
 
     if hover_columns:
-        _tt = [(n,'@{}'.format(n)) for n in hover_columns]
+        _tt = [(n,'@{%s}' % dimension_sanitizer(n)) for n in hover_columns]
         hover = HoverTool(tooltips=_tt)
     else:
         hover = 'hover'

@@ -29,6 +29,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler('dashboard.log'))
 
+
 current_directory = os.path.dirname(os.path.abspath(__file__))
 root_directory = os.path.split(current_directory)[0]
 
@@ -581,11 +582,17 @@ class QuickLookComponent(Component):
         global datasets
         global filtered_datasets
 
+        warnings = []
         ddf = (self.store
                    .active_dataset
                    .get_coadd_ddf_by_filter_metric(filter_type,
                                                    metrics=metrics,
-                                                   tracts=self.store.active_tracts))
+                                                   tracts=self.store.active_tracts,
+                                                   warnings=warnings))
+        if warnings:
+            msg = ';'.join(warnings)
+            self.add_status_message('Selected Tracts Warning',
+                                    msg, level='error')
 
 
         datasets[filter_type] = ddf
@@ -635,7 +642,15 @@ class QuickLookComponent(Component):
                 continue
             top_plot = None
             try:
-                top_plot = visits_plot(dvisits, self.selected_metrics_by_filter, filt)
+                errors = []
+                top_plot = visits_plot(dvisits,
+                                       self.selected_metrics_by_filter,
+                                       filt, errors)
+                if errors:
+                    msg = 'exhibiting metrics {} failed'
+                    msg = msg.format(' '.join(errors))
+                    self.add_status_message('Visits Plot Warning', msg,
+                                            level='error', duration=10)
             except Exception as e:
                 self.add_message_from_error('Visits Plot Error',
                                             '', e)
