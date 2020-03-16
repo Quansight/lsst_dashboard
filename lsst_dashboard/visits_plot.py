@@ -73,9 +73,10 @@ def visits_plot_per_metric(df, x, y, hover_columns=None, filt=0):
     * hover_columns: list of column names for hover information
     '''
     from bokeh.models import HoverTool
+    from holoviews.core.util import dimension_sanitizer
 
     if hover_columns:
-        _tt = [(n,'@{%s}' % n) for n in hover_columns]
+        _tt = [(n,'@{%s}' % dimension_sanitizer(n)) for n in hover_columns]
         hover = HoverTool(tooltips=_tt)
     else:
         hover = 'hover'
