@@ -28,13 +28,14 @@ class OverviewApp(param.Parameterized):
 
     geoviews = param.Boolean(default=False)
 
-    def __init__(self, **params):
+    def __init__(self, tracts_update_callback, **params):
         # Declare Tap stream (source polygon element to be defined later)
         self.stream = hv.streams.Selection1D()
         super().__init__(**params)
         # set up default empty objects
         self.df = pd.DataFrame()
         self.rangexy = hv.streams.RangeXY()
+        self.tracts_update_callback = tracts_update_callback
 
         # load the skmap and metrics data
         self.load_data()
@@ -111,6 +112,8 @@ class OverviewApp(param.Parameterized):
         else:
             tract_dict = self.polys.iloc[self.stream.index].data
             self.selected_tract_str = ','.join([str(t['tract']) for t in tract_dict])
+
+        self.tracts_update_callback(self.tracts_in_widget())
 
     @param.depends('metric', 'filter_')
     def plot(self):
@@ -221,4 +224,8 @@ class OverviewApp(param.Parameterized):
             sizing_mode='stretch_both'
         )
 
-overview = OverviewApp().panel()
+
+def create_overview(tracts_update_callback):
+    overview_app = OverviewApp(tracts_update_callback)
+    overview = overview_app.panel()
+    return overview
