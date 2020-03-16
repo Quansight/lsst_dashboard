@@ -11,13 +11,11 @@ import param
 import panel as pn
 import holoviews as hv
 import numpy as np
-import pandas as pd
-import sklearn.preprocessing
 
 from .base import Application
 from .base import Component
 
-from .plots import visits_plot
+from .visits_plot import visits_plot
 from .plots import scattersky, FilterStream, skyplot
 
 from .dataset import Dataset
@@ -257,6 +255,7 @@ class QuickLookComponent(Component):
                                         margin=(10, 10, 10, 10))
 
         self.list_layout = pn.Column(sizing_mode='stretch_width')
+        self.detail_plots_layout = pn.Column(sizing_mode='stretch_width')
 
         self._update(None)
 
@@ -373,7 +372,6 @@ class QuickLookComponent(Component):
 
     def on_define_new_column_click(self, event):
         new_column_expr = self.new_column_expr
-        logger.info("NEW COLUMN EXPRESSION: '{!s}'".format(new_column_expr))
 
     def _create_switch_view_buttons(self):
         radio_group = pn.widgets.RadioBoxGroup(name='SwitchView',
@@ -624,25 +622,25 @@ class QuickLookComponent(Component):
     # @profile(immediate=True)
     def _update_selected_metrics_by_filter(self):
 
-        plots_list = []
         skyplot_list = []
         detail_plots = {}
 
-        top_plot = None
-
         dvisits = self.get_datavisits()
-
-        try:
-            top_plot = visits_plot(dvisits, self.selected_metrics_by_filter)
-        except Exception as e:
-            self.add_message_from_error('Visits Plot Error',
-                                        '', e)
-
-        self.plot_top = top_plot
-
         for filt, metrics in self.selected_metrics_by_filter.items():
+            plots_list = []
             if not metrics:
                 continue
+            top_plot = None
+            try:
+                top_plot = visits_plot(dvisits, self.selected_metrics_by_filter, filt)
+                logger.info(repr(top_plot))
+            except Exception as e:
+                self.add_message_from_error('Visits Plot Error',
+                                            '', e)
+
+            self.plot_top = top_plot
+            detail_plots[filt] = [top_plot]
+
             filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt, metrics=metrics)
             for i, metric in enumerate(metrics):
@@ -650,7 +648,7 @@ class QuickLookComponent(Component):
                 plot_sky = skyplot(dset,
                                    filter_stream=filter_stream,
                                    vdim=metric)
-                
+
                 skyplot_list.append((filt + ' - ' + metric, plot_sky))
 
                 # Detail plots
@@ -659,7 +657,7 @@ class QuickLookComponent(Component):
                                       ydim=metric,
                                       filter_stream=filter_stream)
                 plots_list.append((metric, plots_ss))
-            detail_plots[filt] = [plots_list]
+            detail_plots[filt].extend([p for m,p in plots_list])
 
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
@@ -674,7 +672,13 @@ class QuickLookComponent(Component):
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
     def linked_tab_detail_plots(self):
-        tabs = [(filt, pn.panel(plots)) for filt, plots in self.detail_plots]
+        tabs = []
+        for filt, plots in self.detail_plots.items():
+            plots_list = pn.Column(sizing_mode='stretch_width')
+            for plot in plots:
+                p = pn.Row(plot, sizing_mode='stretch_width')
+                plots_list.append(p)
+            tabs.append((filt, plots_list))
         return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
     def attempt_to_clear(self, obj):
@@ -689,6 +693,7 @@ class QuickLookComponent(Component):
         self.attempt_to_clear(self._plot_layout)
         self.attempt_to_clear(self.skyplot_layout)
         self.attempt_to_clear(self.list_layout)
+        self.attempt_to_clear(self.detail_plots_layout)
 
         self._on_clear_metrics(event=None)
         self._on_load_data_repository(None)
@@ -700,6 +705,7 @@ class QuickLookComponent(Component):
         self.attempt_to_clear(self._plot_layout)
         self.attempt_to_clear(self.skyplot_layout)
         self.attempt_to_clear(self.list_layout)
+        self.attempt_to_clear(self.detail_plots_layout)
 
         if self._switch_view.value == 'Skyplot View':
 
@@ -725,12 +731,12 @@ class QuickLookComponent(Component):
 
             self.execute_js_script(cmd)
 
-            logger.info(self.plot_top)
             self._plot_top.append(self.plot_top)
             for i, p in self.plots_list:
                 self.list_layout.append(p)
             self._plot_layout.append(self.list_layout)
             # self._plot_layout.append(self.linked_tab_detail_plots())
+            self.detail_plots_layout.append(self.linked_tab_detail_plots())
 
     def on_tracts_updated(self, tracts):
 
@@ -786,10 +792,14 @@ class QuickLookComponent(Component):
             ('view_switcher', view_switcher),
 
             ('metrics_selectors', self._metric_layout),
-            ('metrics_plots', self._plot_layout),
+
+            # ('metrics_plots', self._plot_layout),
+            # ('plot_top', self._plot_top),
+            ('plot_top', None),
+            ('metrics_plots', self.detail_plots_layout),
+
             ('skyplot_metrics_plots', self.skyplot_layout),
             ('overview_plots', overview),
-            ('plot_top', self._plot_top),
             ('flags', pn.Column(pn.Row(self.flag_filter_select,
                                        self.flag_state_select),
                                 pn.Row(self.flag_submit),
