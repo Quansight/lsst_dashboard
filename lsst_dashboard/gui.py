@@ -12,6 +12,8 @@ import panel as pn
 import holoviews as hv
 import numpy as np
 
+from holoviews.streams import RangeXY, PlotSize
+
 from .base import Application
 from .base import Component
 
@@ -255,11 +257,17 @@ class QuickLookComponent(Component):
         self._plot_layout = pn.Column(sizing_mode='stretch_width',
                                       margin=(10, 10, 10, 10))
 
+        self._skyplot_tabs = pn.Tabs(sizing_mode='stretch_both')
         self.skyplot_layout = pn.Column(sizing_mode='stretch_width',
                                         margin=(10, 10, 10, 10))
 
+        self._detail_tabs = pn.Tabs(sizing_mode='stretch_both')
         self.list_layout = pn.Column(sizing_mode='stretch_width')
         self.detail_plots_layout = pn.Column(sizing_mode='stretch_width')
+
+        self._filter_streams = {}
+        self._skyplot_range_stream = RangeXY()
+        self._scatter_range_stream = RangeXY()
 
         self._update(None)
 
@@ -631,9 +639,9 @@ class QuickLookComponent(Component):
     @param.depends('selected_metrics_by_filter', watch=True)
     # @profile(immediate=True)
     def _update_selected_metrics_by_filter(self):
-
         skyplot_list = []
         detail_plots = {}
+        existing_skyplots = {}
 
         dvisits = self.get_datavisits()
         for filt, metrics in self.selected_metrics_by_filter.items():
@@ -658,20 +666,31 @@ class QuickLookComponent(Component):
             self.plot_top = top_plot
             detail_plots[filt] = [top_plot]
 
-            filter_stream = FilterStream()
+            if filt in self._filter_streams:
+                filter_stream = self._filter_streams[filt]
+            else:
+                self._filter_streams[filt] = filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt, metrics=metrics)
             for i, metric in enumerate(metrics):
                 # Sky plots
+                skyplot_name = filt + ' - ' + metric
                 plot_sky = skyplot(dset,
                                    filter_stream=filter_stream,
+                                   range_stream=self._skyplot_range_stream,
                                    vdim=metric)
-
-                skyplot_list.append((filt + ' - ' + metric, plot_sky))
+                if skyplot_name in existing_skyplots:
+                    sky_panel = existing_sky_plots[skyplot_name]
+                    sky_panel.object = plot_sky
+                else:
+                    sky_panel = pn.panel(plot_sky)
+                skyplot_list.append((skyplot_name, sky_panel))
 
                 # Detail plots
                 plots_ss = scattersky(dset,
                                       xdim='psfMag',
                                       ydim=metric,
+                                      sky_range_stream=self._skyplot_range_stream,
+                                      scatter_range_stream=self._scatter_range_stream,
                                       filter_stream=filter_stream)
                 plots_list.append((metric, plots_ss))
             detail_plots[filt].extend([p for m,p in plots_list])
@@ -683,20 +702,12 @@ class QuickLookComponent(Component):
         self.update_display()
         self._switch_view_mode()
 
-    def linked_tab_plots(self):
-        print('>>>>>>>>> SKYPLOT LIST: {}'.format(self.skyplot_list))
-        tabs = [(name, pn.panel(plot)) for name, plot in self.skyplot_list]
-        return pn.Tabs(*tabs, sizing_mode='stretch_both')
-
-    def linked_tab_detail_plots(self):
+    def _update_detail_plots(self):
         tabs = []
         for filt, plots in self.detail_plots.items():
-            plots_list = pn.Column(sizing_mode='stretch_width')
-            for plot in plots:
-                p = pn.Row(plot, sizing_mode='stretch_width')
-                plots_list.append(p)
+            plots_list = pn.Column(*plots, sizing_mode='stretch_width')
             tabs.append((filt, plots_list))
-        return pn.Tabs(*tabs, sizing_mode='stretch_both')
+        self._detail_tabs[:] = tabs
 
     def attempt_to_clear(self, obj):
         try:
@@ -708,7 +719,6 @@ class QuickLookComponent(Component):
         # clear existing plot layouts
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
-        self.attempt_to_clear(self.skyplot_layout)
         self.attempt_to_clear(self.list_layout)
         self.attempt_to_clear(self.detail_plots_layout)
 
@@ -720,40 +730,35 @@ class QuickLookComponent(Component):
         # clear existing plot layouts
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
-        self.attempt_to_clear(self.skyplot_layout)
         self.attempt_to_clear(self.list_layout)
         self.attempt_to_clear(self.detail_plots_layout)
 
         if self._switch_view.value == 'Skyplot View':
-
             cmd = ('''$( ".skyplot-plot-area" ).show();'''
                    '''$( ".metrics-plot-area" ).hide();''')
-
             self.execute_js_script(cmd)
-            self.skyplot_layout.append(self.linked_tab_plots())
 
+            self._skyplot_tabs[:] = self.skyplot_list
+            if self._skyplot_tabs not in self.skyplot_layout:
+                self.skyplot_layout[:] = [self._skyplot_tabs]
         elif self._switch_view.value == 'Overview':
-
+            self.attempt_to_clear(self.skyplot_layout)
             cmd = ('''$( ".skyplot-plot-area" ).hide();'''
                    '''$( ".metrics-plot-area" ).hide();'''
                    '''$( ".overview-plot-area" ).show();''')
-
             self.execute_js_script(cmd)
-
         else:
-
+            self.attempt_to_clear(self.skyplot_layout)
             cmd = ('''$( ".skyplot-plot-area" ).hide();'''
                    '''$( ".metrics-plot-area" ).show();'''
                    '''$( ".overview-plot-area" ).hide();''')
-
             self.execute_js_script(cmd)
 
-            self._plot_top.append(self.plot_top)
-            for i, p in self.plots_list:
-                self.list_layout.append(p)
-            self._plot_layout.append(self.list_layout)
-            # self._plot_layout.append(self.linked_tab_detail_plots())
-            self.detail_plots_layout.append(self.linked_tab_detail_plots())
+            self._update_detail_plots()
+            self._plot_top[:] = [self.plot_top]
+            self.list_layout[:] = [p for _, p in self.plots_list]
+            self._plot_layout[:] = [self.list_layout]
+            self.detail_plots_layout[:] = [self._detail_tabs]
 
     def on_tracts_updated(self, tracts):
 
