@@ -88,7 +88,7 @@ class OverviewApp(param.Parameterized):
     def update_tract_selection(self, event):
         """When tracts are added to the widget, select them on the screen"""
         # create a dataframe of the polygon data (for easy indexing)
-        if geoviews:
+        if self.geoviews:
             df = self.polys.data
         else:
             df = pd.DataFrame(self.polys.data)
@@ -152,10 +152,19 @@ class OverviewApp(param.Parameterized):
                         }
                     return d
                 
-                print('here')
-                # create a dictionary representation of the dataframe
-                self.data = list(self.df_extracted.apply(create_dict, axis=1))
-                self.data_avail = list(self.df_available.apply(create_dict, axis=1))
+                self.data_dict = self.df_extracted.apply(create_dict, axis=1)
+
+                if len(self.data_dict) == 0:
+                    self.data = list()
+                else:
+                    self.data = list(self.data_dict)
+
+                self.data_avail_dict = self.df_available.apply(create_dict, axis=1)
+
+                if len(self.data_avail_dict) == 0:
+                    self.data_avail = list()
+                else:
+                    self.data_avail = list(self.data_avail_dict)
 
                 # declare polygons
                 self.polys = hv.Polygons(self.data, vdims=['metric', 'tract'])
@@ -163,8 +172,6 @@ class OverviewApp(param.Parameterized):
 
             # Declare Tap stream with polys as source and initial values
             self.stream.source = self.polys
-            # initialize selection based on the tracts in widget
-            # self.stream.index = tract_list
 
             # Define a RangeXY stream linked to the image (preserving ranges from the previous image)
             self.rangexy = hv.streams.RangeXY(
@@ -211,32 +218,27 @@ class OverviewApp(param.Parameterized):
             else:
                 (x0, x1), (y0, y1) = self.rangexy.x_range, self.rangexy.y_range
 
-            # return self.polys_avail.opts(opts.Polygons(
-            #     line_color=hv.dim('tract').isin(self.available_tracts).categorize(
-            #                                          {True: 'red', False: 'white'}),
-            #     line_width=hv.dim('tract').isin(self.available_tracts).categorize(
-            #                                          {True: 1, False: 1}),
-            #     color=None
-            #     )) * \
-            #     self.polys.opts(opts.Polygons(xlim=(x0, x1),
-            #                                      ylim=(y0, y1),
-            #                                      hooks=[reset_range_hook],
-            #                                      responsive=True,
-            #                                      bgcolor='black',
-            #                                      # line_color=hv.dim('tract').isin(self.available_tracts).categorize(
-            #                                      #     {True: 'red', False: 'white'}),
-            #                                      # line_width=hv.dim('tract').isin(self.available_tracts).categorize(
-            #                                      #     {True: 1, False: 1}),
-            #                                      line_width=0,
-            #                                      tools=['hover', 'tap'],
-            #                                      active_tools=['wheel_zoom', 'tap'],
-            #                                      colorbar=True,
-            #                                      title=self.metric,
-            #                                      color='metric',
-            #                                      ))
-            return self.polys
+            return self.polys_avail.opts(opts.Polygons(
+                line_color=hv.dim('tract').isin(self.available_tracts).categorize(
+                                                     {True: 'red', False: 'black'}),
+                line_width=hv.dim('tract').isin(self.available_tracts).categorize(
+                                                     {True: 4, False: 1}),
+                fill_alpha=0,
+                )) * \
+                self.polys.opts(opts.Polygons(xlim=(x0, x1),
+                                                 ylim=(y0, y1),
+                                                 hooks=[reset_range_hook],
+                                                 responsive=True,
+                                                 bgcolor='black',
+                                                 line_width=0,
+                                                 tools=['hover', 'tap'],
+                                                 active_tools=['wheel_zoom', 'tap'],
+                                                 colorbar=True,
+                                                 title=self.metric,
+                                                 color='metric',
+                                                 ))
 
-    def left_pane(self):
+    def top_pane(self):
         load_tracts = pn.widgets.Button(name='\u25b6', width=40)
         load_tracts.on_click(self.update_tract_selection)
 
@@ -248,15 +250,9 @@ class OverviewApp(param.Parameterized):
         return pane
 
     def panel(self):
-        # return pn.Column(
-        #     self.left_pane,
-        #     pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max'),
-        #     sizing_mode='stretch_both'
-        # )
-
 
         return pn.Column(
-            self.left_pane,
+            self.top_pane,
             pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max', height=600)
         )
 
