@@ -63,6 +63,12 @@ def main():
         print('run the command below from your local machine to view dashboard:')
         print(f'\nssh -N -L {LOCAL_DASHBOARD}:{host}:{lsst_dashboard_port} -L {LOCAL_DASK_DASHBOARD}:{host}:{dask_dashboard_port} {username}@{hostname}\n')
     else:
+        lsst_dashboard_port = 52001
+        dask_dashboard_port = 52002
+
+        LOCAL_DASHBOARD = lsst_dashboard_port
+        LOCAL_DASK_DASHBOARD = dask_dashboard_port
+
         print(f'starting dask cluster on {host}')
         cluster = LocalCluster(dashboard_address=f':{LOCAL_DASK_DASHBOARD}')
         client = Client(cluster)

@@ -250,26 +250,21 @@ class scattersky(ParameterizedFunction):
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
                                       streams=[self.p.filter_stream])
-        scatter_opts = dict(plot={'height': self.p.height, 'responsive':True},
-                            norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts, cmap=viridis)
-        scatter = dynspread(scatter_shaded).opts(**scatter_opts)
+        scatter = dynspread(scatter_shaded).opts(height=self.p.height, responsive=True)
 
         # Set up sky plot
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height': self.p.height, 'responsive': True},  # cmap width?
-                        norm=dict(axiswise=True))
-        sky_shaded = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).options(
-            colorbar=True, responsive=True, cmap='viridis')
-        sky = sky_shaded.opts(**sky_opts)
-        # sky = dynspread(sky_shaded).opts(**sky_opts)
+        sky = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).opts(
+            colorbar=True, cmap='viridis', height=self.p.height, responsive=True)
+        # sky = dynspread(sky_shaded) # Add once supported in Datashader
 
         # Set up summary table
         table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
                                 streams=[self.p.filter_stream])
-        table = table.opts(plot={'width': 200})
+        table = table.opts(width=200)
 
         # Set up BoundsXY streams to listen to box_select events and notify FilterStream
         scatter_select = BoundsXY(source=scatter)
@@ -300,7 +295,7 @@ class scattersky(ParameterizedFunction):
         if self.p.show_table:
             return (table + scatter_p + sky_p)
         else:
-            return (scatter_p + sky_p).options(sizing_mode='stretch_width')
+            return (scatter_p + sky_p).opts(sizing_mode='stretch_width')
 
 
 class multi_scattersky(ParameterizedFunction):
@@ -461,85 +456,89 @@ class skyshade(Operation):
         return datashaded.options(responsive=True, height=300)  # * decimated
 
 
-# @profile(immediate=True)
-def plot_curve_dask(ddf, kdims=None, vdims=None):
-    import holoviews as hv
-
-    dfc = ddf
-    kdims = kdims or ['visit', 'metrics']
-    vdims = vdims or ['median']
-    dfc = dfc.astype({'visit':str})
-
-    ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
-
-    curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
-    points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0]).opts(size=8, line_color='white')
-
-    plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
-
-    curve = curve.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
-
-    # Now we rename the axis
-    xlabel = kdims[0]
-    ylabel = 'normalized {}'.format(vdims[0])
-
-    grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
-    plot = plot.opts(show_legend=False, show_grid=True,
-                     gridstyle=grid_style,
-                     xlabel=xlabel, ylabel=ylabel,
-                     # xticks=100,
-                     responsive=True, aspect=5,
-                     bgcolor='black', xrotation=45)
-    return plot
-
-def _visit_plot(df, metric):
-    def transform_scale(df, metric):
-        with pd.option_context('mode.use_inf_as_na', True):
-            df = df.dropna(subset=[metric])
-            df['result'] = minmax_scale(df[metric])
-        return df
-
-    _meta = df.dtypes.to_dict()
-    _meta.update({'result': float})
-
-    visit_stats = (df
-                    .map_partitions(lambda _df:transform_scale(_df,metric),
-                        meta=_meta)
-                    .groupby('visit')
-                    .result.apply(pd.Series.median, meta=('median',float))
-                    .reset_index().rename(columns={'index':'visit'}))
-
-    return plot_curve_dask(visit_stats)
-
-def _visit_plot_pandas(df, metric):
-    # drop inf/nan values
-    with pd.option_context('mode.use_inf_as_na', True):
-        df = df.dropna(subset=[metric])
-    label = '{!s}'.format(metric)
-    df[label] = minmax_scale(df[metric])
-    df = df.groupby('visit')
-    df = df[label].median().reset_index()
-    df.head().to_csv('bla.csv')
-    return plot_curve_dask(df.rename(columns={metric:'median'}))
-
-# @profile(immediate=True)
-def visits_plot(dsets_visits, filters_to_metrics, summarized_visits=None):
-    plots = {}
-    for filt, metrics in filters_to_metrics.items():
-        plot_filt = None
-        dset_filt = dsets_visits[filt]
-        for metric in metrics:
-            # plot_metric = _visit_plot(dset_filt[metric], metric)
-            plot_metric = _visit_plot_pandas(dset_filt[metric].compute(), metric)
-            if plot_filt is None:
-                plot_filt = plot_metric
-            else:
-                plot_filt = plot_filt * plot_metric
-
-        if plot_filt is None:
-            continue
-        plots[filt] = plot_filt
-
-    filters = sorted(plots.keys())
-    tabs = [(filt, pn.panel(plots[filt])) for filt in filters]
-    return pn.Tabs(*tabs, sizing_mode='stretch_both')
+# # @profile(immediate=True)
+# def plot_curve_dask(ddf, kdims=None, vdims=None):
+#     import holoviews as hv
+#
+#     dfc = ddf
+#     kdims = kdims or ['visit', 'metrics']
+#     vdims = vdims or ['median']
+#     dfc = dfc.astype({'visit':str})
+#
+#     ds = hv.Dataset(dfc, kdims=vdims, vdims=vdims)
+#
+#     curve = ds.to(hv.Curve, kdims=kdims[0], vdims=vdims[0])#.overlay(kdims[1])
+#     points = ds.to(hv.Scatter, kdims=kdims[0], vdims=vdims[0]).opts(size=8, line_color='white')
+#
+#     plot = (curve * points).opts(hv.opts.Scatter(tools=['hover']))
+#
+#     curve = curve.redim(y=hv.Dimension(vdims[0], range=(-1, 1)))
+#
+#     # Now we rename the axis
+#     xlabel = kdims[0]
+#     ylabel = 'normalized {}'.format(vdims[0])
+#
+#     grid_style = {'grid_line_color': 'white', 'grid_line_alpha': 0.2}
+#     plot = plot.opts(show_legend=False, show_grid=True,
+#                      gridstyle=grid_style,
+#                      xlabel=xlabel, ylabel=ylabel,
+#                      # xticks=100,
+#                      responsive=True, aspect=5,
+#                      bgcolor='black', xrotation=45)
+#     return plot
+#
+# def _visit_plot(df, metric):
+#     def transform_scale(df, metric):
+#         with pd.option_context('mode.use_inf_as_na', True):
+#             df = df.dropna(subset=[metric])
+#             df['result'] = minmax_scale(df[metric])
+#         return df
+#
+#     _meta = df.dtypes.to_dict()
+#     _meta.update({'result': float})
+#
+#     visit_stats = (df
+#                     .map_partitions(lambda _df:transform_scale(_df,metric),
+#                         meta=_meta)
+#                     .groupby('visit')
+#                     .result.apply(pd.Series.median, meta=('median',float))
+#                     .reset_index().rename(columns={'index':'visit'}))
+#
+#     return plot_curve_dask(visit_stats)
+#
+# def _visit_plot_pandas(df, metric):
+#     # drop inf/nan values
+#     with pd.option_context('mode.use_inf_as_na', True):
+#         df = df.dropna(subset=[metric])
+#     label = '{!s}'.format(metric)
+#     df[label] = minmax_scale(df[metric])
+#     df = df.groupby('visit')
+#     df = df[label].median().reset_index()
+#     df.head().to_csv('bla.csv')
+#     return plot_curve_dask(df.rename(columns={metric:'median'}))
+#
+# # @profile(immediate=True)
+# def visits_plot(dsets_visits, filters_to_metrics, filt):
+#     # plots = {}
+#     metrics = filters_to_metrics[filt]
+#     plot_filt = None
+#     if metrics:
+#     # for filt, metrics in filters_to_metrics.items():
+#         # plot_filt = None
+#         dset_filt = dsets_visits[filt]
+#         for metric in metrics:
+#             # plot_metric = _visit_plot(dset_filt[metric], metric)
+#             plot_metric = _visit_plot_pandas(dset_filt[metric].compute(), metric)
+#             if plot_filt is None:
+#                 plot_filt = plot_metric
+#             else:
+#                 plot_filt = plot_filt * plot_metric
+#
+#         # if plot_filt is None:
+#         #     continue
+#         # plots[filt] = plot_filt
+#
+#     # filters = sorted(plots.keys())
+#     # tabs = [(filt, pn.panel(plots[filt])) for filt in filters]
+#     # return pn.Tabs(*tabs, sizing_mode='stretch_both')
+#     return plot_filt

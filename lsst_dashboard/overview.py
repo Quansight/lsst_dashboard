@@ -6,6 +6,7 @@ import pandas as pd
 from holoviews import opts
 import geopandas as gpd
 from shapely.geometry import box
+from importlib import resources
 
 # # for overview with geoviews:
 # import geoviews as gv
@@ -14,13 +15,13 @@ pn.extension()
 
 class OverviewApp(param.Parameterized):
 
-    metrics_path = param.String('../data/PDR2_metrics.parq')
-    skymap_path = param.String('../data/deepCoadd_skyMap.csv')
+    metrics_path = param.String('PDR2_metrics.parq')
+    skymap_path = param.String('deepCoadd_skyMap.csv')
 
     metric = param.ObjectSelector()
     filter_ = param.ObjectSelector()
 
-    selected_tract_str = param.String(default='', label='Selected tracts (comma delim)')
+    selected_tract_str = param.String(default='', label='Selected tracts')
     available_tracts = param.List(default=[])
 
     plot_width = param.Integer(default=800, bounds=(1, None))
@@ -28,17 +29,17 @@ class OverviewApp(param.Parameterized):
 
     geoviews = param.Boolean(default=False)
 
-    def __init__(self, **params):
+    def __init__(self, tracts_update_callback, **params):
         # Declare Tap stream (source polygon element to be defined later)
         self.stream = hv.streams.Selection1D()
         super().__init__(**params)
         # set up default empty objects
         self.df = pd.DataFrame()
         self.rangexy = hv.streams.RangeXY()
+        self.tracts_update_callback = tracts_update_callback
 
         # load the skmap and metrics data
         self.load_data()
-
 
     @param.output()
     def output(self):
@@ -52,10 +53,15 @@ class OverviewApp(param.Parameterized):
 
     def load_data(self):
         """load in the source files, reorganize data, and set up widget options"""
-        # load the data
-        self.metrics_df = pd.read_parquet(self.metrics_path)
+        data_package = 'lsst_dashboard.data'
+        # load the metrics data
+        with resources.path(data_package, self.metrics_path) as path:
+            self.metrics_df = pd.read_parquet(path)
+
         # load skymap (csv with x0, x1, y0, y1 columns)
-        self.skymap = gpd.read_file(self.skymap_path).astype(float)
+        with resources.path(data_package, self.skymap_path) as path:
+            self.skymap = gpd.read_file(path).astype(float)
+
         self.skymap.geometry = self.skymap.apply(lambda x: box(x['x0'], x['y0'], x['x1'], x['y1']), axis=1)
 
         # combine the metrics with the skymap geometry
@@ -111,6 +117,8 @@ class OverviewApp(param.Parameterized):
         else:
             tract_dict = self.polys_avail.iloc[self.stream.index].data
             self.selected_tract_str = ','.join([str(t['tract']) for t in tract_dict])
+
+        self.tracts_update_callback(self.tracts_in_widget())
 
     @param.depends('metric', 'filter_')
     def plot(self):
@@ -244,4 +252,8 @@ class OverviewApp(param.Parameterized):
             pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max', height=600)
         )
 
-overview = OverviewApp().panel().servable()
+def create_overview(tracts_update_callback):
+    overview_app = OverviewApp(tracts_update_callback)
+    overview = overview_app.panel()
+    return overview
+
