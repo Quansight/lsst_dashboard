@@ -34,9 +34,9 @@ def find_available_ports(n, start, stop):
 
 
 @click.command()
-@click.option('--queue', default='debug', help='Slurm Queue to use, ignored when on local machine')
-@click.option('--nodes', default=2, help='Number of compute nodes to launch, ignored when on local machine')
-@click.option('--localcluster', is_flag=True, help='Launches a localcluster instead of on slurm')
+@click.option('--queue', default='debug', help='Slurm Queue to use (default=debug), ignored when on local machine')
+@click.option('--nodes', default=2, help='Number of compute nodes to launch (default=2), ignored when on local machine')
+@click.option('--localcluster', is_flag=True, help='Launches a localcluster instead of slurmcluster')
 def main(queue, nodes, localcluster):
     if 'lsst-dev' in host and not localcluster:
         from dask_jobqueue import SLURMCluster
