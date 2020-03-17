@@ -16,9 +16,9 @@ from param import ParamOverrides
 from bokeh.palettes import Greys9
 
 from holoviews.core.operation import Operation
-from holoviews.streams import Stream
-from holoviews.streams import BoundsXY
-from holoviews.streams import LinkedStream
+from holoviews.streams import (
+    BoundsXY, LinkedStream, PlotReset, PlotSize, RangeXY, Stream
+)
 from holoviews.plotting.bokeh.callbacks import Callback
 
 from holoviews.operation.datashader import datashade
@@ -88,24 +88,6 @@ class FlagSetter(Stream):
 
     def event(self, **kwargs):
         self.filter_stream.event(**kwargs)
-
-
-#######################################################################################
-# All this enables bokeh "reset" button to also reset a stream (such as FilterStream) #
-# Not sure if some of this should be updated for newer version of HV, as this was put #
-# together circa v1.9.0, I think
-
-class ResetCallback(Callback):
-    models = ['plot']
-    on_events = ['reset']
-
-
-class Reset(LinkedStream):
-    def __init__(self, *args, **params):
-        super(Reset, self).__init__(self, *args, **dict(params, transient=True))
-
-
-Stream._callbacks['bokeh'][Reset] = ResetCallback
 
 #######################################################################################
 
@@ -203,8 +185,27 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
     filter_stream.event(filter_range=filter_range)
 
 
-def reset_stream(filter_stream):
-    filter_stream.event(filter_range={}, flags=[], bad_flags=[])
+def reset_stream(filter_stream, range_streams, resetting=True):
+    if filter_stream:
+        filter_stream.event(filter_range={}, flags=[], bad_flags=[])
+    for range_stream in range_streams:
+        range_stream.event(x_range=None, y_range=None)
+
+
+def _link(streams, **contents):
+    for stream in streams:
+        if contents != stream.contents:
+            stream.event(**contents)
+
+def link_streams(*streams):
+    """
+    Links multiple streams of the same type.
+    """
+    assert len(set(type(s) for s in streams)) == 1
+    for stream in streams:
+        stream.add_subscriber(partial(_link, streams))
+    if streams:
+        _link(streams, **streams[0].contents)
 
 
 class scattersky(ParameterizedFunction):
@@ -234,6 +235,8 @@ class scattersky(ParameterizedFunction):
         Whether to show the "unselected" sky points in greyscale when there is a selection.""")
     show_table = param.Boolean(default=False, doc="""
         Whether to show the table next to the plots.""")
+    sky_range_stream = param.ClassSelector(default=None, class_=RangeXY)
+    scatter_range_stream = param.ClassSelector(default=None, class_=RangeXY)
 
     # @profile(immediate=True)
     def __call__(self, dset, **params):
@@ -247,18 +250,26 @@ class scattersky(ParameterizedFunction):
             raise ValueError('ra and/or dec not in Dataset.')
 
         # Set up scatter plot
+        scatter_range = RangeXY()
+        if self.p.sky_range_stream:
+            link_streams(self.p.scatter_range_stream, scatter_range)
+        scatter_streams = [scatter_range, PlotSize()]
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
                                       streams=[self.p.filter_stream])
-        scatter_shaded = datashade(scatter_pts, cmap=viridis)
+        scatter_shaded = datashade(scatter_pts, cmap=viridis, streams=scatter_streams)
         scatter = dynspread(scatter_shaded).opts(height=self.p.height, responsive=True)
 
         # Set up sky plot
+        sky_range = RangeXY()
+        if self.p.sky_range_stream:
+            link_streams(self.p.sky_range_stream, sky_range)
+        skyplot_streams = [sky_range, PlotSize()]
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim)).opts(
-            colorbar=True, cmap='viridis', height=self.p.height, responsive=True)
+        sky = rasterize(sky_pts, aggregator=ds.mean(self.p.ydim), streams=skyplot_streams).opts(
+            bgcolor="black", colorbar=True, cmap='viridis', height=self.p.height, responsive=True)
         # sky = dynspread(sky_shaded) # Add once supported in Datashader
 
         # Set up summary table
@@ -278,19 +289,26 @@ class scattersky(ParameterizedFunction):
         sky_select.add_subscriber(sky_notifier)
 
         # Reset
-        reset = Reset(source=scatter)
-        reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
+        reset = PlotReset(source=scatter)
+        reset.add_subscriber(partial(reset_stream, self.p.filter_stream,
+                                     [self.p.sky_range_stream,
+                                      self.p.scatter_range_stream]))
 
-        raw_scatter = datashade(scatter_filterpoints(dset), cmap=list(Greys9[::-1][:5]))
+        raw_scatter = datashade(
+            scatter_filterpoints(dset), cmap=list(Greys9[::-1][:5]),
+            streams=scatter_streams
+        )
 
         scatter_p = (raw_scatter*scatter).options(bgcolor="black")
 
         if self.p.show_rawsky:
-            raw_sky = datashade(sky_filterpoints(dset), cmap=list(Greys9[::-1][:5]))
+            raw_sky = datashade(
+                sky_filterpoints(dset), cmap=list(Greys9[::-1][:5]),
+                streams=skyplot_streams
+            )
             sky_p = raw_sky*sky
         else:
             sky_p = sky
-        sky_p = sky_p.options(bgcolor="black")
 
         if self.p.show_table:
             return (table + scatter_p + sky_p)
@@ -318,7 +336,7 @@ class multi_scattersky(ParameterizedFunction):
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                      xdim=self.p.xdim, ydim=ydim,
                                      height=self.p.height, width=self.p.width)
-                       for ydim in self._get_ydims(dset)]).cols(3).opts(plot={'merge_tools':False})
+                          for ydim in self._get_ydims(dset)]).cols(3).opts(merge_tools=False)
 
 
 class skypoints(Operation):
@@ -332,14 +350,9 @@ class skypoints(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
-
         dset = filter_dset(dset, filter_range=self.p.filter_range,
                            flags=self.p.flags, bad_flags=self.p.bad_flags)
-
-        # TODO: what is the api to scale to full size of parent? sizing_mode?
-        return hv.Points(dset,
-                         kdims=['ra', 'dec'],
-                         vdims=dset.vdims + ['label']).opts(responsive=True)
+        return hv.Points(dset, ['ra', 'dec'], dset.vdims+['label']).opts(responsive=True)
 
 
 class skyplot(ParameterizedFunction):
@@ -357,6 +370,7 @@ class skyplot(ParameterizedFunction):
         Size of (invisible) decimated points.""")
 
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
+    range_stream = param.ClassSelector(default=RangeXY(), class_=RangeXY)
     flags = param.List(default=[], doc="""
         Flags to select.""")
     bad_flags = param.List(default=[], doc="""
@@ -375,6 +389,9 @@ class skyplot(ParameterizedFunction):
         pts = hv.util.Dynamic(dset, operation=skypoints,
                               streams=[self.p.filter_stream])
 
+        reset = PlotReset(source=pts)
+        reset.add_subscriber(partial(reset_stream, None, [self.p.range_stream]))
+
         if self.p.aggregator == 'mean':
             aggregator = ds.mean(vdim)
         elif self.p.aggregator == 'std':
@@ -382,20 +399,20 @@ class skyplot(ParameterizedFunction):
         elif self.p.aggregator == 'count':
             aggregator = ds.count()
 
-        decimate_opts = dict(plot={'tools': ['hover',
-                                             'box_select']},
-                             style={'alpha': 0,
-                                    'size': self.p.decimate_size,
-                                    'nonselection_alpha': 0})
+        sky_range = RangeXY()
+        if self.p.range_stream:
+            link_streams(self.p.range_stream, sky_range)
+        streams = [sky_range, PlotSize()]
 
-        decimated = decimate(pts).opts(**decimate_opts)
-        raster_ = rasterize(pts, aggregator=aggregator)
+        decimated = decimate(pts, streams=[sky_range]).opts(
+            alpha=0, nonselection_alpha=0, size=self.p.decimate_size,
+            tools=['hover', 'box_select']
+        )
+        raster_ = rasterize(pts, aggregator=aggregator, streams=streams)
         color_gadget = raster_.opts(cmap='viridis', colorbar=True, alpha=0)
-        sky_shaded = shade(raster_, cmap=list(viridis))
-
-        plot = dynspread(sky_shaded) * decimated * color_gadget
-
-        return plot.options(bgcolor="black", responsive=True, min_height=100)
+        sky_shaded = shade(raster_, cmap=list(viridis), normalization='linear')
+        return (dynspread(sky_shaded) * decimated * color_gadget).opts(
+            bgcolor="black", min_height=100, responsive=True)
 
 
 class skyplot_layout(ParameterizedFunction):
