@@ -14,13 +14,14 @@ pn.extension()
 
 class OverviewApp(param.Parameterized):
 
-    metrics_path = param.String('data/PDR2_metrics.parq')
-    skymap_path = param.String('data/deepCoadd_skyMap.csv')
+    metrics_path = param.String('../data/PDR2_metrics.parq')
+    skymap_path = param.String('../data/deepCoadd_skyMap.csv')
 
     metric = param.ObjectSelector()
     filter_ = param.ObjectSelector()
 
     selected_tract_str = param.String(default='', label='Selected tracts (comma delim)')
+    available_tracts = param.List(default=[])
 
     plot_width = param.Integer(default=800, bounds=(1, None))
     plot_height = param.Integer(default=400, bounds=(1, None))
@@ -74,13 +75,17 @@ class OverviewApp(param.Parameterized):
         self.param.filter_.objects = filters
         self.filter_ = self.param.filter_.objects[0]
 
+    def update_available_tracts(self, tract_list):
+        """set the available tracts given a list of new tracts"""
+        self.available_tracts = tract_list
+
     def update_tract_selection(self, event):
         """When tracts are added to the widget, select them on the screen"""
         # create a dataframe of the polygon data (for easy indexing)
         if geoviews:
-            df = self.polys.data
+            df = self.polys_avail.data
         else:
-            df = pd.DataFrame(self.polys.data)
+            df = pd.DataFrame(self.polys_avail.data)
         # get the selected tracts as list of ints
         tract_list = self.tracts_in_widget()
         # convert tracts to poly element indices
@@ -101,10 +106,10 @@ class OverviewApp(param.Parameterized):
         """When tracts are selected on the map, display the tract numbers in the widget"""
         # get the selected polygons, convert to tract strings
         if self.geoviews:
-            tract_list = list(self.polys.iloc[self.stream.index].data.tract)
+            tract_list = list(self.polys_avail.iloc[self.stream.index].data.tract)
             self.selected_tract_str = ','.join([str(t) for t in tract_list])
         else:
-            tract_dict = self.polys.iloc[self.stream.index].data
+            tract_dict = self.polys_avail.iloc[self.stream.index].data
             self.selected_tract_str = ','.join([str(t['tract']) for t in tract_dict])
 
     @param.depends('metric', 'filter_')
@@ -118,16 +123,16 @@ class OverviewApp(param.Parameterized):
         # extract only the provided metric
         self.df_extracted = self.df_filter[['tract','geometry', self.metric, 'x0','x1','y0','y1']]
         # rename the metric column (necessary abstraction for plotting)
-        self.df_extracted = self.df_extracted.rename(columns={self.metric: 'metric'})
+        self.df_extracted = self.df_extracted.rename(columns={self.metric: 'metric'}).copy(deep=True)
+        # pull available tracts
+        self.df_available = self.df_extracted[self.df_extracted['tract'].isin(self.available_tracts)].copy(deep=True)
 
-        if self.df.empty:
+        if self.df_extracted.empty:
             return pn.Spacer()
         else:
             if self.geoviews:
-                self.polys = gv.Polygons(gpd.GeoDataFrame(self.df_extracted).set_geometry('geometry'), vdims=['metric', 'tract']).opts(
-                    tools=['hover', 'tap'], width=self.plot_width, height=self.plot_height,
-                    line_width=0, active_tools=['wheel_zoom', 'tap'],
-                    colorbar=True, title=self.metric, color='metric')
+                self.polys = gv.Polygons(gpd.GeoDataFrame(self.df_extracted).set_geometry('geometry'), vdims=['metric', 'tract'])
+                self.polys_avail = gv.Polygons(gpd.GeoDataFrame(self.df_available).set_geometry('geometry'), vdims=['metric', 'tract'])
             else:
 
                 def create_dict(row):
@@ -137,20 +142,27 @@ class OverviewApp(param.Parameterized):
                          'metric': row['metric']
                         }
                     return d
-                # create a dictionary reprresentation of the dataframe
+                print('here')
+                # create a dictionary representation of the dataframe
                 data = list(self.df_extracted.apply(create_dict, axis=1))
+                data_avail = list(self.df_available.apply(create_dict, axis=1))
+                self.data = data
+                self.data_avail = data_avail
+                # data_avail = data
+                # data =data_avail
+
                 # declare polygons
-                self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
-                    tools=['hover', 'tap'],
-                    line_width=0, active_tools=['wheel_zoom', 'tap'],
-                    colorbar=True, title=self.metric, color='metric')
+                self.polys = hv.Polygons(data, vdims=['metric', 'tract'])
+                self.polys_avail = hv.Polygons(data_avail, vdims=['metric', 'tract'])
 
             # Declare Tap stream with polys as source and initial values
-            self.stream.source = self.polys
+            self.stream.source = self.polys_avail
+            # initialize selection based on the tracts in widget
+            # self.stream.index = tract_list
 
             # Define a RangeXY stream linked to the image (preserving ranges from the previous image)
             self.rangexy = hv.streams.RangeXY(
-                source=self.polys,
+                source=self.polys_avail,
                 x_range=self.rangexy.x_range,
                 y_range=self.rangexy.y_range,
             )
@@ -183,20 +195,32 @@ class OverviewApp(param.Parameterized):
                 if index == list():
                     # select all
                     index = list(self.df_extracted.index)
-                return self.polys.iloc[index].opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
+                return self.polys_avail.iloc[index].opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
             tap_dmap = hv.DynamicMap(tap_histogram, streams=[self.stream, self.rangexy])
 
             # set up the plot to match the range stream
+            # upon instantiation, before zooming, x_range and y_range are Nones
             if not self.rangexy.x_range and not self.rangexy.y_range:
                 (x0, x1, y0, y1) = (None, None, None, None)
             else:
                 (x0, x1), (y0, y1) = self.rangexy.x_range, self.rangexy.y_range
 
-            return self.polys.opts(opts.Polygons(xlim=(x0, x1),
+            return self.polys_avail.opts(opts.Polygons(xlim=(x0, x1),
                                                  ylim=(y0, y1),
                                                  hooks=[reset_range_hook],
                                                  responsive=True,
-                                                 bgcolor='black')) # TODO: responsive=True isn't changing the width
+                                                 bgcolor='black',
+                                                 line_color=hv.dim('tract').isin(self.available_tracts).categorize(
+                                                     {True: 'red', False: 'white'}),
+                                                 line_width=hv.dim('tract').isin(self.available_tracts).categorize(
+                                                     {True: 1, False: 1}),
+                                                 tools=['hover', 'tap'],
+                                                 active_tools=['wheel_zoom', 'tap'],
+                                                 colorbar=True,
+                                                 title=self.metric,
+                                                 color='metric',
+                                                 ))
+#             return hv.Curve([])
 
     def left_pane(self):
         load_tracts = pn.widgets.Button(name='\u25b6', width=40)
@@ -210,10 +234,14 @@ class OverviewApp(param.Parameterized):
         return pane
 
     def panel(self):
+        # return pn.Column(
+        #     self.left_pane,
+        #     pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max'),
+        #     sizing_mode='stretch_both'
+        # )
         return pn.Column(
             self.left_pane,
-            pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max'),
-            sizing_mode='stretch_both'
+            pn.panel(self.plot, sizing_mode='stretch_both', width_policy='max', height_policy='max', height=600)
         )
 
-overview = OverviewApp().panel()
+overview = OverviewApp().panel().servable()
