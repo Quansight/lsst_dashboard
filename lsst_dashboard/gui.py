@@ -64,11 +64,7 @@ def create_hv_dataset(ddf):
         else:
             vdims.append(c)
 
-    df = (ddf.replace(np.inf, np.nan)
-             .replace(-np.inf, np.nan)
-             .dropna(how='any'))
-
-    return hv.Dataset(df, kdims=kdims, vdims=vdims)
+    return hv.Dataset(ddf, kdims=kdims, vdims=vdims)
 
 
 class Store(object):
@@ -611,7 +607,7 @@ class QuickLookComponent(Component):
             query_expr = self._assemble_query_expression()
 
             if query_expr:
-                ddf = ddf.query(query_expr)
+                ddf = ddf.query(query_expr).persist()
                 filtered_datasets[filter_type] = ddf
 
         return create_hv_dataset(ddf)
