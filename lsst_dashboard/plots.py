@@ -12,10 +12,10 @@ from sklearn.preprocessing import minmax_scale
 
 from param import ParameterizedFunction
 from param import ParamOverrides
-
 from bokeh.palettes import Greys9
-
+from holoviews import opts
 from holoviews.core.operation import Operation
+from holoviews.operation.element import apply_when
 from holoviews.streams import (
     BoundsXY, LinkedStream, PlotReset, PlotSize, RangeXY, Stream
 )
@@ -352,33 +352,48 @@ class skypoints(Operation):
     def _process(self, dset, key=None):
         dset = filter_dset(dset, filter_range=self.p.filter_range,
                            flags=self.p.flags, bad_flags=self.p.bad_flags)
-        return hv.Points(dset, ['ra', 'dec'], dset.vdims+['label']).opts(responsive=True)
+        return hv.Points(dset, [dset.get_dimension('ra'), dset.get_dimension('dec')],
+                         dset.vdims+[dset.get_dimension('label')]).opts(responsive=True)
 
 
 class skyplot(ParameterizedFunction):
-    """Datashaded + decimated RA/dec plot, with colormap of third dimension
+    """Skyplot of RA/dec switching between rasterized and raw data view.
+
+    Colormapped by a third dimension.
     """
-    cmap = param.String(default='coolwarm', doc="""
-        Colormap to use.""")
+
     aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'], doc="""
         Aggregator for datashading.""")
-    vdim = param.String(default=None, doc="""
-        Dimension to use for colormap.""")
-    width = param.Number(default=None)
-    height = param.Number(default=None)
+
+    cmap = param.String(default='coolwarm', doc="""
+        Colormap to use.""")
+
     decimate_size = param.Number(default=5, doc="""
         Size of (invisible) decimated points.""")
 
-    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
-    range_stream = param.ClassSelector(default=RangeXY(), class_=RangeXY)
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
+    max_points = param.Integer(default=10000, doc="""
+        Maximum number of points to display before switching to rasterize.""")
 
-    # @profile(immediate=True)
+    vdim = param.String(default=None, doc="""
+        Dimension to use for colormap.""")
+
+    xsampling = param.Integer(default=500, doc="""
+        How densely to sample the rasterized plot along the x-axis.""")
+
+    ysampling = param.Integer(default=500, doc="""
+        How densely to sample the rasterized plot along the y-axis.""")
+
+    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream, doc="""
+        Filter stream to update plot with currently selected filters.""")
+
+    range_stream = param.ClassSelector(default=RangeXY(), class_=RangeXY, doc="""
+        Range stream to share between plots to link and persist plot ranges.""")
+
+    flags = param.List(default=[], doc="Flags to select.")
+
+    bad_flags = param.List(default=[], doc="Flags to ignore")
+
     def __call__(self, dset, **params):
-        # print("SKYPLOT", dset)
         self.p = ParamOverrides(self, params)
 
         if self.p.vdim is None:
@@ -386,8 +401,12 @@ class skyplot(ParameterizedFunction):
         else:
             vdim = self.p.vdim
 
-        pts = hv.util.Dynamic(dset, operation=skypoints,
-                              streams=[self.p.filter_stream])
+        ra_range = (ra0, ra1) = dset.range('ra')
+        dec_range = (dec0, dec1) = dset.range('dec')
+        xsampling = (ra1-ra0)/self.p.xsampling
+        ysampling = (dec1-dec0)/self.p.ysampling
+
+        pts = dset.apply(skypoints, streams=[self.p.filter_stream])
 
         reset = PlotReset(source=pts)
         reset.add_subscriber(partial(reset_stream, None, [self.p.range_stream]))
@@ -404,15 +423,19 @@ class skyplot(ParameterizedFunction):
             link_streams(self.p.range_stream, sky_range)
         streams = [sky_range, PlotSize()]
 
-        decimated = decimate(pts, streams=[sky_range]).opts(
-            alpha=0, nonselection_alpha=0, size=self.p.decimate_size,
-            tools=['hover', 'box_select']
+        rasterize_inst = rasterize.instance(
+            aggregator=aggregator, streams=streams,
+            x_sampling=xsampling, y_sampling=ysampling
         )
-        raster_ = rasterize(pts, aggregator=aggregator, streams=streams)
-        color_gadget = raster_.opts(cmap='viridis', colorbar=True, alpha=0)
-        sky_shaded = shade(raster_, cmap=list(viridis), normalization='linear')
-        return (dynspread(sky_shaded) * decimated * color_gadget).opts(
-            bgcolor="black", min_height=100, responsive=True)
+        raster_pts = apply_when(
+            pts, operation=rasterize_inst, predicate=lambda pts: len(pts) > self.p.max_points
+        )
+        return raster_pts.opts(
+            opts.Image(cmap='viridis', colorbar=True, bgcolor="black",
+                       min_height=100, responsive=True, tools=['hover']),
+            opts.Points(size=self.p.decimate_size, tools=['hover'],
+                        color=vdim, cmap='viridis')
+        )
 
 
 class skyplot_layout(ParameterizedFunction):
