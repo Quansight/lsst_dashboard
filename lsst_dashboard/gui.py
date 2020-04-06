@@ -11,6 +11,7 @@ import param
 import panel as pn
 import holoviews as hv
 import numpy as np
+import dask.dataframe as dd
 
 from holoviews.streams import RangeXY, PlotSize
 
@@ -60,8 +61,16 @@ def create_hv_dataset(ddf):
         if (c in _kdims or
                 c in _idNames or
                 c in _flags):
+            if c in ('ra', 'dec'):
+                cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
+                c = hv.Dimension(c, range=(cmin, cmax))
+            elif c == 'label':
+                cvalues = list(ddf[c].unique())
+                c = hv.Dimension(c, values=cvalues)
             kdims.append(c)
         else:
+            cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
+            c = hv.Dimension(c, range=(cmin, cmax))
             vdims.append(c)
 
     return hv.Dataset(ddf, kdims=kdims, vdims=vdims)
