@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import click
 import getpass
 import socket
 import os
@@ -11,11 +12,12 @@ username = getpass.getuser()
 
 # dask ports need to be between 29000 and 29999 (hard requirement due to firewall constraints)
 # ssh forwarded ports should be between 20000 and 21000 (recommendation)
+# Using different ranges for dashboard and dask dashboard to avoid bad redirect behavior by 
+# chrome when a dask dashboard port is reused as dashboard port 
 
 DASK_ALLOWED_PORTS = (29000, 30000)
-DASHBOARD_ALLOWED_PORTS = (20000, 21000)
-LOCAL_DASHBOARD = 5000
-LOCAL_DASK_DASHBOARD = 8989
+DASK_DASHBOARD_ALLOWED_PORTS = (20000, 20500)
+DASHBOARD_ALLOWED_PORTS = (20500, 21000)
 
 def find_available_ports(n, start, stop):
     count = 0
@@ -29,18 +31,21 @@ def find_available_ports(n, start, stop):
                 yield port
             except OSError:
                 continue
-        
-def main():
-    if 'lsst-dev' in host:
+
+
+@click.command()
+@click.option('--queue', default='debug', help='Slurm Queue to use (default=debug), ignored when on local machine')
+@click.option('--nodes', default=2, help='Number of compute nodes to launch (default=2), ignored when on local machine')
+@click.option('--localcluster', is_flag=True, help='Launches a localcluster instead of slurmcluster')
+def main(queue, nodes, localcluster):
+    if 'lsst-dev' in host and not localcluster:
         from dask_jobqueue import SLURMCluster
 
-        # dask ports need to be between 29000 and 29999 (hard requirement due to firewall constraints)
         scheduler_port, worker_port = find_available_ports(2, *DASK_ALLOWED_PORTS)
+        lsst_dashboard_port, = find_available_ports(1, *DASHBOARD_ALLOWED_PORTS)   
+        dask_dashboard_port, = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS) 
 
-        # dashboard ports and jhub etc need to be between 20000 and 20999 (recommended no hard requirement)
-        lsst_dashboard_port, dask_dashboard_port = find_available_ports(2, *DASHBOARD_ALLOWED_PORTS)
-
-        print(f'starting dask cluster using slurm on {host}')
+        print(f'...starting dask cluster using slurm on {host} (queue={queue})')
         cluster = SLURMCluster(
             queue='debug',
             cores=24,
@@ -50,26 +55,24 @@ def main():
             dashboard_address=f':{dask_dashboard_port}',
         )
 
-        cluster.scale(2)
+        print(f'...requesting {nodes} nodes')
+        cluster.scale(nodes)
         client = Client(cluster)
-        print('waiting for at least one node')
+        print('...waiting for at least one node')
         client.wait_for_workers(1)
 
         # currently local and server ports need to match
         LOCAL_DASHBOARD = lsst_dashboard_port
         LOCAL_DASK_DASHBOARD = dask_dashboard_port
 
-        print('starting dashboard')
+        print('...starting dashboard')
         print('run the command below from your local machine to view dashboard:')
         print(f'\nssh -N -L {LOCAL_DASHBOARD}:{host}:{lsst_dashboard_port} -L {LOCAL_DASK_DASHBOARD}:{host}:{dask_dashboard_port} {username}@{hostname}\n')
     else:
-        lsst_dashboard_port = 52001
-        dask_dashboard_port = 52002
-
-        LOCAL_DASHBOARD = lsst_dashboard_port
-        LOCAL_DASK_DASHBOARD = dask_dashboard_port
-
-        print(f'starting dask cluster on {host}')
+        LOCAL_DASHBOARD = 52001
+        LOCAL_DASK_DASHBOARD = 52002
+        
+        print(f'starting local dask cluster on {host}')
         cluster = LocalCluster(dashboard_address=f':{LOCAL_DASK_DASHBOARD}')
         client = Client(cluster)
 
