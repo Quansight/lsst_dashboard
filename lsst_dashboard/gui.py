@@ -23,7 +23,6 @@ from .visits_plot import visits_plot
 from .plots import scattersky, FilterStream, skyplot
 
 from .dataset import Dataset
-from .dataset import KartothekDataset
 
 from .utils import set_timeout
 
@@ -84,7 +83,7 @@ def create_hv_dataset(ddf, percentile=1):
 
 class Store(object):
     def __init__(self):
-        self.active_dataset = KartothekDataset('')
+        self.active_dataset = Dataset('')
         self.active_tracts = []
 
 def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
@@ -94,7 +93,7 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
     global datavisits
     global filtered_datavisits
 
-    d = KartothekDataset(data_repo_path, **kwargs)
+    d = Dataset(data_repo_path, **kwargs)
     d.connect()
 
     global store
@@ -289,7 +288,7 @@ class QuickLookComponent(Component):
         global datavisits
         global filtered_datavisits
 
-        self.store.active_dataset = KartothekDataset('')
+        self.store.active_dataset = Dataset('')
         self.skyplot_list = []
         self.plots_list = []
         self.plot_top = None

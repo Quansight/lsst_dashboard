@@ -10,11 +10,6 @@ import numpy as np
 from kartothek.io.dask.dataframe import read_dataset_as_ddf
 from storefact import get_store_from_url
 
-try:
-    from lsst.daf.persistence import Butler
-    from lsst.daf.persistence.butlerExceptions import NoResults
-except:
-    Butler = None
 
 METADATA_FILENAME = 'dashboard_metadata.yaml'
 
@@ -23,125 +18,6 @@ class Dataset():
     """
     USAGE:
         d = Dataset(path)
-        d.connect()
-        d.init_data()
-    """
-
-    def __init__(self, path, tracts=None, filters=None):
-        self.conn = None
-        self.path = Path(path)
-        self.coadd = {}
-        self.visits = None
-        self.visits_by_metric = {}
-        self.metadata = {}
-        self.metrics = []
-        self.failures = {}
-        self.flags = []
-        self.tracts = tracts
-        self.filters = filters if filters is not None else []
-
-    def parse_metadata_from_file(self):
-        if self.path.joinpath(METADATA_FILENAME).exists():
-            self.metadata_path = self.path.joinpath(METADATA_FILENAME)
-        else:
-            meta_path = os.environ.get('LSST_META', os.curdir)
-            self.metadata_path = Path(meta_path).joinpath(self.path.name, METADATA_FILENAME)
-
-        with self.metadata_path.open('r') as f:
-            self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
-            self.failures = self.metadata.get('failures', {})
-            if self.tracts is None:
-                self.tracts = list(set(x for v in self.metadata['visits'].values() for x in v.keys()))
-
-    def parse_metadata_from_butler(self):
-        try:
-            print('-- connect to butler --')
-            self.conn = Butler(str(self.path))
-            self.metadata = self.conn.get('qaDashboard_metadata')
-            self.failures = self.metadata.get('failures', {})
-            if not self.filters:
-                self.filters = list(self.metadata['visits'].keys())
-            if not self.tracts:
-                all_tracts = [list(self.metadata['visits'][filt].keys()) for filt in self.filters]
-                self.tracts = list(set([int(y) for x in all_tracts for y in x]))
-        except:
-            raise
-            print(f'{self.path} is not available in Butler attempting to read parquet files instead')
-
-    def connect(self):
-
-        print('-- read metadata file --')
-        if Butler:
-            self.parse_metadata_from_butler()
-        else:
-            self.parse_metadata_from_file()
-
-        print('-- read coadd table --')
-        self.fetch_coadd_table()  # currently ignoring forced/unforced
-
-        # update metadata based on coadd table fields
-        print('-- generate other metadata fields --')
-        df = self.coadd['qaDashboardCoaddTable']
-        self.flags = df.columns[df.dtypes == bool].to_list()
-
-        if not Butler:
-            self.filters = list(self.metadata['visits'].keys())
-
-        self.metrics = set(df.columns.to_list()) - set(self.flags) - set(['patch', 'dec', 'label', 'psfMag',
-                                                                         'ra', 'filter', 'dataset', 'dir0', 'tract'])
-        print('-- read visit data --')
-        self.fetch_visits_by_metric()
-        print('-- done with reads --')
-
-    def fetch_coadd_table(self, coadd_version='unforced'):
-
-        table = 'qaDashboardCoaddTable'  # + coadd_version
-
-        if Butler:
-            filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
-        else:
-            filenames = [str(self.path.joinpath(f'{table}-{t}.parq')) for t in self.tracts]
-
-        column_map = {'patchId': 'patch', 'tractId': 'tract'}
-        self.coadd[table] = dd.read_parquet(filenames).rename(columns=column_map).compute()
-
-
-    def fetch_visits(self):
-
-        table = 'qaDashboardVisitTable'
-
-        if self.conn:
-            pass
-            # filenames = [self.conn.get(table, tract=int(t)).filename for t in self.tracts]
-        else:
-            filenames = [str(self.path.joinpath(f'{table}-{t}.parq')) for t in self.tracts]
-
-        self.visits = dd.read_parquet(filenames, npartitions=16).rename(columns={'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'})
-
-
-    def fetch_visits_by_metric(self):
-        for filt in self.filters:
-            self.visits_by_metric[filt] = {}
-            for metric in self.metrics:
-                if self.conn:
-                    filenames = []
-                    for t in self.tracts:
-                        try:
-                            filenames.append(self.conn.get('qaDashboardVisitTable', tract=int(t), filter=filt, column=metric).filename)
-                        except NoResults:
-                            continue
-                else:
-                    filenames =  list(self.path.glob(f'./*{filt}*{metric}.parq'))
-
-                column_map = {'tractId': 'tract', 'visitId': 'visit', 'patchId': 'patch'}
-                self.visits_by_metric[filt][metric] = dd.read_parquet(filenames).rename(columns=column_map)
-
-
-
-class KartothekDataset():
-    """
-    USAGE:
-        d = KartothekDataset(path)
         d.connect()
         d.init_data()
     """
