@@ -11,6 +11,8 @@ import param
 import panel as pn
 import holoviews as hv
 import numpy as np
+import dask.array as da
+import dask.dataframe as dd
 
 from holoviews.streams import RangeXY, PlotSize
 
@@ -48,7 +50,7 @@ filtered_datavisits = []
 sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 
 
-def create_hv_dataset(ddf):
+def create_hv_dataset(ddf, percentile=1):
 
     _idNames = ('patch', 'tract')
     _kdims = ('ra', 'dec', 'psfMag', 'label')
@@ -57,18 +59,27 @@ def create_hv_dataset(ddf):
     kdims = []
     vdims = []
     for c in ddf.columns:
-        if (c in _kdims or
-                c in _idNames or
-                c in _flags):
+        if (c in _kdims or c in _idNames or c in _flags):
+            if c in ('ra', 'dec', 'psfMag'):
+                cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
+                c = hv.Dimension(c, range=(cmin, cmax))
+            elif c in ('filter', 'label', 'patch'):
+                cvalues = list(ddf[c].unique())
+                c = hv.Dimension(c, values=cvalues)
+            elif ddf[c].dtype.kind == 'b':
+                c = hv.Dimension(c, values=[True, False])
             kdims.append(c)
         else:
+            if percentile is not None:
+                p = percentile
+                darray = ddf[c].values
+                cmin, cmax = da.compute(da.percentile(darray, p), da.percentile(darray, 100-p))
+            else:
+                cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
+            c = hv.Dimension(c, range=(cmin, cmax))
             vdims.append(c)
 
-    df = (ddf.replace(np.inf, np.nan)
-             .replace(-np.inf, np.nan)
-             .dropna(how='any'))
-
-    return hv.Dataset(df, kdims=kdims, vdims=vdims)
+    return hv.Dataset(ddf, kdims=kdims, vdims=vdims)
 
 
 class Store(object):
@@ -611,7 +622,7 @@ class QuickLookComponent(Component):
             query_expr = self._assemble_query_expression()
 
             if query_expr:
-                ddf = ddf.query(query_expr)
+                ddf = ddf.query(query_expr).persist()
                 filtered_datasets[filter_type] = ddf
 
         return create_hv_dataset(ddf)
@@ -738,9 +749,12 @@ class QuickLookComponent(Component):
                    '''$( ".metrics-plot-area" ).hide();''')
             self.execute_js_script(cmd)
 
-            self._skyplot_tabs[:] = self.skyplot_list
-            if self._skyplot_tabs not in self.skyplot_layout:
+            if self._skyplot_tabs in self.skyplot_layout:
+                self._skyplot_tabs[:] = self.skyplot_list
+            else:
+                self._skyplot_tabs[:] = []
                 self.skyplot_layout[:] = [self._skyplot_tabs]
+                self._skyplot_tabs[:] = self.skyplot_list
         elif self._switch_view.value == 'Overview':
             self.attempt_to_clear(self.skyplot_layout)
             cmd = ('''$( ".skyplot-plot-area" ).hide();'''

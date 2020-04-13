@@ -5,6 +5,8 @@ from pathlib import Path
 import dask.dataframe as dd
 import os
 
+import numpy as np
+
 from kartothek.io.dask.dataframe import read_dataset_as_ddf
 from storefact import get_store_from_url
 
@@ -42,7 +44,8 @@ class Dataset():
         if self.path.joinpath(METADATA_FILENAME).exists():
             self.metadata_path = self.path.joinpath(METADATA_FILENAME)
         else:
-            self.metadata_path = Path(os.environ.get('LSST_META', os.curdir)).joinpath(self.path.name, METADATA_FILENAME)
+            meta_path = os.environ.get('LSST_META', os.curdir)
+            self.metadata_path = Path(meta_path).joinpath(self.path.name, METADATA_FILENAME)
 
         with self.metadata_path.open('r') as f:
             self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
@@ -199,15 +202,20 @@ class KartothekDataset():
 
         store = partial(get_store_from_url, 'hfs://' + str(self.path))
 
-        coadd_df = read_dataset_as_ddf(predicates=predicates,
-                                       dataset_uuid=dataset,
-                                       columns=columns,
-                                       store=store,
-                                       table='table').compute()
+        karto_kwargs = dict(predicates=predicates,
+                            dataset_uuid=dataset,
+                            columns=columns,
+                            store=store,
+                            table='table')
 
-        # hack label in ...
-        coadd_df['label'] = 'star'
-        coadd_df.set_index('filter', inplace=True)
+        coadd_df = (read_dataset_as_ddf(**karto_kwargs)
+                    .repartition(partition_size="100MB")
+                    .replace(np.inf, np.nan)
+                    .replace(-np.inf, np.nan)
+                    .dropna(how='any')
+                    .assign(label='star')
+                    .set_index('filter')
+                    .persist())
 
         return coadd_df
 
