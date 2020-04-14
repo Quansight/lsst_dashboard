@@ -89,7 +89,6 @@ class Dataset():
                     .replace(np.inf, np.nan)
                     .replace(-np.inf, np.nan)
                     .dropna(how='any')
-                    .assign(label='star')
                     .set_index('filter')
                     .persist())
 
@@ -153,9 +152,6 @@ class Dataset():
                                        store=store,
                                        table='table')
 
-        # hack label in ...
-        coadd_df['label'] = 'star'
-
         self.coadd[table] = coadd_df
 
     def post_process_metadata(self):
@@ -164,7 +160,7 @@ class Dataset():
         self.filters = list(self.metadata['visits'].keys())
         self.metrics = (set(df.columns.to_list()) -
                         set(self.flags) -
-                        set(['patch', 'dec', 'label',
+                        set(['patch', 'dec',
                              'psfMag', 'ra', 'filter',
                              'dataset', 'dir0', 'tract']))
 
@@ -189,8 +185,6 @@ class Dataset():
                                          store=store,
                                          columns=columns,
                                          table='table')
-        # hack label in ...
-        visits_ddf['label'] = 'star'
 
         return visits_ddf[visits_ddf[metric].notnull()]
 

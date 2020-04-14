@@ -52,7 +52,7 @@ sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 def create_hv_dataset(ddf, percentile=1):
 
     _idNames = ('patch', 'tract')
-    _kdims = ('ra', 'dec', 'psfMag', 'label')
+    _kdims = ('ra', 'dec', 'psfMag')
     _flags = [c for c in ddf.columns if ddf[c].dtype == np.dtype('bool')]
 
     kdims = []
@@ -62,7 +62,7 @@ def create_hv_dataset(ddf, percentile=1):
             if c in ('ra', 'dec', 'psfMag'):
                 cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
                 c = hv.Dimension(c, range=(cmin, cmax))
-            elif c in ('filter', 'label', 'patch'):
+            elif c in ('filter', 'patch'):
                 cvalues = list(ddf[c].unique())
                 c = hv.Dimension(c, values=cvalues)
             elif ddf[c].dtype.kind == 'b':
