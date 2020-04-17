@@ -662,9 +662,10 @@ class QuickLookComponent(Component):
             top_plot = None
             try:
                 errors = []
-                top_plot = visits_plot(dvisits,
-                                       self.selected_metrics_by_filter,
-                                       filt, errors)
+                top_plot = visits_plot(
+                    dvisits, self.selected_metrics_by_filter,
+                    filt, errors
+                )
                 if errors:
                     msg = 'exhibiting metrics {} failed'
                     msg = msg.format(' '.join(errors))
