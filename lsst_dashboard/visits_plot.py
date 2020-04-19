@@ -1,7 +1,7 @@
 import holoviews as hv
 import panel as pn
 
-from lsst_datashboard.dataset import process_metric_visits
+from lsst_dashboard.dataset import process_metric_visits
 
 
 def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[]):
