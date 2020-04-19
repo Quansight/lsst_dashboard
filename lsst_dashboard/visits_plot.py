@@ -1,6 +1,7 @@
-import pandas as pd
-import numpy as np
 import holoviews as hv
+import panel as pn
+
+from lsst_datashboard.dataset import process_metric_visits
 
 
 def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[]):
@@ -11,7 +12,6 @@ def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[]):
 
 
 def visits_plot_layout(plots):
-    import panel as pn
     tabs = [(filt, pn.panel(plot)) for filt,plot in plots.items()]
     return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
@@ -27,11 +27,10 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, errors=[]):
             dfp = process_metric_visits(df.compute(), metric)
             col_median = '{}_median'.format(metric)
             col_scaled = '{}_scaled'.format(metric)
-            dfp.rename(columns={'cmedian': col_median,
-                                'cscaled': col_scaled},
-                       inplace=True)
-            plot_metric = visits_plot_per_metric(dfp, 'visit',  col_scaled,
-                                                 [col_median, 'visit'],
+            plot_metric = visits_plot_per_metric(df=dfp,
+                                                 x='visit',
+                                                 y=col_scaled,
+                                                 hover_columns=[col_median, 'visit'],
                                                  filt=filt)
             plot_all = plot_all * plot_metric if plot_all else plot_metric
         except:
@@ -48,24 +47,6 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, errors=[]):
         return None
 
 
-def process_metric_visits(dfc, metric):
-    from sklearn.preprocessing import minmax_scale
-
-    with pd.option_context('mode.use_inf_as_na', True):
-        dfc = dfc.dropna(subset=[metric])
-
-    dfc['minmax'] = dfc[metric].transform(minmax_scale)
-    dfgrouped = dfc.groupby('visit')
-    dfp = dfgrouped.agg(
-            cscaled=('minmax', np.median),
-            cmedian=(metric, np.median)
-            ).reset_index()
-    col_median = '{}_median'.format(metric)
-    col_scaled = '{}_scaled'.format(metric)
-    dfp.rename(columns={'cmedian': col_median, 'cscaled': col_scaled}, inplace=True)
-    return dfp
-
-
 def visits_plot_per_metric(df, x, y, hover_columns=None, filt=0):
     '''
     * x: name of the column for x-axis
@@ -76,7 +57,7 @@ def visits_plot_per_metric(df, x, y, hover_columns=None, filt=0):
     from holoviews.core.util import dimension_sanitizer
 
     if hover_columns:
-        _tt = [(n,'@{%s}' % dimension_sanitizer(n)) for n in hover_columns]
+        _tt = [(n, '@{%s}' % dimension_sanitizer(n)) for n in hover_columns]
         hover = HoverTool(tooltips=_tt)
     else:
         hover = 'hover'

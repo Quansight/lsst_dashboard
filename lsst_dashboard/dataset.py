@@ -1,13 +1,13 @@
-import yaml
+import os
 from functools import partial
 from pathlib import Path
+import yaml
 
 import dask.dataframe as dd
-import os
-
 import numpy as np
 
 from kartothek.io.dask.dataframe import read_dataset_as_ddf
+from sklearn.preprocessing import minmax_scale
 from storefact import get_store_from_url
 
 try:
@@ -17,6 +17,23 @@ except:
     Butler = None
 
 METADATA_FILENAME = 'dashboard_metadata.yaml'
+
+
+def process_metric_visits(dfc, metric):
+    '''Scale a visit metric to normalize y-axis values on
+    visit plot'''
+
+    with pd.option_context('mode.use_inf_as_na', True):
+        dfc = dfc.dropna(subset=[metric])
+
+    dfc['minmax'] = dfc[metric].transform(minmax_scale)
+    dfgrouped = dfc.groupby('visit')
+    dfp = dfgrouped.agg(cscaled=('minmax', np.median),
+                        cmedian=(metric, np.median)).reset_index()
+    col_median = '{}_median'.format(metric)
+    col_scaled = '{}_scaled'.format(metric)
+    dfp.rename(columns={'cmedian': col_median, 'cscaled': col_scaled}, inplace=True)
+    return dfp
 
 
 class Dataset():
