@@ -362,7 +362,7 @@ class scattersky(ParameterizedFunction):
             x_sampling=ra_sampling, y_sampling=dec_sampling
         )
         sky_rasterized = apply_when(
-            sky_pts, operation=sky_rasterize, streams=[sky_range],
+            sky_pts, operation=sky_rasterize,
             predicate=lambda pts: len(pts) > self.p.max_points
         ).opts(
             opts.Image(cmap=self.p.sky_cmap, symmetric=True),
