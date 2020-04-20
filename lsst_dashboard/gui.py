@@ -20,12 +20,12 @@ from .base import Application
 from .base import Component
 
 from .visits_plot import visits_plot
-from .plots import scattersky, FilterStream, skyplot
+from .plots import FilterStream, scattersky, skyplot
 
 from .dataset import Dataset
 from .dataset import KartothekDataset
 
-from .utils import set_timeout
+from .utils import clear_dynamicmaps, set_timeout
 
 from .overview import create_overview
 
@@ -50,7 +50,7 @@ filtered_datavisits = []
 sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 
 
-def create_hv_dataset(ddf, percentile=1):
+def create_hv_dataset(ddf, percentile=(1, 99)):
 
     _idNames = ('patch', 'tract')
     _kdims = ('ra', 'dec', 'psfMag', 'label')
@@ -71,9 +71,9 @@ def create_hv_dataset(ddf, percentile=1):
             kdims.append(c)
         else:
             if percentile is not None:
-                p = percentile
+                p0, p1 = percentile
                 darray = ddf[c].values
-                cmin, cmax = da.compute(da.percentile(darray, p), da.percentile(darray, 100-p))
+                cmin, cmax = da.compute(da.percentile(darray, p0)[0], da.percentile(darray, p1)[0])
             else:
                 cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
             c = hv.Dimension(c, range=(cmin, cmax))
@@ -744,32 +744,28 @@ class QuickLookComponent(Component):
         self.attempt_to_clear(self._plot_layout)
         self.attempt_to_clear(self.list_layout)
         self.attempt_to_clear(self.detail_plots_layout)
+        self.attempt_to_clear(self.skyplot_layout)
 
         if self._switch_view.value == 'Skyplot View':
             cmd = ('''$( ".skyplot-plot-area" ).show();'''
                    '''$( ".metrics-plot-area" ).hide();''')
             self.execute_js_script(cmd)
-
-            if self._skyplot_tabs in self.skyplot_layout:
-                self._skyplot_tabs[:] = self.skyplot_list
-            else:
-                self._skyplot_tabs[:] = []
-                self.skyplot_layout[:] = [self._skyplot_tabs]
-                self._skyplot_tabs[:] = self.skyplot_list
+            clear_dynamicmaps(self._skyplot_tabs)
+            self._skyplot_tabs[:] = self.skyplot_list
+            self.skyplot_layout[:] = [self._skyplot_tabs]
         elif self._switch_view.value == 'Overview':
-            self.attempt_to_clear(self.skyplot_layout)
             cmd = ('''$( ".skyplot-plot-area" ).hide();'''
                    '''$( ".metrics-plot-area" ).hide();'''
                    '''$( ".overview-plot-area" ).show();''')
             self.execute_js_script(cmd)
         else:
-            self.attempt_to_clear(self.skyplot_layout)
             cmd = ('''$( ".skyplot-plot-area" ).hide();'''
                    '''$( ".metrics-plot-area" ).show();'''
                    '''$( ".overview-plot-area" ).hide();''')
             self.execute_js_script(cmd)
 
             self._update_detail_plots()
+            clear_dynamicmaps(self._detail_tabs)
             self._plot_top[:] = [self.plot_top]
             self.list_layout[:] = [p for _, p in self.plots_list]
             self._plot_layout[:] = [self.list_layout]
