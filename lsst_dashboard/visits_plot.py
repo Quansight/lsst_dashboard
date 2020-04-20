@@ -12,7 +12,7 @@ def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[]):
 
 
 def visits_plot_layout(plots):
-    tabs = [(filt, pn.panel(plot)) for filt,plot in plots.items()]
+    tabs = [(filt, pn.panel(plot)) for filt, plot in plots.items()]
     return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
 
@@ -27,13 +27,18 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, errors=[]):
             dfp = process_metric_visits(df.compute(), metric)
             col_median = '{}_median'.format(metric)
             col_scaled = '{}_scaled'.format(metric)
+            dfp.rename(columns={'cmedian': col_median,
+                                'cscaled': col_scaled},
+                       inplace=True)
+            hover_cols = [col_median, 'visit']
             plot_metric = visits_plot_per_metric(df=dfp,
                                                  x='visit',
                                                  y=col_scaled,
-                                                 hover_columns=[col_median, 'visit'],
+                                                 hover_columns=hover_cols,
                                                  filt=filt)
             plot_all = plot_all * plot_metric if plot_all else plot_metric
         except:
+            raise
             errors.append(metric)
 
     if plot_all:

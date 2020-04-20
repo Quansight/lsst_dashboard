@@ -5,6 +5,7 @@ import yaml
 
 import dask.dataframe as dd
 import numpy as np
+import pandas as pd
 
 from kartothek.io.dask.dataframe import read_dataset_as_ddf
 from sklearn.preprocessing import minmax_scale
