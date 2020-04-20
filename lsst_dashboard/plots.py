@@ -21,6 +21,7 @@ from holoviews.streams import (
     BoundsXY, LinkedStream, PlotReset, PlotSize, RangeXY, Stream
 )
 from holoviews.plotting.bokeh.callbacks import Callback
+from holoviews.plotting.util import process_cmap
 
 from holoviews.operation.datashader import datashade
 from holoviews.operation.datashader import shade
@@ -249,7 +250,7 @@ class scattersky(ParameterizedFunction):
     max_points = param.Integer(default=10000, doc="""
         Maximum number of points to display before switching to rasterize.""")
 
-    scatter_cmap = param.String(default='bgyw', doc="""
+    scatter_cmap = param.String(default='fire', doc="""
         Colormap to use for the scatter plot""")
 
     sky_cmap = param.String(default='coolwarm', doc="""
@@ -327,14 +328,15 @@ class scattersky(ParameterizedFunction):
             streams=scatter_streams, x_sampling=x_sampling,
             y_sampling=y_sampling
         )
+        cmap = process_cmap(self.p.scatter_cmap)[:250] if self.p.scatter_cmap == 'fire' else self.p.scatter_cmap
         scatter_rasterized = apply_when(
             scatter_pts, operation=scatter_rasterize,
             predicate=lambda pts: len(pts) > self.p.max_points
         ).opts(
-            opts.Image(bgcolor="black", clim=(1, np.nan), clipping_colors={'min': 'transparent'},
-                       cmap=self.p.scatter_cmap),
-            opts.Points(bgcolor="black", clim=(1, np.nan), clipping_colors={'min': 'transparent'},
-                        cmap=self.p.scatter_cmap),
+            opts.Image(clim=(1, np.nan), clipping_colors={'min': 'transparent'},
+                       cmap=cmap),
+            opts.Points(clim=(1, np.nan), clipping_colors={'min': 'transparent'},
+                        cmap=cmap),
             opts.Overlay(hooks=[partial(reset_hook, x_range=x_range, y_range=y_range)])
         )
 
@@ -365,8 +367,8 @@ class scattersky(ParameterizedFunction):
             sky_pts, operation=sky_rasterize,
             predicate=lambda pts: len(pts) > self.p.max_points
         ).opts(
-            opts.Image(cmap=self.p.sky_cmap, symmetric=True),
-            opts.Points(cmap=self.p.sky_cmap, symmetric=True),
+            opts.Image(bgcolor="black", cmap=self.p.sky_cmap, symmetric=True),
+            opts.Points(bgcolor="black", cmap=self.p.sky_cmap, symmetric=True),
             opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range,
                                         y_range=dec_range)])
         )
@@ -553,8 +555,9 @@ class skyplot(ParameterizedFunction):
             predicate=lambda pts: len(pts) > self.p.max_points
         )
         return raster_pts.opts(
-            opts.Image(colorbar=True, cmap=self.p.cmap, min_height=100,
-                       responsive=True, tools=['hover'], symmetric=True
+            opts.Image(bgcolor='black', colorbar=True, cmap=self.p.cmap,
+                       min_height=100, responsive=True, tools=['hover'],
+                       symmetric=True
             ),
             opts.Points(color=vdim, cmap=self.p.cmap, framewise=True,
                         size=self.p.decimate_size, tools=['hover'],
