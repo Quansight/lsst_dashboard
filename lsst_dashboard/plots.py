@@ -349,7 +349,7 @@ class scattersky(ParameterizedFunction):
                     ranges['dec'] = y_range
                 return dset.redim.range(**ranges) if ranges else dset
             dset_sky = dset.apply(redim_sky, streams=[self.p.sky_range_stream])
-            link_streams(self.p.sky_range_stream, sky_range)x
+            link_streams(self.p.sky_range_stream, sky_range)
         else:
             dset_sky = dset
         sky_pts = dset_sky.apply(
