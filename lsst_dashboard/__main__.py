@@ -86,7 +86,7 @@ def main(queue, nodes, localcluster):
     # use --allow-websocket-origin=localhost:5000 or set BOKEH_ALL
     # os.environ["BOKEH_ALL"] = "" 
     # need to use same port on local and server for now.
-    dashboard.render().show(port=lsst_dashboard_port)
+    dashboard.render().show(port=LOCAL_DASHBOARD)
 
 
 if __name__ == "__main__":
