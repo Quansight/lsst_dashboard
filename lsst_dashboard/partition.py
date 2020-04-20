@@ -1,165 +1,336 @@
-# repartition data using kartothe
+import logging
 from pathlib import Path
+import dask
 from dask import delayed
 from kartothek.io.dask.dataframe import update_dataset_from_ddf, read_dataset_as_ddf
+from kartothek.io.eager import read_dataset_as_dataframes
 from storefact import get_store_from_url
 from functools import partial
 import pandas as pd
+import numpy as np
 import dask.dataframe as dd
 import dask.array as da
+from tqdm import tqdm
+
+from lsst.daf.persistence import Butler
 
 
 def getMetrics():
-    return ['base_Footprint_nPix', 
-            'Gaussian-PSF_magDiff_mmag',
-            'CircAper12pix-PSF_magDiff_mmag',
-            'Kron-PSF_magDiff_mmag',
-            'CModel-PSF_magDiff_mmag',
-            'traceSdss_pixel',
-            'traceSdss_fwhm_pixel',
-            'psfTraceSdssDiff_percent',
-            'e1ResidsSdss_milli',
-            'e2ResidsSdss_milli',
-            'deconvMoments',
-            'compareUnforced_Gaussian_magDiff_mmag',
-            'compareUnforced_CircAper12pix_magDiff_mmag',
-            'compareUnforced_Kron_magDiff_mmag',
-            'compareUnforced_CModel_magDiff_mmag',
-            'traceSdss_pixel',
-            'traceSdss_fwhm_pixel',
-            'psfTraceSdssDiff_percent',
-            'e1ResidsSdss_milli',
-            'e2ResidsSdss_milli',
-            'base_PsfFlux_instFlux',
-            'base_PsfFlux_instFluxErr'
+    return [
+        "base_Footprint_nPix",
+        "Gaussian-PSF_magDiff_mmag",
+        #             'CircAper12pix-PSF_magDiff_mmag',
+        "Kron-PSF_magDiff_mmag",
+        "CModel-PSF_magDiff_mmag",
+        "traceSdss_pixel",
+        "traceSdss_fwhm_pixel",
+        "psfTraceSdssDiff_percent",
+        "e1ResidsSdss_milli",
+        "e2ResidsSdss_milli",
+        "deconvMoments",
+        "compareUnforced_Gaussian_magDiff_mmag",
+        #             'compareUnforced_CircAper12pix_magDiff_mmag',
+        "compareUnforced_Kron_magDiff_mmag",
+        "compareUnforced_CModel_magDiff_mmag",
+        "base_PsfFlux_instFlux",
+        "base_PsfFlux_instFluxErr",
     ]
 
 
 def getFlags():
-    return ['calib_psf_used',
-            'calib_psf_candidate',
-            'calib_photometry_reserved',
-            'merge_measurement_i2',
-            'merge_measurement_i',
-            'merge_measurement_r2',
-            'merge_measurement_r',
-            'merge_measurement_z',
-            'merge_measurement_y',
-            'merge_measurement_g',
-            'merge_measurement_N921',
-            'merge_measurement_N816',
-            'merge_measurement_N1010',
-            'merge_measurement_N387',
-            'merge_measurement_N515',
-            'qaBad_flag'
+    return [
+        "calib_psf_used",
+        "calib_psf_candidate",
+        "calib_photometry_reserved",
+        "merge_measurement_i2",
+        "merge_measurement_i",
+        "merge_measurement_r2",
+        "merge_measurement_r",
+        "merge_measurement_z",
+        "merge_measurement_y",
+        "merge_measurement_g",
+        "merge_measurement_N921",
+        "merge_measurement_N816",
+        "merge_measurement_N1010",
+        "merge_measurement_N387",
+        "merge_measurement_N515",
+        "qaBad_flag",
     ]
 
 
-def normalize(*args):
-    """
-    extract tract, visit ints from strings
-    """
-    return [int(x.split('-')[-1]) for x in args]
-
-
-def normalize_df(df, sample_frac=None):
-    """
-    append ra, dec, psfMag to dataframe and cleanup
+class DatasetPartitioner(object):
+    """Partitions datasets with ['filter', 'tract'] dataId keys
     """
 
-    # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
+    partition_on = ("filter", "tract")
+    categories = ("filter", "tract")
+    bucket_by = "patch"
+    num_buckets = 8
+    _default_dataset = None
 
-    if sample_frac:
-        df = df.sample(frac=sample_frac)
-    df = df.assign(
-        ra = da.rad2deg(df.coord_ra),
-        dec = da.rad2deg(df.coord_dec),
-        psfMag = -2.5 * da.log10(df.base_PsfFlux_instFlux)
+    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None):
+
+        self._butler = Butler(butlerpath)
+        if dataset is None:
+            dataset = self._default_dataset
+
+        self.dataset = dataset
+        if destination is None:
+            destination = f"{butlerpath}/ktk"
+        self.destination = destination
+        self.sample_frac = sample_frac
+
+        self.stats_path = f"{self.destination}/{self.dataset}_stats.parq"
+
+        self._store = None
+        self.engine = engine
+        self.metadata = self.butler.get("qaDashboard_metadata")
+
+        self.dataIds = [
+            dataId for dataId in self.iter_dataId() if self.butler.datasetExists(self.dataset, dataId)
+        ]
+
+        self._filenames = None
+
+    def __getstate__(self):
+        d = self.__dict__
+        d["_butler"] = None
+        d["_store"] = None
+        return d
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
+    @property
+    def store(self):
+        if self._store is None:
+            self._store = partial(get_store_from_url, "hfs://" + self.destination)
+        return self._store
+
+    @property
+    def butler(self):
+        if self._butler is None:
+            self._butler = Butler(butlerpath)
+        return self._butler
+
+    def iter_dataId(self):
+        d = self.metadata
+        for filt in d["visits"].keys():
+            for tract in d["visits"][filt]:
+                yield {"filter": filt, "tract": tract}
+
+    @property
+    def filenames(self):
+        if self._filenames is None:
+            filenames = []
+            for dataId in tqdm(self.dataIds, desc=f"Getting filenames for {self.dataset} from Butler"):
+                filenames.append(self.butler.get(self.dataset, **dataId).filename)
+            self._filenames = filenames
+        return self._filenames
+
+    def normalize_df(self, df):
+        """
+        append ra, dec, psfMag to dataframe and cleanup
+        """
+
+        # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
+
+        if self.sample_frac:
+            df = df.sample(frac=self.sample_frac)
+        df = df.assign(
+            ra=da.rad2deg(df.coord_ra),
+            dec=da.rad2deg(df.coord_dec),
+            psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+        )
+
+        del df["coord_ra"]
+        del df["coord_dec"]
+        df = df.rename(columns={"patchId": "patch", "ccdId": "ccd"})
+
+        #         categories = list(self.categories)
+        #         df = df.categorize(columns=categories)
+
+        return df
+
+    def get_metric_columns(self):
+        return getMetrics()
+
+    def get_flag_columns(self):
+        return getFlags()
+
+    def get_columns(self):
+        return list(
+            set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
+        )
+
+    def get_df(self):
+        columns = self.get_columns()
+
+        dfs = []
+        for filename, dataId in zip(self.filenames, self.dataIds):
+            df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
+            df = delayed(pd.DataFrame.assign)(df, **dataId)
+            dfs.append(df)
+
+        return self.normalize_df(dd.from_delayed(dfs))
+
+    @property
+    def ktk_kwargs(self):
+        return dict(
+            dataset_uuid=self.dataset,
+            store=self.store,
+            table="table",
+            shuffle=True,
+            num_buckets=self.num_buckets,
+            bucket_by=self.bucket_by,
+            partition_on=self.partition_on,
+        )
+
+    def partition(self):
+        """Write partitioned dataset using kartothek
+        """
+        df = self.get_df()
+        print(f"... ...ktk repartitioning {self.dataset}")
+        graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+        graph.compute()
+
+    def load_from_ktk(self, predicates, columns=None, dask=True):
+        ktk_kwargs = dict(
+            dataset_uuid=self.dataset, predicates=predicates, store=self.store, columns={"table": columns},
+        )
+        #         print(ktk_kwargs)
+        if dask:
+            ktk_kwargs["table"] = "table"
+            return read_dataset_as_ddf(**ktk_kwargs)
+        else:
+            ktk_kwargs["tables"] = ["table"]
+            datalist = read_dataset_as_dataframes(**ktk_kwargs)
+            if datalist:
+                return read_dataset_as_dataframes(**ktk_kwargs)[0]["table"]
+            else:
+                raise IOError(f"No data returned for {ktk_kwargs}.")
+
+    def load_dataId(self, dataId, columns=None, dask=False, raise_exception=False):
+        predicates = [[(k, "==", v) for k, v in dataId.items()]]
+        try:
+            return self.load_from_ktk(predicates, columns=columns, dask=dask)
+        except IOError:
+            if raise_exception:
+                raise
+            else:
+                print(f"No {self.dataset} data available for {dataId}, columns={columns}")
+                return pd.DataFrame()
+
+    def describe_dataId(self, dataId, dask=False, **kwargs):
+        df = self.load_dataId(dataId, columns=self.get_metric_columns(), dask=dask)
+        return df.replace(np.inf, np.nan).replace(-np.inf, np.nan).dropna(how="any").describe(**kwargs)
+
+    def get_stats_list(self, dataIds=None):
+        if dataIds is None:
+            dataIds = self.dataIds
+
+        fn = partial(
+            describe_dataId, store=self.store, dataset=self.dataset, columns=self.get_metric_columns()
+        )
+
+        client = dask.distributed.client.default_client()
+
+        futures = client.map(fn, dataIds)
+        results = client.gather(futures)
+        return results
+
+    def compute_stats(self, dataIds=None):
+        if dataIds is None:
+            dataIds = self.dataIds
+
+        stats_list = self.get_stats_list(dataIds)
+
+        dfs = []
+        for dataId, stats in zip(dataIds, stats_list):
+            index = pd.MultiIndex.from_tuples(
+                [(*dataId.values(), s) for s in stats.index], names=[*dataId.keys(), "statistic"]
+            )
+            columns = stats.columns
+            df = pd.DataFrame(stats.values, index=index, columns=columns)
+            dfs.append(df)
+
+        return pd.concat(dfs, sort=True)
+
+    def write_stats(self, dataIds=None):
+        stats = self.compute_stats(dataIds=dataIds)
+        stats.to_parquet(self.stats_path)
+
+    def load_stats(self, columns=None):
+        if not os.path.exists(self.stats_path):
+            self.write_stats()
+
+        return pd.read_parquet(self.stats_path, columns=columns)
+
+
+class CoaddForcedPartitioner(DatasetPartitioner):
+    _default_dataset = "analysisCoaddTable_forced"
+
+
+class CoaddUnforcedPartitioner(DatasetPartitioner):
+    _default_dataset = "analysisCoaddTable_unforced"
+
+    def get_metric_columns(self):
+        return list(
+            set(getMetrics())
+            - {
+                "compareUnforced_CModel_magDiff_mmag",
+                "compareUnforced_Gaussian_magDiff_mmag",
+                "compareUnforced_Kron_magDiff_mmag",
+            }
+        )
+
+
+class VisitPartitioner(DatasetPartitioner):
+    partition_on = ("filter", "tract", "visit")
+    categories = ("filter", "tract")
+    bucket_by = "ccd"
+    _default_dataset = "analysisVisitTable"
+
+    def get_metric_columns(self):
+        return list(
+            set(getMetrics())
+            - {
+                "CModel-PSF_magDiff_mmag",
+                "compareUnforced_CModel_magDiff_mmag",
+                "compareUnforced_Gaussian_magDiff_mmag",
+                "compareUnforced_Kron_magDiff_mmag",
+            }
+        )
+
+    def get_columns(self):
+        return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
+
+    def iter_dataId(self):
+        d = self.metadata
+        for filt in d["visits"].keys():
+            for tract in d["visits"][filt]:
+                for visit in d["visits"][filt][tract]:
+                    yield {"filter": filt, "tract": tract, "visit": visit}
+
+
+def describe_dataId(
+    dataId, store, dataset, columns=None, percentiles=[0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]
+):
+    """This wasn't working as a method with client.map because of deserialization problem
+    """
+    predicates = [[(k, "==", v) for k, v in dataId.items()]]
+    ktk_kwargs = dict(
+        dataset_uuid=dataset,
+        predicates=predicates,
+        store=store,
+        tables=["table"],
+        columns={"table": columns},
     )
 
-    del df['coord_ra']
-    del df['coord_dec']
-    df = df.rename(columns={'patchId': 'patch', 'ccdId':'ccd'})
-    df = df.categorize(columns=['filter', 'tract'])
-
-    return df
-    
-
-def ktk_repartition(src, dst, sample_frac=None):
-    """
-    Read data formatted in the Directory Structure below and repartition to ktk:
-
-    'analysisVisitTable': 'plots/%(filter)s/tract-%(tract)d/visit-%(visit)d/%(tract)d_%(visit)d.parq',
-    'analysisVisitTable_commonZp': 'plots/%(filter)s/tract-%(tract)d/visit-%(visit)d/%(tract)d_%(visit)d_commonZp.parq',
-    'analysisCoaddTable_forced': 'plots/%(filter)s/tract-%(tract)d/%(tract)d_forced.parq',
-    'analysisCoaddTable_unforced': 'plots/%(filter)s/tract-%(tract)d/%(tract)d_unforced.parq',
-    'analysisColorTable': 'plots/color/tract-%(tract)d/%(tract)d_color.parq',
-    'visitMatchTable': 'plots/%(filter)s/tract-%(tract)d/%(tract)d_visit_match.parq',
-
-    """
-    p = Path(src)
-    if p.stem != 'plots':
-        p = p.joinpath('plots')
-    
-    store_factory = partial(get_store_from_url, 'hfs://' + dst)
-
-    coadd_cols = list(set(getMetrics() + getFlags() + ['coord_ra', 'coord_dec', 'patchId']))
-    visit_cols = coadd_cols + ['ccdId', 'filter', 'tract', 'visit']
-    
-    print(f'...constructing coadd_forced dataframe')
-    dfs = []
-    for f in p.glob('**/*_forced.parq'):
-        *_, filt, tract, _ = f.parts
-        tract, = normalize(tract)
-        df = delayed(pd.read_parquet)(f, columns=coadd_cols)
-        df = delayed(pd.DataFrame.assign)(df, filter=filt, tract=tract)
-        dfs.append(df)
-    dfs = normalize_df(dd.from_delayed(dfs), sample_frac)
-    repartition_dataset(store_factory, dfs, 'coadd_forced', 'patch')
-    del dfs
-
-    print(f'...constructing coadd_unforced dataframe')
-    dfs = []
-    for f in p.glob('**/*_unforced.parq'):
-        *_, filt, tract, _ = f.parts
-        tract, = normalize(tract)
-        df = delayed(pd.read_parquet)(f, columns=coadd_cols)
-        df = delayed(pd.DataFrame.assign)(df, filter=filt, tract=tract)
-        dfs.append(df)
-    dfs = normalize_df(dd.from_delayed(dfs), sample_frac)
-    repartition_dataset(store_factory, dfs, 'coadd_unforced', 'patch')
-    del dfs
-
-    print(f'...constructing visits dataframe')
-    dfs = []
-    for f in p.glob('**/visit-*/*[0-9].parq'):
-        *_, filt, tract, visit, _ = f.parts
-        tract, visit = normalize(tract, visit)
-        df = delayed(pd.read_parquet)(f)
-        df = delayed(pd.DataFrame.assign)(df, filter=filt, tract=tract, visit=visit)
-        dfs.append(df)
-    dfs = dd.from_delayed(dfs)
-    dfs = dfs[list(set(visit_cols).intersection(dfs.columns))] # not all visits have all cols
-    dfs = normalize_df(dfs, sample_frac)
-    repartition_dataset(store_factory, dfs, 'visits', 'ccd')
-    del dfs
-
-    return store_factory
-
-
-def repartition_dataset(store_factory, df, name, bucket_by):
-    """Repartition dataset using kartothek
-    """
-    print(f'... ...ktk repartitioning {name}')
-    graph = update_dataset_from_ddf(
-        df,
-        dataset_uuid=name,
-        store=store_factory,
-        table='table',
-        shuffle=True,
-        num_buckets=4,
-        bucket_by=bucket_by,
-        partition_on=['filter', 'tract'],
+    df = read_dataset_as_dataframes(**ktk_kwargs)[0]["table"]
+    return (
+        df.replace(np.inf, np.nan)
+        .replace(-np.inf, np.nan)
+        .dropna(how="any")
+        .describe(percentiles=percentiles)
     )
-    graph.compute()
-

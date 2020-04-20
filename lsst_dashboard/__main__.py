@@ -12,8 +12,8 @@ username = getpass.getuser()
 
 # dask ports need to be between 29000 and 29999 (hard requirement due to firewall constraints)
 # ssh forwarded ports should be between 20000 and 21000 (recommendation)
-# Using different ranges for dashboard and dask dashboard to avoid bad redirect behavior by 
-# chrome when a dask dashboard port is reused as dashboard port 
+# Using different ranges for dashboard and dask dashboard to avoid bad redirect behavior by
+# chrome when a dask dashboard port is reused as dashboard port
 
 DASK_ALLOWED_PORTS = (29000, 30000)
 DASK_DASHBOARD_ALLOWED_PORTS = (20000, 20500)
@@ -42,8 +42,8 @@ def main(queue, nodes, localcluster):
         from dask_jobqueue import SLURMCluster
 
         scheduler_port, = find_available_ports(1, *DASK_ALLOWED_PORTS)
-        lsst_dashboard_port, = find_available_ports(1, *DASHBOARD_ALLOWED_PORTS)   
-        dask_dashboard_port, = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS) 
+        lsst_dashboard_port, = find_available_ports(1, *DASHBOARD_ALLOWED_PORTS)
+        dask_dashboard_port, = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS)
 
         print(f'...starting dask cluster using slurm on {host} (queue={queue})')
         cluster = SLURMCluster(
@@ -72,22 +72,87 @@ def main(queue, nodes, localcluster):
     else:
         LOCAL_DASHBOARD = 52001
         LOCAL_DASK_DASHBOARD = 52002
-        
+
         print(f'starting local dask cluster on {host}')
         cluster = LocalCluster(dashboard_address=f':{LOCAL_DASK_DASHBOARD}')
         client = Client(cluster)
 
-        
+
     print(f'### lsst dashboard available at http://localhost:{LOCAL_DASHBOARD} ###')
     print(f'### dask dashboard available at http://localhost:{LOCAL_DASK_DASHBOARD} ###')
 
     from lsst_dashboard.gui import dashboard
 
-    # bokeh.server.views.ws - ERROR - Refusing websocket connection from Origin 'http://localhost:5000';                      
+    # bokeh.server.views.ws - ERROR - Refusing websocket connection from Origin 'http://localhost:5000';
     # use --allow-websocket-origin=localhost:5000 or set BOKEH_ALL
-    # os.environ["BOKEH_ALL"] = "" 
+    # os.environ["BOKEH_ALL"] = ""
     # need to use same port on local and server for now.
     dashboard.render().show(port=LOCAL_DASHBOARD)
+
+
+@click.command()
+@click.argument("butlerpath")
+@click.option(
+    "--destination", default=None, help="path to write repartitioned dataset (default: butlerpath/ktk)"
+)
+@click.option(
+    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored when on local machine"
+)
+@click.option(
+    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored when on local machine"
+)
+@click.option("--localcluster", is_flag=True, help="Launches a localcluster instead of slurmcluster")
+def repartition(butlerpath, destination, queue, nodes, localcluster):
+    if "lsst-dev" in host and not localcluster:
+        from dask_jobqueue import SLURMCluster
+
+        scheduler_port, worker_port = find_available_ports(2, *DASK_ALLOWED_PORTS)
+        (dask_dashboard_port,) = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS)
+
+        print(f"...starting dask cluster using slurm on {host} (queue={queue})")
+        cluster = SLURMCluster(
+            queue=queue,
+            cores=24,
+            memory="128GB",
+            scheduler_port=scheduler_port,
+            extra=[f"--worker-port {worker_port}"],
+            dashboard_address=f":{dask_dashboard_port}",
+        )
+
+        print(f"...requesting {nodes} nodes")
+        cluster.scale(nodes)
+        client = Client(cluster)
+        print("...waiting for at least one node")
+        client.wait_for_workers(1)
+
+        # currently local and server ports need to match
+        LOCAL_DASK_DASHBOARD = dask_dashboard_port
+
+    else:
+        LOCAL_DASK_DASHBOARD = 52002
+
+        print(f"starting local dask cluster on {host}")
+        cluster = LocalCluster(dashboard_address=f":{LOCAL_DASK_DASHBOARD}")
+        client = Client(cluster)
+
+    print(f"### dask dashboard available at http://localhost:{LOCAL_DASK_DASHBOARD} ###")
+
+    from lsst_dashboard.partition import CoaddForcedPartitioner, CoaddUnforcedPartitioner, VisitPartitioner
+
+    if destination is None:
+        destination = f"{butlerpath}/ktk"
+
+    coadd_forced = CoaddForcedPartitioner(butlerpath, destination)
+    coadd_forced.partition()
+    coadd_forced.write_stats()
+
+    coadd_unforced = CoaddUnforcedPartitioner(butlerpath, destination)
+    coadd_unforced.partition()
+    coadd_unforced.write_stats()
+
+    visits = VisitPartitioner(butlerpath, destination)
+    visits.partition()
+    visits.write_stats()
 
 
 if __name__ == "__main__":
