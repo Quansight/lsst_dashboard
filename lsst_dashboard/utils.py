@@ -3,6 +3,9 @@ from pathlib import Path
 
 import asyncio
 
+import panel as pn
+import holoviews as hv
+
 
 def set_timeout(seconds, callback):
 
@@ -26,3 +29,13 @@ def scan_folder(path):
     filters = [f.name for f in folder.joinpath('plots').iterdir() if f.is_dir()]
 
     return tracts, filters
+
+
+
+def clear_dynamicmaps(obj):
+    """
+    Clears all DynamicMaps on an object to force recalculation.
+    """
+    for p in obj.select(pn.pane.HoloViews):
+        for dmap in p.object.traverse(lambda x: x, [hv.DynamicMap]):
+            dmap.data.clear()
