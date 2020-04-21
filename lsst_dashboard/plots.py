@@ -461,7 +461,7 @@ class skypoints(Operation):
         dset = filter_dset(dset, filter_range=self.p.filter_range,
                            flags=self.p.flags, bad_flags=self.p.bad_flags)
         return hv.Points(dset, [dset.get_dimension('ra'), dset.get_dimension('dec')],
-                         dset.vdims+[dset.get_dimension('label')]).opts(responsive=True)
+                         dset.vdims).opts(responsive=True)
 
 
 class skyplot(ParameterizedFunction):

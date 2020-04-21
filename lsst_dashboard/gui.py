@@ -23,7 +23,6 @@ from .visits_plot import visits_plot
 from .plots import FilterStream, scattersky, skyplot
 
 from .dataset import Dataset
-from .dataset import KartothekDataset
 
 from .utils import clear_dynamicmaps, set_timeout
 
@@ -53,7 +52,7 @@ sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 def create_hv_dataset(ddf, percentile=(1, 99)):
 
     _idNames = ('patch', 'tract')
-    _kdims = ('ra', 'dec', 'psfMag', 'label')
+    _kdims = ('ra', 'dec', 'psfMag')
     _flags = [c for c in ddf.columns if ddf[c].dtype == np.dtype('bool')]
 
     kdims = []
@@ -63,7 +62,7 @@ def create_hv_dataset(ddf, percentile=(1, 99)):
             if c in ('ra', 'dec', 'psfMag'):
                 cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
                 c = hv.Dimension(c, range=(cmin, cmax))
-            elif c in ('filter', 'label', 'patch'):
+            elif c in ('filter', 'patch'):
                 cvalues = list(ddf[c].unique())
                 c = hv.Dimension(c, values=cvalues)
             elif ddf[c].dtype.kind == 'b':
@@ -84,7 +83,7 @@ def create_hv_dataset(ddf, percentile=(1, 99)):
 
 class Store(object):
     def __init__(self):
-        self.active_dataset = KartothekDataset('')
+        self.active_dataset = Dataset('')
         self.active_tracts = []
 
 def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
@@ -94,7 +93,7 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
     global datavisits
     global filtered_datavisits
 
-    d = KartothekDataset(data_repo_path, **kwargs)
+    d = Dataset(data_repo_path, **kwargs)
     d.connect()
 
     global store
@@ -289,7 +288,7 @@ class QuickLookComponent(Component):
         global datavisits
         global filtered_datavisits
 
-        self.store.active_dataset = KartothekDataset('')
+        self.store.active_dataset = Dataset('')
         self.skyplot_list = []
         self.plots_list = []
         self.plot_top = None

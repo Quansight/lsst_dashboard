@@ -41,17 +41,18 @@ def main(queue, nodes, localcluster):
     if 'lsst-dev' in host and not localcluster:
         from dask_jobqueue import SLURMCluster
 
-        scheduler_port, worker_port = find_available_ports(2, *DASK_ALLOWED_PORTS)
+        scheduler_port, = find_available_ports(1, *DASK_ALLOWED_PORTS)
         lsst_dashboard_port, = find_available_ports(1, *DASHBOARD_ALLOWED_PORTS)   
         dask_dashboard_port, = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS) 
 
         print(f'...starting dask cluster using slurm on {host} (queue={queue})')
         cluster = SLURMCluster(
-            queue='debug',
+            queue=queue,
             cores=24,
+            processes=6,
             memory='128GB',
             scheduler_port=scheduler_port,
-            extra=[f'--worker-port {worker_port}'],
+            extra=[f'--worker-port {":".join(str(p) for p in DASK_ALLOWED_PORTS)}'],
             dashboard_address=f':{dask_dashboard_port}',
         )
 
