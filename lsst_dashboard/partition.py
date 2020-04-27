@@ -1,5 +1,3 @@
-import logging
-from pathlib import Path
 import dask
 from dask import delayed
 from kartothek.io.dask.dataframe import update_dataset_from_ddf, read_dataset_as_ddf
