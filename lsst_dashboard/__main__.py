@@ -4,7 +4,7 @@ import getpass
 import socket
 import os
 
-from dask.distributed import Client, LocalCluster
+from distributed import Client
 
 hostname = socket.gethostname()
 host = hostname.split(".")[0]
@@ -34,21 +34,21 @@ def find_available_ports(n, start, stop):
                 continue
 
 
-@click.command()
-@click.option(
-    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored when on local machine"
-)
-@click.option(
-    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored when on local machine"
-)
-@click.option("--localcluster", is_flag=True, help="Launches a localcluster instead of slurmcluster")
-def main(queue, nodes, localcluster):
-    if "lsst-dev" in host and not localcluster:
-        from dask_jobqueue import SLURMCluster
 
-        (scheduler_port,) = find_available_ports(1, *DASK_ALLOWED_PORTS)
-        (lsst_dashboard_port,) = find_available_ports(1, *DASHBOARD_ALLOWED_PORTS)
-        (dask_dashboard_port,) = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS)
+def launch_dask_cluster(queue, nodes, localcluster):
+    # Launch Dask Cluster
+    if 'lsst-dev' in host:
+        # Set up allowed ports
+        scheduler_port, = find_available_ports(1, *DASK_ALLOWED_PORTS)
+        lsst_dashboard_port, = find_available_ports(1, *DASHBOARD_ALLOWED_PORTS)
+        dask_dashboard_port, = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS)
+    else:
+        localcluster = True
+        lsst_dashboard_port = 52001
+        dask_dashboard_port = 52002
+
+    if not localcluster:
+        from dask_jobqueue import SLURMCluster
 
         print(f"...starting dask cluster using slurm on {host} (queue={queue})")
         cluster = SLURMCluster(
@@ -63,125 +63,96 @@ def main(queue, nodes, localcluster):
 
         print(f"...requesting {nodes} nodes")
         cluster.scale(nodes)
-        client = Client(cluster)
-        print("...waiting for at least one node")
-        client.wait_for_workers(1)
-
-        # currently local and server ports need to match
-        LOCAL_DASHBOARD = lsst_dashboard_port
-        LOCAL_DASK_DASHBOARD = dask_dashboard_port
-
-        print("...starting dashboard")
-        print("run the command below from your local machine to view dashboard:")
-        print(
-            f"\nssh -N -L {LOCAL_DASHBOARD}:{host}:{lsst_dashboard_port} -L {LOCAL_DASK_DASHBOARD}:{host}:{dask_dashboard_port} {username}@{hostname}\n"
-        )
+        print('run the command below from your local machine to forward ports for view dashboard and dask diagnostics:')
+        print(f'\nssh -N -L {lsst_dashboard_port}:{host}:{lsst_dashboard_port} -L {dask_dashboard_port}:{host}:{dask_dashboard_port} {username}@{hostname}\n')
     else:
-        LOCAL_DASHBOARD = 52001
-        LOCAL_DASK_DASHBOARD = 52002
+        from dask.distributed import LocalCluster
+        print(f'starting local dask cluster on {host}')
+        cluster = LocalCluster(dashboard_address=f':{dask_dashboard_port}')
 
-        print(f"starting local dask cluster on {host}")
-        cluster = LocalCluster(dashboard_address=f":{LOCAL_DASK_DASHBOARD}")
-        client = Client(cluster)
+    print(f'### dask dashboard available at http://localhost:{dask_dashboard_port} ###')
+    return cluster, lsst_dashboard_port
 
-    print(f"### lsst dashboard available at http://localhost:{LOCAL_DASHBOARD} ###")
-    print(f"### dask dashboard available at http://localhost:{LOCAL_DASK_DASHBOARD} ###")
 
+@click.group(invoke_without_command=True)
+@click.pass_context
+@click.option('--queue', default='debug', help='Slurm Queue to use (default=debug), ignored on local machine')
+@click.option('--nodes', default=2, help='Number of compute nodes to launch (default=2), ignored on local machine')
+@click.option('--localcluster', is_flag=True, help='Launches a localcluster instead of slurmcluster, default on local machine')
+def cli(ctx, queue, nodes, localcluster):
+    """LSST Data Explorer Launch Script"""
+    ctx.ensure_object(dict)
+    ctx.obj.update({
+        'queue': queue,
+        'nodes': nodes,
+        'localcluster': localcluster,
+    })
+
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+
+
+@cli.command('dask', short_help='Just Launch Dask Cluster')
+@click.pass_context
+def start_dask(ctx):
+    #print(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
+    cluster, _ = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
+    print(f'Dask Cluster: {cluster}')
+    print(f'Connect to cluster with "client = Client({cluster.scheduler_address})"')
+    input('Press Any Key to Exit')
+
+
+@cli.command('dashboard', short_help='Launch Visualization Dashboard (w/ Dask)')
+@click.pass_context
+def start_dashboard(ctx):
+    cluster, lsst_dashboard_port = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
+    client = Client(cluster)
+    print(f'Dask Cluster: {cluster}')
+    print(f'Waiting for at least one worker')
+    client.wait_for_workers(1)
+    print(f'### starting lsst data explorer at http://localhost:{lsst_dashboard_port} ###')
+    
     from lsst_dashboard.gui import dashboard
-
-    # bokeh.server.views.ws - ERROR - Refusing websocket connection from Origin 'http://localhost:5000';
-    # use --allow-websocket-origin=localhost:5000 or set BOKEH_ALL
-    # os.environ["BOKEH_ALL"] = ""
-    # need to use same port on local and server for now.
-    dashboard.render().show(port=LOCAL_DASHBOARD)
+    dashboard.render().show(port=lsst_dashboard_port)
 
 
-@click.command()
-@click.argument("butlerpath")
-@click.option(
-    "--destination", default=None, help="path to write repartitioned dataset (default: butlerpath/ktk)"
-)
-@click.option(
-    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored when on local machine"
-)
-@click.option(
-    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored when on local machine"
-)
-@click.option("--localcluster", is_flag=True, help="Launches a localcluster instead of slurmcluster")
-def repartition(butlerpath, destination, queue, nodes, localcluster):
-    if "lsst-dev" in host and not localcluster:
-        # from dask_jobqueue import SLURMCluster
+@cli.command('repartition', short_help='Prepare Butler Data for Vizualization (w/ Dask)')
+@click.pass_context
+@click.argument("butler_path")
+@click.argument("destination_path", required=False)
+def repartition(ctx, butler_path, destination_path):
+    """Repartition a Butler Dataset for use with LSST Data Explorer Dashboard"""
+    cluster, _ = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
+    client = Client(cluster)
+    print(f'Dask Cluster: {cluster}')
+    print(f'Waiting for at least one worker')
+    client.wait_for_workers(1)
 
-        # scheduler_port, worker_port = find_available_ports(2, *DASK_ALLOWED_PORTS)
-        # (dask_dashboard_port,) = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS)
-
-        # print(f"...starting dask cluster using slurm on {host} (queue={queue})")
-        # cluster = SLURMCluster(
-        #     queue=queue,
-        #     cores=24,
-        #     memory="128GB",
-        #     scheduler_port=scheduler_port,
-        #     extra=[f"--worker-port {worker_port}"],
-        #     dashboard_address=f":{dask_dashboard_port}",
-        # )
-
-        # print(f"...requesting {nodes} nodes")
-        # cluster.scale(nodes)
-        # client = Client(cluster)
-        # print(f"...waiting for at least {waitfor} workers")
-        # client.wait_for_workers(waitfor)
-
-        from dask_jobqueue import SLURMCluster
-
-        scheduler_port, worker_port = find_available_ports(2, *DASK_ALLOWED_PORTS)
-        (dask_dashboard_port,) = find_available_ports(1, *DASK_DASHBOARD_ALLOWED_PORTS)
-
-        print(f"...starting dask cluster using slurm on {host} (queue={queue})")
-        print(f"...starting dask cluster using slurm on {host} (queue={queue})")
-        cluster = SLURMCluster(
-            queue=queue,
-            cores=24,
-            memory="128GB",
-            scheduler_port=scheduler_port,
-            extra=[f"--worker-port {worker_port}"],
-            dashboard_address=f":{dask_dashboard_port}",
-        )
-
-        print(f"...requesting {nodes} nodes")
-        cluster.scale(nodes)
-        client = Client(cluster)
-        print(f"...waiting for {nodes} nodes")
-        client.wait_for_workers(nodes)
-
-        # currently local and server ports need to match
-        LOCAL_DASK_DASHBOARD = dask_dashboard_port
-
-    else:
-        LOCAL_DASK_DASHBOARD = 52002
-
-        print(f"starting local dask cluster on {host}")
-        cluster = LocalCluster(dashboard_address=f":{LOCAL_DASK_DASHBOARD}")
-        client = Client(cluster)
-
-    print(f"### dask dashboard available at http://localhost:{LOCAL_DASK_DASHBOARD} ###")
-
+    print(f'### repartitioning data from {butler_path}')
     from lsst_dashboard.partition import CoaddForcedPartitioner, CoaddUnforcedPartitioner, VisitPartitioner
 
-    if destination is None:
-        destination = f"{butlerpath}/ktk"
+    if destination_path is None:
+        destination_path = f"{butler_path}/ktk"
 
-    coadd_forced = CoaddForcedPartitioner(butlerpath, destination)
+    print(f'...partitioned data will be written to {destination_path}')
+
+    print('...partitioning coadd forced data')
+    coadd_forced = CoaddForcedPartitioner(butler_path, destination_path)
     coadd_forced.partition()
     coadd_forced.write_stats()
 
-    coadd_unforced = CoaddUnforcedPartitioner(butlerpath, destination)
+    print('...partitioning coadd unforced data')
+    coadd_unforced = CoaddUnforcedPartitioner(butler_path, destination_path)
     coadd_unforced.partition()
     coadd_unforced.write_stats()
 
-    visits = VisitPartitioner(butlerpath, destination)
+    print('...partitioning visit data')
+    visits = VisitPartitioner(butler_path, destination_path)
     visits.partition()
     visits.write_stats()
 
+    print('...partitioning complete')
+
 
 if __name__ == "__main__":
-    main()
+    cli(obj={})
