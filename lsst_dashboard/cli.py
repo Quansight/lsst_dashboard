@@ -120,7 +120,9 @@ def start_dashboard(ctx):
 @click.pass_context
 @click.argument("butler_path")
 @click.argument("destination_path", required=False)
-def repartition(ctx, butler_path, destination_path):
+@click.option("--sample_frac", default=None, type=float, help='sample dataset by fraction [0-1]')
+@click.option("--num_buckets", default=8, help='number of buckets per partition')
+def repartition(ctx, butler_path, destination_path, sample_frac, num_buckets):
     """Repartition a Butler Dataset for use with LSST Data Explorer Dashboard"""
     cluster, _ = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
     client = Client(cluster)
@@ -137,17 +139,17 @@ def repartition(ctx, butler_path, destination_path):
     print(f'...partitioned data will be written to {destination_path}')
 
     print('...partitioning coadd forced data')
-    coadd_forced = CoaddForcedPartitioner(butler_path, destination_path)
+    coadd_forced = CoaddForcedPartitioner(butler_path, destination_path, sample_frac, num_buckets)
     coadd_forced.partition()
     coadd_forced.write_stats()
 
     print('...partitioning coadd unforced data')
-    coadd_unforced = CoaddUnforcedPartitioner(butler_path, destination_path)
+    coadd_unforced = CoaddUnforcedPartitioner(butler_path, destination_path, sample_frac, num_buckets)
     coadd_unforced.partition()
     coadd_unforced.write_stats()
 
     print('...partitioning visit data')
-    visits = VisitPartitioner(butler_path, destination_path)
+    visits = VisitPartitioner(butler_path, destination_path, sample_frac, num_buckets)
     visits.partition()
     visits.write_stats()
 

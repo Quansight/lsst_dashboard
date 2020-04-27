@@ -13,7 +13,7 @@ from tqdm import tqdm
 from lsst.daf.persistence import Butler
 
 
-def getMetrics():
+def get_metrics():
     return [
         "base_Footprint_nPix",
         "Gaussian-PSF_magDiff_mmag",
@@ -35,7 +35,7 @@ def getMetrics():
     ]
 
 
-def getFlags():
+def get_flags():
     return [
         "calib_psf_used",
         "calib_psf_candidate",
@@ -63,10 +63,9 @@ class DatasetPartitioner(object):
     partition_on = ("filter", "tract")
     categories = ("filter", "tract")
     bucket_by = "patch"
-    num_buckets = 8
     _default_dataset = None
 
-    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None):
+    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8):
 
         self._butler = Butler(butlerpath)
         if dataset is None:
@@ -77,6 +76,7 @@ class DatasetPartitioner(object):
             destination = f"{butlerpath}/ktk"
         self.destination = destination
         self.sample_frac = sample_frac
+        self.num_buckets = num_buckets
 
         self.stats_path = f"{self.destination}/{self.dataset}_stats.parq"
 
@@ -167,10 +167,10 @@ class DatasetPartitioner(object):
         return df
 
     def get_metric_columns(self):
-        return getMetrics()
+        return get_metrics()
 
     def get_flag_columns(self):
-        return getFlags()
+        return get_flags()
 
     def get_columns(self):
         # return None
@@ -314,7 +314,7 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
     def get_metric_columns(self):
         return list(
-            set(getMetrics())
+            set(get_metrics())
             - {
                 "compareUnforced_CModel_magDiff_mmag",
                 "compareUnforced_Gaussian_magDiff_mmag",
@@ -331,7 +331,7 @@ class VisitPartitioner(DatasetPartitioner):
 
     def get_metric_columns(self):
         return list(
-            set(getMetrics())
+            set(get_metrics())
             - {
                 "CModel-PSF_magDiff_mmag",
                 "compareUnforced_CModel_magDiff_mmag",
