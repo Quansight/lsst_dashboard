@@ -161,8 +161,8 @@ class DatasetPartitioner(object):
 
         df = df.rename(columns={"patchId": "patch", "ccdId": "ccd"})
 
-        #         categories = list(self.categories)
-        #         df = df.categorize(columns=categories)
+        categories = list(self.categories)
+        df = df.categorize(columns=categories)
 
         return df
 
