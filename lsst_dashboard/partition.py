@@ -342,8 +342,8 @@ class VisitPartitioner(DatasetPartitioner):
             }
         )
 
-    # def get_columns(self):
-    #     return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
+    def get_columns(self):
+        return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
 
     def iter_dataId(self):
         d = self.metadata
