@@ -36,6 +36,13 @@ def find_available_ports(n, start, stop):
 
 
 def launch_dask_cluster(queue, nodes, localcluster):
+    """
+    Usage from script:
+        from distributed import Client
+        from lsst_dashboard.cli import launch_dask_cluster                                                                                                                                                 
+        cluster, port = launch_dask_cluster('normal', 6, False)
+        client = Client(cluster)
+    """
     # Launch Dask Cluster
     if 'lsst-dev' in host:
         # Set up allowed ports
@@ -50,19 +57,20 @@ def launch_dask_cluster(queue, nodes, localcluster):
     if not localcluster:
         from dask_jobqueue import SLURMCluster
 
-        print(f"...starting dask cluster using slurm on {host} (queue={queue})")
+        print(f'...starting dask cluster using slurm on {host} (queue={queue})')
+        procs_per_node = 6
         cluster = SLURMCluster(
             queue=queue,
             cores=24,
-            processes=6,
-            memory="128GB",
+            processes=procs_per_node,
+            memory='128GB',
             scheduler_port=scheduler_port,
             extra=[f'--worker-port {":".join(str(p) for p in DASK_ALLOWED_PORTS)}'],
             dashboard_address=f":{dask_dashboard_port}",
         )
 
-        print(f"...requesting {nodes} nodes")
-        cluster.scale(nodes)
+        print(f'...requesting {nodes} nodes')
+        cluster.scale(nodes*procs_per_node)
         print('run the command below from your local machine to forward ports for view dashboard and dask diagnostics:')
         print(f'\nssh -N -L {lsst_dashboard_port}:{host}:{lsst_dashboard_port} -L {dask_dashboard_port}:{host}:{dask_dashboard_port} {username}@{hostname}\n')
     else:
@@ -139,17 +147,17 @@ def repartition(ctx, butler_path, destination_path, sample_frac, num_buckets):
     print(f'...partitioned data will be written to {destination_path}')
 
     print('...partitioning coadd forced data')
-    coadd_forced = CoaddForcedPartitioner(butler_path, destination_path, sample_frac, num_buckets)
+    coadd_forced = CoaddForcedPartitioner(butler_path, destination_path, sample_frac=sample_frac, num_buckets=num_buckets)
     coadd_forced.partition()
     coadd_forced.write_stats()
 
     print('...partitioning coadd unforced data')
-    coadd_unforced = CoaddUnforcedPartitioner(butler_path, destination_path, sample_frac, num_buckets)
+    coadd_unforced = CoaddUnforcedPartitioner(butler_path, destination_path, sample_frac=sample_frac, num_buckets=num_buckets)
     coadd_unforced.partition()
     coadd_unforced.write_stats()
 
     print('...partitioning visit data')
-    visits = VisitPartitioner(butler_path, destination_path, sample_frac, num_buckets)
+    visits = VisitPartitioner(butler_path, destination_path, sample_frac=sample_frac, num_buckets=num_buckets)
     visits.partition()
     visits.write_stats()
 

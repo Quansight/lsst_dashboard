@@ -1,4 +1,4 @@
-import dask
+import distributed
 from dask import delayed
 from kartothek.io.dask.dataframe import update_dataset_from_ddf, read_dataset_as_ddf
 from kartothek.io.eager import read_dataset_as_dataframes
@@ -271,7 +271,7 @@ class DatasetPartitioner(object):
 
         fn = partial(describe_dataId, store=self.store, dataset=self.dataset)
 
-        client = dask.distributed.client.default_client()
+        client = distributed.client.default_client()
 
         futures = client.map(fn, dataIds)
         results = client.gather(futures)
