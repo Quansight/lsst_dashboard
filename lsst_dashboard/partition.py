@@ -61,7 +61,7 @@ class DatasetPartitioner(object):
     """
 
     partition_on = ("filter", "tract")
-    categories = ("filter", "tract")
+    categories = ["filter", "tract"]
     bucket_by = "patch"
     _default_dataset = None
 
@@ -148,8 +148,6 @@ class DatasetPartitioner(object):
 
         # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
 
-        # if self.sample_frac:
-        #     df = df.sample(frac=self.sample_frac)
         df = df.assign(
             ra=da.rad2deg(df.coord_ra),
             dec=da.rad2deg(df.coord_dec),
@@ -161,8 +159,8 @@ class DatasetPartitioner(object):
 
         df = df.rename(columns={"patchId": "patch", "ccdId": "ccd"})
 
-        categories = list(self.categories)
-        df = df.categorize(columns=categories)
+        if self.categories:
+            df = df.categorize(columns=self.categories)
 
         return df
 
@@ -196,10 +194,6 @@ class DatasetPartitioner(object):
 
         if dfs:
             df = dd.from_delayed(dfs)
-
-            categories = list(self.categories)
-            df = df.categorize(columns=categories)
-
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
 
@@ -325,7 +319,7 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
 class VisitPartitioner(DatasetPartitioner):
     partition_on = ("filter", "tract", "visit")
-    categories = ("filter", "tract")
+    categories = None # ["filter", "tract"] Some visit datasets are erroring on categorization
     bucket_by = "ccd"
     _default_dataset = "analysisVisitTable"
 
