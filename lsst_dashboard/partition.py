@@ -90,7 +90,13 @@ class DatasetPartitioner(object):
             dataId for dataId in self.iter_dataId() if self.butler.datasetExists(self.dataset, dataId)
         ]
 
+        self.filters = [filt for filt in self.metadata["visits"].keys()]
+        self.dataIds_by_filter = {
+            filt: [d for d in self.dataIds if d["filter"] == filt] for filt in self.filters
+        }
+
         self._filenames = None
+        self._filenames_by_filter = None
 
     def __getstate__(self):
         d = self.__dict__
@@ -123,10 +129,19 @@ class DatasetPartitioner(object):
     def filenames(self):
         if self._filenames is None:
             filenames = []
+            filenames_by_filter = {filt: [] for filt in self.filters}
             for dataId in tqdm(self.dataIds, desc=f"Getting filenames for {self.dataset} from Butler"):
-                filenames.append(self.butler.get(self.dataset, **dataId).filename)
+                filename = self.butler.get(self.dataset, **dataId).filename
+                filenames.append(filename)
+                filenames_by_filter[dataId["filter"]].append(filename)
             self._filenames = filenames
+            self._filenames_by_filter = filenames_by_filter
         return self._filenames
+
+    @property
+    def filenames_by_filter(self):
+        self.filenames
+        return self._filenames_by_filter
 
     def normalize_df(self, df):
         """
@@ -135,8 +150,8 @@ class DatasetPartitioner(object):
 
         # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
 
-        if self.sample_frac:
-            df = df.sample(frac=self.sample_frac)
+        # if self.sample_frac:
+        #     df = df.sample(frac=self.sample_frac)
         df = df.assign(
             ra=da.rad2deg(df.coord_ra),
             dec=da.rad2deg(df.coord_dec),
@@ -145,6 +160,7 @@ class DatasetPartitioner(object):
 
         del df["coord_ra"]
         del df["coord_dec"]
+
         df = df.rename(columns={"patchId": "patch", "ccdId": "ccd"})
 
         #         categories = list(self.categories)
@@ -159,20 +175,41 @@ class DatasetPartitioner(object):
         return getFlags()
 
     def get_columns(self):
+        # return None
         return list(
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
 
-    def get_df(self):
+    def get_df(self, filt):
+        dataIds = self.dataIds_by_filter[filt]
+        filenames = self.filenames_by_filter[filt]
+
         columns = self.get_columns()
 
         dfs = []
-        for filename, dataId in zip(self.filenames, self.dataIds):
+        for filename, dataId in tqdm(
+            zip(filenames, dataIds),
+            desc=f"Building dask dataframe for {self.dataset} ({filt})",
+            total=len(dataIds),
+        ):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             dfs.append(df)
 
-        return self.normalize_df(dd.from_delayed(dfs))
+        if dfs:
+            df = dd.from_delayed(dfs)
+
+            categories = list(self.categories)
+            df = df.categorize(columns=categories)
+
+            if self.sample_frac:
+                df = df.sample(frac=self.sample_frac)
+
+            df = self.normalize_df(df)
+
+            return df
+        else:
+            return None
 
     @property
     def ktk_kwargs(self):
@@ -186,13 +223,18 @@ class DatasetPartitioner(object):
             partition_on=self.partition_on,
         )
 
-    def partition(self):
+    def partition_filt(self, filt):
         """Write partitioned dataset using kartothek
         """
-        df = self.get_df()
-        print(f"... ...ktk repartitioning {self.dataset}")
-        graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
-        graph.compute()
+        df = self.get_df(filt)
+        if df is not None:
+            print(f"... ...ktk repartitioning {self.dataset} ({filt})")
+            graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+            graph.compute()
+
+    def partition(self):
+        for filt in self.filters:
+            self.partition_filt(filt)
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
@@ -222,16 +264,14 @@ class DatasetPartitioner(object):
                 return pd.DataFrame()
 
     def describe_dataId(self, dataId, dask=False, **kwargs):
-        df = self.load_dataId(dataId, columns=self.get_metric_columns(), dask=dask)
+        df = self.load_dataId(dataId, dask=dask)
         return df.replace(np.inf, np.nan).replace(-np.inf, np.nan).dropna(how="any").describe(**kwargs)
 
     def get_stats_list(self, dataIds=None):
         if dataIds is None:
             dataIds = self.dataIds
 
-        fn = partial(
-            describe_dataId, store=self.store, dataset=self.dataset, columns=self.get_metric_columns()
-        )
+        fn = partial(describe_dataId, store=self.store, dataset=self.dataset)
 
         client = dask.distributed.client.default_client()
 
