@@ -170,13 +170,13 @@ def repartition(butlerpath, destination, queue, nodes, localcluster):
     if destination is None:
         destination = f"{butlerpath}/ktk"
 
-    # coadd_forced = CoaddForcedPartitioner(butlerpath, destination)
-    # coadd_forced.partition()
-    # coadd_forced.write_stats()
+    coadd_forced = CoaddForcedPartitioner(butlerpath, destination)
+    coadd_forced.partition()
+    coadd_forced.write_stats()
 
-    # coadd_unforced = CoaddUnforcedPartitioner(butlerpath, destination)
-    # coadd_unforced.partition()
-    # coadd_unforced.write_stats()
+    coadd_unforced = CoaddUnforcedPartitioner(butlerpath, destination)
+    coadd_unforced.partition()
+    coadd_unforced.write_stats()
 
     visits = VisitPartitioner(butlerpath, destination)
     visits.partition()
