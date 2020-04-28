@@ -6,6 +6,7 @@ import dask.dataframe as dd
 import os
 
 import numpy as np
+import pandas as pd
 
 from kartothek.io.dask.dataframe import read_dataset_as_ddf
 from storefact import get_store_from_url
@@ -21,31 +22,34 @@ class Dataset:
         d.connect()
         d.init_data()
     """
-    def __init__(self, path, tracts=None, filters=None):
-        self.conn = None
+    def __init__(self, path):
         self.path = Path(path)
         self.coadd = {}
         self.visits = None
         self.visits_by_metric = {}
-        self.metadata = {}
         self.metrics = []
-        self.failures = {}
+        self.failures = {} # this functionality no longer works
         self.flags = []
-        self.tracts = tracts
-        self.filters = filters if filters is not None else []
+        self.filters = []
+        self.tracts = []
+        self.stats = {}
 
     def connect(self):
 
-        self.parse_metadata_from_file()
+        print('-- read coadd/visits summary stats tables and generate metadata')
+        self.read_summary_stats()
+        # use coadd_forced table to populate filters & tracts
+        self.filters = list(self.stats['coadd_forced'].index.unique(level=0))
+        self.tracts = list(self.stats['coadd_forced'].index.unique(level=1))
 
         print("-- read coadd table --")
-        self.fetch_coadd_table()  # currently ignoring forced/unforced
+        self.fetch_coadd_table()
 
         print("-- generate other metadata fields --")
         self.post_process_metadata()
 
-        print("-- read visit data --")
-        self.fetch_visits_by_metric()
+        #print("-- read visit data --")
+        #self.fetch_visits_by_metric()
 
         print("-- done with reads --")
 
@@ -118,19 +122,12 @@ class Dataset:
 
         return coadd_df.drop_duplicates().count().compute()["patch"]
 
-    def parse_metadata_from_file(self):
-        if self.path.joinpath(METADATA_FILENAME).exists():
-            self.metadata_path = self.path.joinpath(METADATA_FILENAME)
-        else:
-            self.metadata_path = Path(os.environ.get("LSST_META", os.curdir)).joinpath(
-                self.path.name, METADATA_FILENAME
-            )
+    def read_summary_stats(self):
+        for table in ['CoaddTable_unforced', 'CoaddTable_forced', 'VisitTable']:
+            name = table.replace('Table', '').lower()
+            path = self.path.joinpath(f'analysis{table}_stats.parq')
+            self.stats[name] = pd.read_parquet(path)
 
-        with self.metadata_path.open("r") as f:
-            self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
-            self.failures = self.metadata.get("failures", {})
-            if self.tracts is None:
-                self.tracts = list(set(x for v in self.metadata["visits"].values() for x in v.keys()))
 
     def fetch_coadd_table(self, coadd_version="unforced"):
         table = "qaDashboardCoaddTable"
@@ -148,18 +145,10 @@ class Dataset:
     def post_process_metadata(self):
         df = self.coadd["qaDashboardCoaddTable"]
         self.flags = df.columns[df.dtypes == bool].to_list()
-        self.filters = list(self.metadata["visits"].keys())
         self.metrics = (
             set(df.columns.to_list())
             - set(self.flags)
-            - set(["patch", "dec", "psfMag", "ra", "filter", "dataset", "dir0", "tract"])
-        )
-
-    def fetch_visits(self):
-        store = partial(get_store_from_url, "hfs://" + str(self.path))
-        predicates = [[("tract", "in", self.tracts)]]
-        self.visits = read_dataset_as_ddf(
-            predicates=predicates, dataset_uuid="analysisVisitTable", store=store, table="table"
+            - set(["patch", "dec", "psfMag", "ra", "filter", "dataset", "tract"])
         )
 
     def get_visits_by_metric_filter(self, filt, metric):

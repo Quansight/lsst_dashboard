@@ -90,8 +90,8 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
     global datasets
     global filtered_datasets
-    global datavisits
-    global filtered_datavisits
+    #global datavisits
+    #global filtered_datavisits
 
     d = Dataset(data_repo_path, **kwargs)
     d.connect()
@@ -103,22 +103,22 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
     datasets = {}
     filtered_datasets = {}
-    dtf = d.coadd[datastack]
+    #dtf = d.coadd[datastack]
 
 
     datavisits = {}
     filtered_datavisits = {}
-    for filt in d.filters:
-        datavisits[filt] = {}
-        filtered_datavisits[filt] = {}
-        for metric in d.metrics:
-            df = d.visits_by_metric[filt][metric]
-            filtered_df = None
-            if df is not None:
-                filtered_df = df.copy()
-
-            datavisits[filt][metric] = df
-            filtered_datavisits[filt][metric] = filtered_df
+    #for filt in d.filters:
+    #    datavisits[filt] = {}
+    #    filtered_datavisits[filt] = {}
+    #    for metric in d.metrics:
+    #        df = d.visits_by_metric[filt][metric]
+    #        filtered_df = None
+    #        if df is not None:
+    #            filtered_df = df.copy()
+    #
+    #        datavisits[filt][metric] = df
+    #        filtered_datavisits[filt][metric] = filtered_df
 
     return d
 
@@ -285,8 +285,8 @@ class QuickLookComponent(Component):
 
         # Setup Variables
         global datasets
-        global datavisits
-        global filtered_datavisits
+        #global datavisits
+        #global filtered_datavisits
 
         self.store.active_dataset = Dataset('')
         self.skyplot_list = []
@@ -295,8 +295,8 @@ class QuickLookComponent(Component):
 
         datasets = {}
         filtered_datasets = {}
-        datavisits = {}
-        filtered_datavisits = {}
+        #datavisits = {}
+        #filtered_datavisits = {}
 
         # Setup UI
         self._switch_view_mode()
@@ -627,13 +627,7 @@ class QuickLookComponent(Component):
         return create_hv_dataset(ddf)
 
     def get_datavisits(self):
-        global datavisits
-        global filtered_datavisits
-        # if self.query_filter == '' and len(self.selected_flag_filters) == 0:
-        if len(self.selected_flag_filters) == 0:
-            return datavisits
-        else:
-            return filtered_datavisits
+        return store.active_dataset.stats['visit']
 
     def add_message_from_error(self, title, info, exception_obj, level='error'):
 
