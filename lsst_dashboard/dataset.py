@@ -143,9 +143,6 @@ class Dataset:
             predicates=predicates, dataset_uuid=dataset, store=store, table="table"
         )
 
-        # hack label in ...
-        coadd_df["label"] = "star"
-
         self.coadd[table] = coadd_df
 
     def post_process_metadata(self):
@@ -155,7 +152,7 @@ class Dataset:
         self.metrics = (
             set(df.columns.to_list())
             - set(self.flags)
-            - set(["patch", "dec", "label", "psfMag", "ra", "filter", "dataset", "dir0", "tract"])
+            - set(["patch", "dec", "psfMag", "ra", "filter", "dataset", "dir0", "tract"])
         )
 
     def fetch_visits(self):
@@ -200,8 +197,6 @@ class Dataset:
             columns=columns,
             table="table",
         )
-        # hack label in ...
-        visits_ddf["label"] = "star"
 
         return visits_ddf[visits_ddf[metric].notnull()]
 
