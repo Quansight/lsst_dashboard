@@ -72,8 +72,8 @@ def create_hv_dataset(ddf, stats, percentile=(1, 99)):
         else:
             if percentile is not None:
                 p0, p1 = percentile
-                if p0 in stats.index and p1 in stats.index:
-                    cmin, cmax = stats[metric][f'{p0}%'].min(), stats[metric][f'{p0}%'].max()
+                if f'{p0}%' in stats.index and f'{p1}%' in stats.index:
+                    cmin, cmax = stats[c][f'{p0}%'].min(), stats[c][f'{p1}%'].max()
                 else:
                     print('percentiles not found in stats, computing')
                     darray = ddf[c].values
