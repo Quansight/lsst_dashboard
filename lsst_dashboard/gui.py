@@ -4,6 +4,7 @@ import traceback
 import json
 import logging
 import os
+import datetime
 
 from functools import partial
 
@@ -705,13 +706,13 @@ class QuickLookComponent(Component):
         self._switch_view_mode()
 
     def _update_detail_plots(self):
-        print("_update_detail_plots")
+        print(f"{datetime.datetime.now()}: _update_detail_plots")
         tabs = []
         for filt, plots in self.detail_plots.items():
             plots_list = pn.Column(*plots, sizing_mode="stretch_width")
             tabs.append((filt, plots_list))
         self._detail_tabs[:] = tabs
-        print("Done _update_detail_plots")
+        print(f"{datetime.datetime.now()}: Done _update_detail_plots")
 
     def attempt_to_clear(self, obj):
         try:
@@ -733,7 +734,7 @@ class QuickLookComponent(Component):
     def _switch_view_mode(self, *events):
 
         # clear existing plot layouts
-        print("_switch_view_mode")
+        print(f"{datetime.datetime.now()}: _switch_view_mode")
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
         self.attempt_to_clear(self.list_layout)
@@ -767,6 +768,7 @@ class QuickLookComponent(Component):
             self.list_layout[:] = [p for _, p in self.plots_list]
             self._plot_layout[:] = [self.list_layout]
             self.detail_plots_layout[:] = [self._detail_tabs]
+            print(f"{datetime.datetime.now()}: end _switch_view_mode")
 
     def on_tracts_updated(self, tracts):
 
