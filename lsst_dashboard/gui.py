@@ -1,4 +1,4 @@
-from profilehooks import profile
+# from profilehooks import profile
 
 import traceback
 import json
@@ -28,6 +28,7 @@ from .utils import clear_dynamicmaps, set_timeout
 
 from .overview import create_overview
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.FileHandler("dashboard.log"))
@@ -47,6 +48,22 @@ datavisits = []
 filtered_datavisits = []
 
 sample_data_directory = "sample_data/DM-23243-KTK-1Perc"
+
+
+def profile(func):
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        from line_profiler import LineProfiler
+
+        prof = LineProfiler()
+        try:
+            return prof(func)(*args, **kwargs)
+        finally:
+            prof.print_stats()
+
+    return wrapper
 
 
 def create_hv_dataset(ddf, stats, percentile=(1, 99)):
