@@ -636,8 +636,7 @@ class QuickLookComponent(Component):
         self.add_status_message(title, msg_body, level=level, duration=10)
 
     @param.depends("selected_metrics_by_filter", watch=True)
-    @profile(immediate=True)
-    # @profile
+    # @profile(immediate=True)
     def _update_selected_metrics_by_filter(self):
         skyplot_list = []
         detail_plots = {}
@@ -764,11 +763,15 @@ class QuickLookComponent(Component):
 
             self._update_detail_plots()
             clear_dynamicmaps(self._detail_tabs)
+            print(f"{datetime.datetime.now()}: self._plot_top[:] = [self.plot_top]")
             self._plot_top[:] = [self.plot_top]
+            print(f"{datetime.datetime.now()}: self.list_layout[:] = [p for _, p in self.plots_list]")
             self.list_layout[:] = [p for _, p in self.plots_list]
+            print(f"{datetime.datetime.now()}: self._plot_layout[:] = [self.list_layout]")
             self._plot_layout[:] = [self.list_layout]
+            print(f"{datetime.datetime.now()}: self.detail_plots_layout[:] = [self._detail_tabs]")
             self.detail_plots_layout[:] = [self._detail_tabs]
-            print(f"{datetime.datetime.now()}: end _switch_view_mode")
+            print(f"{datetime.datetime.now()}: ")
 
     def on_tracts_updated(self, tracts):
 
