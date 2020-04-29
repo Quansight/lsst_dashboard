@@ -705,6 +705,7 @@ class QuickLookComponent(Component):
         self._switch_view_mode()
 
     def _update_detail_plots(self):
+        print("_update_detail_plots")
         tabs = []
         for filt, plots in self.detail_plots.items():
             plots_list = pn.Column(*plots, sizing_mode="stretch_width")
@@ -727,6 +728,7 @@ class QuickLookComponent(Component):
         self._on_clear_metrics(event=None)
         self._on_load_data_repository(None)
 
+    @profile(immediate=True)
     def _switch_view_mode(self, *events):
 
         # clear existing plot layouts
