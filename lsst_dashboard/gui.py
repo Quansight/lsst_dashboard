@@ -584,7 +584,7 @@ class QuickLookComponent(Component):
 
         return query_expr
 
-    @profile(immediate=True)
+    # @profile(immediate=True)
     def get_dataset_by_filter(self, filter_type, metrics):
         global datasets
         global filtered_datasets
@@ -711,6 +711,7 @@ class QuickLookComponent(Component):
             plots_list = pn.Column(*plots, sizing_mode="stretch_width")
             tabs.append((filt, plots_list))
         self._detail_tabs[:] = tabs
+        print("Done _update_detail_plots")
 
     def attempt_to_clear(self, obj):
         try:
@@ -728,7 +729,7 @@ class QuickLookComponent(Component):
         self._on_clear_metrics(event=None)
         self._on_load_data_repository(None)
 
-    @profile(immediate=True)
+    # @profile(immediate=True)
     def _switch_view_mode(self, *events):
 
         # clear existing plot layouts
