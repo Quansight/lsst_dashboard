@@ -84,8 +84,6 @@ class Dataset:
 
         coadd_df = (read_dataset_as_ddf(**karto_kwargs)
                     .repartition(partition_size="4GB")
-                    .replace(np.inf, np.nan)
-                    .replace(-np.inf, np.nan)
                     .dropna(how='any')
                     .set_index('filter')
                     .persist())

@@ -146,18 +146,20 @@ class DatasetPartitioner(object):
         append ra, dec, psfMag to dataframe and cleanup
         """
 
-        # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
+        # TODO I think the partitioning destroys the original indexing if the index numbers are important we may need to do a reset_index()
 
-        df = df.assign(
-            ra=da.rad2deg(df.coord_ra),
-            dec=da.rad2deg(df.coord_dec),
-            psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+        df = (df.assign(
+                    ra=da.rad2deg(df.coord_ra),
+                    dec=da.rad2deg(df.coord_dec),
+                    psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+                )
+                .replace(np.inf, np.nan)
+                .replace(-np.inf, np.nan)
+                .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
         del df["coord_ra"]
         del df["coord_dec"]
-
-        df = df.rename(columns={"patchId": "patch", "ccdId": "ccd"})
 
         if self.categories:
             df = df.categorize(columns=self.categories)
