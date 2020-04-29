@@ -1,4 +1,4 @@
-# from profilehooks import profile
+from profilehooks import profile
 
 import traceback
 import json
@@ -633,7 +633,7 @@ class QuickLookComponent(Component):
         self.add_status_message(title, msg_body, level=level, duration=10)
 
     @param.depends("selected_metrics_by_filter", watch=True)
-    # @profile(immediate=True)
+    @profile(immediate=True)
     def _update_selected_metrics_by_filter(self):
         skyplot_list = []
         detail_plots = {}
@@ -721,6 +721,7 @@ class QuickLookComponent(Component):
     def _switch_view_mode(self, *events):
 
         # clear existing plot layouts
+        print("_switch_view_mode")
         self.attempt_to_clear(self._plot_top)
         self.attempt_to_clear(self._plot_layout)
         self.attempt_to_clear(self.list_layout)
