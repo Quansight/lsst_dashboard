@@ -1,4 +1,4 @@
-# from profilehooks import profile
+from profilehooks import profile
 
 import traceback
 import json
@@ -48,22 +48,6 @@ datavisits = []
 filtered_datavisits = []
 
 sample_data_directory = "sample_data/DM-23243-KTK-1Perc"
-
-
-def profile(func):
-    from functools import wraps
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        from line_profiler import LineProfiler
-
-        prof = LineProfiler()
-        try:
-            return prof(func)(*args, **kwargs)
-        finally:
-            prof.print_stats()
-
-    return wrapper
 
 
 def create_hv_dataset(ddf, stats, percentile=(1, 99)):
@@ -600,6 +584,7 @@ class QuickLookComponent(Component):
 
         return query_expr
 
+    @profile(immediate=True)
     def get_dataset_by_filter(self, filter_type, metrics):
         global datasets
         global filtered_datasets
@@ -650,8 +635,8 @@ class QuickLookComponent(Component):
         self.add_status_message(title, msg_body, level=level, duration=10)
 
     @param.depends("selected_metrics_by_filter", watch=True)
-    # @profile(immediate=True)
-    @profile
+    @profile(immediate=True)
+    # @profile
     def _update_selected_metrics_by_filter(self):
         skyplot_list = []
         detail_plots = {}
@@ -680,10 +665,13 @@ class QuickLookComponent(Component):
                 filter_stream = self._filter_streams[filt]
             else:
                 self._filter_streams[filt] = filter_stream = FilterStream()
+            print("getting dataset")
             dset = self.get_dataset_by_filter(filt, metrics=metrics)
+            print("got dataset")
             for i, metric in enumerate(metrics):
                 # Sky plots
                 skyplot_name = filt + " - " + metric
+                print("making skyplot...")
                 plot_sky = skyplot(
                     dset, filter_stream=filter_stream, range_stream=self._skyplot_range_stream, vdim=metric
                 )
@@ -693,8 +681,10 @@ class QuickLookComponent(Component):
                 else:
                     sky_panel = pn.panel(plot_sky)
                 skyplot_list.append((skyplot_name, sky_panel))
+                print("made skyplot.")
 
                 # Detail plots
+                print("making scattersky...")
                 plots_ss = scattersky(
                     dset,
                     xdim="psfMag",
@@ -704,6 +694,7 @@ class QuickLookComponent(Component):
                     filter_stream=filter_stream,
                 )
                 plots_list.append((metric, plots_ss))
+                print("made scattersky.")
             detail_plots[filt].extend([p for m, p in plots_list])
 
         self.skyplot_list = skyplot_list
