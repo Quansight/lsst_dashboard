@@ -658,34 +658,35 @@ class QuickLookComponent(Component):
             self.plot_top = top_plot
             detail_plots[filt] = [top_plot]
 
-            # if filt in self._filter_streams:
-            #     filter_stream = self._filter_streams[filt]
-            # else:
-            #     self._filter_streams[filt] = filter_stream = FilterStream()
-            # dset = self.get_dataset_by_filter(filt, metrics=metrics)
-            # for i, metric in enumerate(metrics):
-            #     # Sky plots
-            #     skyplot_name = filt + ' - ' + metric
-            #     plot_sky = skyplot(dset,
-            #                        filter_stream=filter_stream,
-            #                        range_stream=self._skyplot_range_stream,
-            #                        vdim=metric)
-            #     if skyplot_name in existing_skyplots:
-            #         sky_panel = existing_sky_plots[skyplot_name]
-            #         sky_panel.object = plot_sky
-            #     else:
-            #         sky_panel = pn.panel(plot_sky)
-            #     skyplot_list.append((skyplot_name, sky_panel))
+            if filt in self._filter_streams:
+                filter_stream = self._filter_streams[filt]
+            else:
+                self._filter_streams[filt] = filter_stream = FilterStream()
+            dset = self.get_dataset_by_filter(filt, metrics=metrics)
+            for i, metric in enumerate(metrics):
+                # Sky plots
+                skyplot_name = filt + " - " + metric
+                plot_sky = skyplot(
+                    dset, filter_stream=filter_stream, range_stream=self._skyplot_range_stream, vdim=metric
+                )
+                if skyplot_name in existing_skyplots:
+                    sky_panel = existing_sky_plots[skyplot_name]
+                    sky_panel.object = plot_sky
+                else:
+                    sky_panel = pn.panel(plot_sky)
+                skyplot_list.append((skyplot_name, sky_panel))
 
-            #     # Detail plots
-            #     plots_ss = scattersky(dset,
-            #                           xdim='psfMag',
-            #                           ydim=metric,
-            #                           sky_range_stream=self._skyplot_range_stream,
-            #                           scatter_range_stream=self._scatter_range_stream,
-            #                           filter_stream=filter_stream)
-            #     plots_list.append((metric, plots_ss))
-            # detail_plots[filt].extend([p for m,p in plots_list])
+                # Detail plots
+                plots_ss = scattersky(
+                    dset,
+                    xdim="psfMag",
+                    ydim=metric,
+                    sky_range_stream=self._skyplot_range_stream,
+                    scatter_range_stream=self._scatter_range_stream,
+                    filter_stream=filter_stream,
+                )
+                plots_list.append((metric, plots_ss))
+            detail_plots[filt].extend([p for m, p in plots_list])
 
         self.skyplot_list = skyplot_list
         self.plots_list = plots_list
