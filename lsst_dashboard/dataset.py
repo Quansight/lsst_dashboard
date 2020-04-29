@@ -22,7 +22,7 @@ class Dataset:
         d.connect()
         d.init_data()
     """
-    def __init__(self, path):
+    def __init__(self, path, coadd_version='unforced'):
         self.path = Path(path)
         self.coadd = {}
         self.visits = None
@@ -33,23 +33,21 @@ class Dataset:
         self.filters = []
         self.tracts = []
         self.stats = {}
+        self.coadd_version = coadd_version
 
     def connect(self):
-
         print('-- read coadd/visits summary stats tables and generate metadata')
         self.read_summary_stats()
-        # use coadd_forced table to populate filters & tracts
-        self.filters = list(self.stats['coadd_forced'].index.unique(level=0))
-        self.tracts = list(self.stats['coadd_forced'].index.unique(level=1))
+        # use coadd table to populate filters & tracts
+        coadd_version = self.coadd_version
+        self.filters = list(self.stats[f'coadd_{coadd_version}'].index.unique(level=0))
+        self.tracts = list(self.stats[f'coadd_{coadd_version}'].index.unique(level=1))
 
-        print("-- read coadd table --")
-        self.fetch_coadd_table()
+        print(f"-- read {coadd_version} coadd table --")
+        self.fetch_coadd_table(coadd_version=coadd_version)
 
         print("-- generate other metadata fields --")
         self.post_process_metadata()
-
-        #print("-- read visit data --")
-        #self.fetch_visits_by_metric()
 
         print("-- done with reads --")
 
