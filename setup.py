@@ -16,7 +16,8 @@ __name__ == "__main__" and setuptools.setup(
         packages=setuptools.find_packages(),
         entry_points={
             "console_scripts": [
-                "lsst_data_explorer = lsst_dashboard.cli:cli",
+                "lsst_data_explorer = lsst_dashboard.cli:start_dashboard",
+                "lsst_data_repartition = lsst_dashboard.cli:repartition",
             ]
         },
     )

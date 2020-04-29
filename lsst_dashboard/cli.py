@@ -82,38 +82,15 @@ def launch_dask_cluster(queue, nodes, localcluster):
     return cluster, lsst_dashboard_port
 
 
-@click.group(invoke_without_command=True)
-@click.pass_context
+@click.command()
 @click.option('--queue', default='debug', help='Slurm Queue to use (default=debug), ignored on local machine')
 @click.option('--nodes', default=2, help='Number of compute nodes to launch (default=2), ignored on local machine')
 @click.option('--localcluster', is_flag=True, help='Launches a localcluster instead of slurmcluster, default on local machine')
-def cli(ctx, queue, nodes, localcluster):
-    """LSST Data Explorer Launch Script"""
-    ctx.ensure_object(dict)
-    ctx.obj.update({
-        'queue': queue,
-        'nodes': nodes,
-        'localcluster': localcluster,
-    })
-
-    if ctx.invoked_subcommand is None:
-        click.echo(ctx.get_help())
-
-
-@cli.command('dask', short_help='Just Launch Dask Cluster')
-@click.pass_context
-def start_dask(ctx):
-    #print(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
-    cluster, _ = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
-    print(f'Dask Cluster: {cluster}')
-    print(f'Connect to cluster with "client = Client({cluster.scheduler_address})"')
-    input('Press Any Key to Exit')
-
-
-@cli.command('dashboard', short_help='Launch Visualization Dashboard (w/ Dask)')
-@click.pass_context
-def start_dashboard(ctx):
-    cluster, lsst_dashboard_port = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
+def start_dashboard(queue, nodes, localcluster):
+    """
+        Launches lsst_data_explorer with a Dask Cluster.
+    """
+    cluster, lsst_dashboard_port = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
     print(f'Dask Cluster: {cluster}')
     print(f'Waiting for at least one worker')
@@ -124,15 +101,17 @@ def start_dashboard(ctx):
     dashboard.render().show(port=lsst_dashboard_port)
 
 
-@cli.command('repartition', short_help='Prepare Butler Data for Vizualization (w/ Dask)')
-@click.pass_context
+@click.command()
 @click.argument("butler_path")
 @click.argument("destination_path", required=False)
 @click.option("--sample_frac", default=None, type=float, help='sample dataset by fraction [0-1]')
 @click.option("--num_buckets", default=8, help='number of buckets per partition')
-def repartition(ctx, butler_path, destination_path, sample_frac, num_buckets):
-    """Repartition a Butler Dataset for use with LSST Data Explorer Dashboard"""
-    cluster, _ = launch_dask_cluster(ctx.obj['queue'], ctx.obj['nodes'], ctx.obj['localcluster'])
+@click.option('--queue', default='debug', help='Slurm Queue to use (default=debug), ignored on local machine')
+@click.option('--nodes', default=2, help='Number of compute nodes to launch (default=2), ignored on local machine')
+@click.option('--localcluster', is_flag=True, help='Launches a localcluster instead of slurmcluster, default on local machine')
+def repartition(butler_path, destination_path, sample_frac, num_buckets, queue, nodes, localcluster):
+    """Repartitions a Butler Dataset for use with LSST Data Explorer using a Dask cluster"""
+    cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
     print(f'Dask Cluster: {cluster}')
     print(f'Waiting for at least one worker')
@@ -162,7 +141,3 @@ def repartition(ctx, butler_path, destination_path, sample_frac, num_buckets):
     visits.write_stats()
 
     print('...partitioning complete')
-
-
-if __name__ == "__main__":
-    cli(obj={})
