@@ -650,7 +650,8 @@ class QuickLookComponent(Component):
         self.add_status_message(title, msg_body, level=level, duration=10)
 
     @param.depends("selected_metrics_by_filter", watch=True)
-    @profile(immediate=True)
+    # @profile(immediate=True)
+    @profile
     def _update_selected_metrics_by_filter(self):
         skyplot_list = []
         detail_plots = {}
