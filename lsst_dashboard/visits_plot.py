@@ -5,7 +5,11 @@ import holoviews as hv
 
 def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[], statistic='mean'):
     metrics = filters_to_metrics[filt]
-    dset_filt = dsets_visits.loc[filt, :, :, statistic].reset_index(['filter','tract','statistic'], drop=True).sort_index()
+    dset_filt = dsets_visits.loc[filt, :, :, statistic].reset_index(['filter','tract','statistic'], drop=True)
+    # there is one value per tract, take the median
+    del dset_filt['visit']
+    dset_filt = dset_filt.groupby('visit').median().sort_index()
+    
     plot_filt = visits_plot_per_filter(dset_filt, metrics, filt, statistic, errors=errors)
     return plot_filt
 
