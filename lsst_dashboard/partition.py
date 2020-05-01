@@ -178,19 +178,23 @@ class DatasetPartitioner(object):
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
 
-    def df_generator(self, filt, dataIds, filenames, columns):
+    def df_generator(self, dataIds, filenames, columns):
         for filename, dataId in tqdm(
             zip(filenames, dataIds),
-            desc=f"Building dask dataframe for {self.dataset} ({filt})",
+            desc=f"Building dask dataframe for {self.dataset}",
             total=len(dataIds),
         ):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             yield df
 
-    def get_df(self, filt):
-        dataIds = self.dataIds_by_filter[filt]
-        filenames = self.filenames_by_filter[filt]
+    def get_df(self, filt=None):
+        if filt is not None:
+            dataIds = self.dataIds_by_filter[filt]
+            filenames = self.filenames_by_filter[filt]
+        else:
+            dataIds = self.dataIds
+            filenames = self.filenames
 
         columns = self.get_columns()
 
@@ -231,8 +235,14 @@ class DatasetPartitioner(object):
             graph.compute()
 
     def partition(self):
-        for filt in self.filters:
-            self.partition_filt(filt)
+        df = self.get_df()
+        if df is not None:
+            print(f"... ...ktk repartitioning {self.dataset} ({filt})")
+            graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+            graph.compute()
+
+        # for filt in self.filters:
+        #     self.partition_filt(filt)
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
