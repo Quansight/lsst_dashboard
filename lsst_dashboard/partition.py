@@ -229,14 +229,14 @@ class DatasetPartitioner(object):
             graph.compute()
 
     def partition(self):
-        df = self.get_df()
-        if df is not None:
-            print(f"... ...ktk repartitioning {self.dataset}")
-            graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
-            graph.compute()
+        # df = self.get_df()
+        # if df is not None:
+        #     print(f"... ...ktk repartitioning {self.dataset}")
+        #     graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+        #     graph.compute()
 
-        # for filt in self.filters:
-        #     self.partition_filt(filt)
+        for filt in self.filters:
+            self.partition_filt(filt)
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
