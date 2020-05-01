@@ -158,9 +158,6 @@ class DatasetPartitioner(object):
                 .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
-        del df["coord_ra"]
-        del df["coord_dec"]
-
         if self.categories:
             df = df.categorize(columns=self.categories)
 
@@ -200,9 +197,6 @@ class DatasetPartitioner(object):
 
         if len(dataIds) > 0:
             df = dd.from_delayed(self.df_generator(filt, dataIds, filenames, columns))
-
-            categories = list(self.categories)
-            df = df.categorize(columns=categories)
 
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
