@@ -237,7 +237,7 @@ class DatasetPartitioner(object):
     def partition(self):
         df = self.get_df()
         if df is not None:
-            print(f"... ...ktk repartitioning {self.dataset} ({filt})")
+            print(f"... ...ktk repartitioning {self.dataset}")
             graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
             graph.compute()
 
