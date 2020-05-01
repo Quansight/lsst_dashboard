@@ -161,9 +161,6 @@ class DatasetPartitioner(object):
             .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
-        del df["coord_ra"]
-        del df["coord_dec"]
-
         if self.categories:
             df = df.categorize(columns=self.categories)
 
@@ -181,24 +178,33 @@ class DatasetPartitioner(object):
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
 
-    def get_df(self, filt):
-        dataIds = self.dataIds_by_filter[filt]
-        filenames = self.filenames_by_filter[filt]
-
-        columns = self.get_columns()
-
-        dfs = []
+    def df_generator(self, dataIds, filenames, columns, filt=None):
+        if filt is None:
+            desc = f"Building dask dataframe for {self.dataset}"
+        else:
+            desc = f"Building dask dataframe for {self.dataset} ({filt})"
         for filename, dataId in tqdm(
             zip(filenames, dataIds),
-            desc=f"Building dask dataframe for {self.dataset} ({filt})",
+            desc=desc,
             total=len(dataIds),
         ):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
-            dfs.append(df)
+            yield df
 
-        if dfs:
-            df = dd.from_delayed(dfs)
+    def get_df(self, filt=None):
+        if filt is not None:
+            dataIds = self.dataIds_by_filter[filt]
+            filenames = self.filenames_by_filter[filt]
+        else:
+            dataIds = self.dataIds
+            filenames = self.filenames
+
+        columns = self.get_columns()
+
+        if len(dataIds) > 0:
+            df = dd.from_delayed(self.df_generator(dataIds, filenames, columns, filt=filt))
+
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
 
@@ -230,6 +236,12 @@ class DatasetPartitioner(object):
             graph.compute()
 
     def partition(self):
+        # df = self.get_df()
+        # if df is not None:
+        #     print(f"... ...ktk repartitioning {self.dataset}")
+        #     graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+        #     graph.compute()
+
         for filt in self.filters:
             self.partition_filt(filt)
 
@@ -340,6 +352,7 @@ class VisitPartitioner(DatasetPartitioner):
         )
 
     def get_columns(self):
+        # return None
         return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
 
     def iter_dataId(self):
