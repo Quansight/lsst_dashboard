@@ -173,7 +173,7 @@ class DatasetPartitioner(object):
         return get_flags()
 
     def get_columns(self):
-        # return None
+        return None
         return list(
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
@@ -351,6 +351,7 @@ class VisitPartitioner(DatasetPartitioner):
         )
 
     def get_columns(self):
+        return None
         return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
 
     def iter_dataId(self):
