@@ -178,13 +178,7 @@ class DatasetPartitioner(object):
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
 
-    def get_df(self, filt):
-        dataIds = self.dataIds_by_filter[filt]
-        filenames = self.filenames_by_filter[filt]
-
-        columns = self.get_columns()
-
-        dfs = []
+    def df_generator(self, dataIds, filenames, columns):
         for filename, dataId in tqdm(
             zip(filenames, dataIds),
             desc=f"Building dask dataframe for {self.dataset} ({filt})",
@@ -192,10 +186,20 @@ class DatasetPartitioner(object):
         ):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
-            dfs.append(df)
+            yield df
 
-        if dfs:
-            df = dd.from_delayed(dfs)
+    def get_df(self, filt):
+        dataIds = self.dataIds_by_filter[filt]
+        filenames = self.filenames_by_filter[filt]
+
+        columns = self.get_columns()
+
+        if len(dataIds) > 0:
+            df = dd.from_delayed(self.df_generator(dataIds, filenames, columns))
+
+            categories = list(self.categories)
+            df = df.categorize(columns=categories)
+
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
 
