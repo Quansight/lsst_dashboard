@@ -1,26 +1,23 @@
 import pandas as pd
 import numpy as np
 import holoviews as hv
+import panel as pn
 
 
-def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[], statistic='mean'):
+def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[], statistic='mean', selections={}):
     metrics = filters_to_metrics[filt]
     dset_filt = dsets_visits.loc[filt, :, :, statistic].reset_index(['filter','tract','statistic'], drop=True)
     # there is one value per tract, take the median
     del dset_filt['visit']
     dset_filt = dset_filt.groupby('visit').median().sort_index()
-    
-    plot_filt = visits_plot_per_filter(dset_filt, metrics, filt, statistic, errors=errors)
-    return plot_filt
-
+    return visits_plot_per_filter(dset_filt, metrics, filt, statistic, errors=errors, selections=selections)
 
 def visits_plot_layout(plots):
-    import panel as pn
     tabs = [(filt, pn.panel(plot)) for filt,plot in plots.items()]
     return pn.Tabs(*tabs, sizing_mode='stretch_both')
 
 
-def visits_plot_per_filter(dsets_filter, metrics, filt, statistic, errors=[]):
+def visits_plot_per_filter(dsets_filter, metrics, filt, statistic, errors=[], selections={}):
     '''
     * dsets_filter: a dictionary pointing to metrics dataframes
     '''
@@ -33,17 +30,19 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, statistic, errors=[]):
             plot_metric = visits_plot_per_metric(df, 'visit',  col_stat,
                                                     [col_stat, 'visit'],
                                                     filt=filt)
+            if (filt, metric) in selections:
+                stream = selections[(filt, metric)]
+                stream.source = plot_metric.get(1)
+                plot_metric.get(1).opts(selected=stream.index)
             plot_all = plot_all * plot_metric if plot_all else plot_metric
         except:
             errors.append(metric)
 
     if plot_all:
-        return plot_all.opts(show_legend=False, show_grid=True,
-                             gridstyle={'grid_line_color': 'white',
-                                        'grid_line_alpha': 0.2},
-                             responsive=True, aspect=5,
-                             ylabel="normalized/metric",
-                             bgcolor='black', xrotation=45)
+        return plot_all.opts(
+            aspect=5, bgcolor='black', show_legend=False, show_grid=True,
+            gridstyle={'grid_line_color': 'white', 'grid_line_alpha': 0.2},
+            responsive=True, xrotation=45, ylabel="normalized/metric")
     else:
         return None
 
@@ -72,11 +71,7 @@ def visits_plot_per_metric(df, x, y, hover_columns=None, filt=0):
 
     curve = hv.Curve(df, x_renamed, y)
 
-    points = hv.Scatter(df, [x_renamed, y], hover_columns)
-    points = points.opts(size=8, line_color='white',
-                         tools=[hover], toolbar='above')
+    points = hv.Scatter(df, [x_renamed, y], hover_columns).opts(
+        size=8, line_color='white', tools=[hover, 'tap'], toolbar='above')
 
-    plot = curve * points
-    plot = plot.redim(y=hv.Dimension(y, range=(-1, 1)))
-
-    return plot
+    return (curve * points).redim(y=hv.Dimension(y, range=(-1, 1)))
