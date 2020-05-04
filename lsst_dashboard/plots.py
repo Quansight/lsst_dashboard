@@ -96,9 +96,9 @@ class SelectionCallback(Selection1DCallback):
             el = self.plot.current_frame
             stream = self.streams[0]
             if len(msg["index"]):
-                selection = el.iloc[msg["index"]]
-                values = selection.dimension_values(stream.dimension)
-                msg["values"] = list(values)
+                selection = el.data.iloc[msg["index"]]
+                dim = el.get_dimension(stream.dimension)
+                msg["values"] = list(selection[dim.name])
             else:
                 msg["values"] = []
         return msg
