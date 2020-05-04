@@ -17,15 +17,8 @@ from holoviews import opts
 from holoviews.core.operation import Operation
 from holoviews.core.util import isfinite
 from holoviews.operation.element import apply_when
-from holoviews.streams import (
-    BoundsXY,
-    LinkedStream,
-    PlotReset,
-    PlotSize,
-    RangeXY,
-    Stream,
-)
-from holoviews.plotting.bokeh.callbacks import Callback
+from holoviews.streams import BoundsXY, LinkedStream, PlotReset, PlotSize, RangeXY, Selection1D, Stream
+from holoviews.plotting.bokeh.callbacks import Callback, Selection1DCallback
 from holoviews.plotting.util import process_cmap
 
 from holoviews.operation.datashader import datashade
@@ -77,6 +70,42 @@ class FilterStream(Stream):
         doc="""
         Flags to ignore""",
     )
+
+
+class Selection(Selection1D):
+    """
+    A stream representing the selection along a column of values on
+    the source element.
+    """
+
+    index = param.List(default=[], allow_None=True, constant=True)
+
+    values = param.List(default=[], allow_None=True, constant=True)
+
+    def __init__(self, **params):
+        if "dimension" not in params:
+            raise ValueError("Must define a dimension to select values on.")
+        self.dimension = params.pop("dimension")
+        super(Selection, self).__init__(**params)
+
+
+class SelectionCallback(Selection1DCallback):
+    def _process_msg(self, msg):
+        msg = super()._process_msg(msg)
+        if "index" in msg:
+            el = self.plot.current_frame
+            stream = self.streams[0]
+            if len(msg["index"]):
+                selection = el.iloc[msg["index"]]
+                values = selection.dimension_values(stream.dimension)
+                msg["values"] = list(values)
+            else:
+                msg["values"] = []
+        return msg
+
+
+callbacks = Stream._callbacks["bokeh"]
+callbacks[Selection] = SelectionCallback
 
 
 class FlagSetter(Stream):

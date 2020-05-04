@@ -20,7 +20,7 @@ from .base import Application
 from .base import Component
 
 from .visits_plot import visits_plot
-from .plots import FilterStream, scattersky, skyplot
+from .plots import FilterStream, Selection, link_streams, scattersky, skyplot
 
 from .dataset import Dataset
 
@@ -256,9 +256,16 @@ class QuickLookComponent(Component):
         self.list_layout = pn.Column(sizing_mode="stretch_width")
         self.detail_plots_layout = pn.Column(sizing_mode="stretch_width")
 
+        self.coadd_toggle = pn.widgets.RadioButtonGroup(
+            options=["Coadd View", "Visit View"], disabled=True, align="end", margin=(5, 0), width=250
+        )
+        self.coadd_toggle.param.watch(self._update_selected_metrics_by_filter, ["value"])
+
         self._filter_streams = {}
         self._skyplot_range_stream = RangeXY()
         self._scatter_range_stream = RangeXY()
+
+        self._visits_selections = {}
 
         self._update(None)
 
@@ -587,7 +594,7 @@ class QuickLookComponent(Component):
 
         return query_expr
 
-    def get_dataset_by_filter(self, filter_type, metrics):
+    def get_dataset_by_filter(self, filter_type, metrics, visits=None):
         global datasets
         global filtered_datasets
 
@@ -636,9 +643,19 @@ class QuickLookComponent(Component):
         logger.error(msg_body)
         self.add_status_message(title, msg_body, level=level, duration=10)
 
+    def _toggle_coadd_view(self, **kwargs):
+        for stream in self._visits_selections.values():
+            if stream.values:
+                kwargs = {"disabled": False}
+                if self.coadd_toggle.disabled:
+                    kwargs["value"] = "Visit View"
+                self.coadd_toggle.set_param(**kwargs)
+                return
+        self.coadd_toggle.set_param(disabled=True, value="Coadd View")
+
     @param.depends("selected_metrics_by_filter", watch=True)
     # @profile(immediate=True)
-    def _update_selected_metrics_by_filter(self):
+    def _update_selected_metrics_by_filter(self, *args):
         skyplot_list = []
         detail_plots = {}
         existing_skyplots = {}
@@ -648,10 +665,30 @@ class QuickLookComponent(Component):
             plots_list = []
             if not metrics:
                 continue
+
+            for metric in metrics:
+                key = (filt, metric)
+                if key in self._visits_selections:
+                    selection = self._visits_selections[key]
+                else:
+                    selection = Selection(dimension=0)
+                    selection.add_subscriber(self._toggle_coadd_view, 0.1)
+                    self._visits_selections[key] = selection
+                    streams = []
+                    for (f, m), stream in self._visits_selections.items():
+                        if f != filt:
+                            continue
+                        # Reset links
+                        stream._subscribers = stream._subscribers[:1]
+                        streams.append(stream)
+                    link_streams(*streams)
+
             top_plot = None
             try:
                 errors = []
-                top_plot = visits_plot(dvisits, self.selected_metrics_by_filter, filt, errors)
+                top_plot = visits_plot(
+                    dvisits, self.selected_metrics_by_filter, filt, errors, self._visits_selections
+                )
                 if errors:
                     msg = "exhibiting metrics {} failed"
                     msg = msg.format(" ".join(errors))
@@ -666,7 +703,7 @@ class QuickLookComponent(Component):
                 filter_stream = self._filter_streams[filt]
             else:
                 self._filter_streams[filt] = filter_stream = FilterStream()
-            dset = self.get_dataset_by_filter(filt, metrics=metrics)
+            dset = self.get_dataset_by_filter(filt, metrics, selection.values)
             for i, metric in enumerate(metrics):
                 # Sky plots
                 skyplot_name = filt + " - " + metric
@@ -757,7 +794,7 @@ class QuickLookComponent(Component):
             self._plot_top[:] = [self.plot_top]
             self.list_layout[:] = [p for _, p in self.plots_list]
             self._plot_layout[:] = [self.list_layout]
-            self.detail_plots_layout[:] = [self._detail_tabs]
+            self.detail_plots_layout[:] = [self.coadd_toggle, self._detail_tabs]
 
     def on_overview_selected_tracts_updated(self, tracts):
 
