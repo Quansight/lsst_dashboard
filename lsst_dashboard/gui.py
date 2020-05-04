@@ -691,8 +691,14 @@ class QuickLookComponent(Component):
                 errors = []
                 top_plot = visits_plot(
                     dvisits, self.selected_metrics_by_filter,
-                    filt, errors, self._visits_selections
+                    filt, errors, selections=self._visits_selections
                 )
+                if selection.values and self.coadd_toggle:
+                    title = 'Visit View %s' % selection.values[0]
+                else:
+                    title = 'Coadd View'
+                top_plot.opts(title=title)
+
                 if errors:
                     msg = 'exhibiting metrics {} failed'
                     msg = msg.format(' '.join(errors))

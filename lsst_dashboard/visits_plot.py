@@ -33,7 +33,8 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, statistic, errors=[], se
             if (filt, metric) in selections:
                 stream = selections[(filt, metric)]
                 stream.source = plot_metric.get(1)
-                plot_metric.get(1).opts(selected=stream.index)
+                if stream.index:
+                    plot_metric.get(1).opts(selected=stream.index)
             plot_all = plot_all * plot_metric if plot_all else plot_metric
         except:
             errors.append(metric)
