@@ -1,6 +1,4 @@
-import logging
-from pathlib import Path
-import dask
+import distributed
 from dask import delayed
 from kartothek.io.dask.dataframe import update_dataset_from_ddf, read_dataset_as_ddf
 from kartothek.io.eager import read_dataset_as_dataframes
@@ -15,7 +13,7 @@ from tqdm import tqdm
 from lsst.daf.persistence import Butler
 
 
-def getMetrics():
+def get_metrics():
     return [
         "base_Footprint_nPix",
         "Gaussian-PSF_magDiff_mmag",
@@ -37,7 +35,7 @@ def getMetrics():
     ]
 
 
-def getFlags():
+def get_flags():
     return [
         "calib_psf_used",
         "calib_psf_candidate",
@@ -63,12 +61,11 @@ class DatasetPartitioner(object):
     """
 
     partition_on = ("filter", "tract")
-    categories = ("filter", "tract")
+    categories = ["filter", "tract"]
     bucket_by = "patch"
-    num_buckets = 8
     _default_dataset = None
 
-    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None):
+    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8):
 
         self._butler = Butler(butlerpath)
         if dataset is None:
@@ -79,6 +76,7 @@ class DatasetPartitioner(object):
             destination = f"{butlerpath}/ktk"
         self.destination = destination
         self.sample_frac = sample_frac
+        self.num_buckets = num_buckets
 
         self.stats_path = f"{self.destination}/{self.dataset}_stats.parq"
 
@@ -148,31 +146,31 @@ class DatasetPartitioner(object):
         append ra, dec, psfMag to dataframe and cleanup
         """
 
-        # TODO I think the partitioning destroys the original indexing if the index numbers are inportant we may need to do a reset_index()
+        # TODO I think the partitioning destroys the original indexing if the index numbers are important we may need to do a reset_index()
 
-        # if self.sample_frac:
-        #     df = df.sample(frac=self.sample_frac)
-        df = df.assign(
-            ra=da.rad2deg(df.coord_ra),
-            dec=da.rad2deg(df.coord_dec),
-            psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+        df = (df.assign(
+                    ra=da.rad2deg(df.coord_ra),
+                    dec=da.rad2deg(df.coord_dec),
+                    psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+                )
+                .replace(np.inf, np.nan)
+                .replace(-np.inf, np.nan)
+                .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
         del df["coord_ra"]
         del df["coord_dec"]
 
-        df = df.rename(columns={"patchId": "patch", "ccdId": "ccd"})
-
-        #         categories = list(self.categories)
-        #         df = df.categorize(columns=categories)
+        if self.categories:
+            df = df.categorize(columns=self.categories)
 
         return df
 
     def get_metric_columns(self):
-        return getMetrics()
+        return get_metrics()
 
     def get_flag_columns(self):
-        return getFlags()
+        return get_flags()
 
     def get_columns(self):
         # return None
@@ -198,10 +196,6 @@ class DatasetPartitioner(object):
 
         if dfs:
             df = dd.from_delayed(dfs)
-
-            categories = list(self.categories)
-            df = df.categorize(columns=categories)
-
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
 
@@ -273,7 +267,7 @@ class DatasetPartitioner(object):
 
         fn = partial(describe_dataId, store=self.store, dataset=self.dataset)
 
-        client = dask.distributed.client.default_client()
+        client = distributed.client.default_client()
 
         futures = client.map(fn, dataIds)
         results = client.gather(futures)
@@ -316,7 +310,7 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
     def get_metric_columns(self):
         return list(
-            set(getMetrics())
+            set(get_metrics())
             - {
                 "compareUnforced_CModel_magDiff_mmag",
                 "compareUnforced_Gaussian_magDiff_mmag",
@@ -327,13 +321,13 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
 class VisitPartitioner(DatasetPartitioner):
     partition_on = ("filter", "tract", "visit")
-    categories = ("filter", "tract")
+    categories = None # ["filter", "tract"] Some visit datasets are erroring on categorization
     bucket_by = "ccd"
     _default_dataset = "analysisVisitTable"
 
     def get_metric_columns(self):
         return list(
-            set(getMetrics())
+            set(get_metrics())
             - {
                 "CModel-PSF_magDiff_mmag",
                 "compareUnforced_CModel_magDiff_mmag",

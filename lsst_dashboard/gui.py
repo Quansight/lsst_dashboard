@@ -49,7 +49,7 @@ filtered_datavisits = []
 sample_data_directory = 'sample_data/DM-23243-KTK-1Perc'
 
 
-def create_hv_dataset(ddf, percentile=(1, 99)):
+def create_hv_dataset(ddf, stats, percentile=(1, 99)):
 
     _idNames = ('patch', 'tract')
     _kdims = ('ra', 'dec', 'psfMag')
@@ -57,10 +57,11 @@ def create_hv_dataset(ddf, percentile=(1, 99)):
 
     kdims = []
     vdims = []
+
     for c in ddf.columns:
         if (c in _kdims or c in _idNames or c in _flags):
             if c in ('ra', 'dec', 'psfMag'):
-                cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
+                cmin, cmax = stats[c]['min'].min(), stats[c]['max'].max()
                 c = hv.Dimension(c, range=(cmin, cmax))
             elif c in ('filter', 'patch'):
                 cvalues = list(ddf[c].unique())
@@ -71,10 +72,14 @@ def create_hv_dataset(ddf, percentile=(1, 99)):
         else:
             if percentile is not None:
                 p0, p1 = percentile
-                darray = ddf[c].values
-                cmin, cmax = da.compute(da.percentile(darray, p0)[0], da.percentile(darray, p1)[0])
+                if f'{p0}%' in stats.index and f'{p1}%' in stats.index:
+                    cmin, cmax = stats[c][f'{p0}%'].min(), stats[c][f'{p1}%'].max()
+                else:
+                    print('percentiles not found in stats, computing')
+                    darray = ddf[c].values
+                    cmin, cmax = da.compute(da.percentile(darray, p0)[0], da.percentile(darray, p1)[0])
             else:
-                cmin, cmax = dd.compute(ddf[c].min(), ddf[c].max())
+                cmin, cmax = stats[c]['min'].min(), stats[c]['max'].max()
             c = hv.Dimension(c, range=(cmin, cmax))
             vdims.append(c)
 
@@ -86,14 +91,14 @@ class Store(object):
         self.active_dataset = Dataset('')
         self.active_tracts = []
 
-def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
+def init_dataset(data_repo_path, datastack='forced', **kwargs):
 
     global datasets
     global filtered_datasets
-    global datavisits
-    global filtered_datavisits
+    #global datavisits
+    #global filtered_datavisits
 
-    d = Dataset(data_repo_path, **kwargs)
+    d = Dataset(data_repo_path, coadd_version=datastack, **kwargs)
     d.connect()
 
     global store
@@ -103,27 +108,14 @@ def init_dataset(data_repo_path, datastack='qaDashboardCoaddTable', **kwargs):
 
     datasets = {}
     filtered_datasets = {}
-    dtf = d.coadd[datastack]
-
 
     datavisits = {}
     filtered_datavisits = {}
-    for filt in d.filters:
-        datavisits[filt] = {}
-        filtered_datavisits[filt] = {}
-        for metric in d.metrics:
-            df = d.visits_by_metric[filt][metric]
-            filtered_df = None
-            if df is not None:
-                filtered_df = df.copy()
-
-            datavisits[filt][metric] = df
-            filtered_datavisits[filt][metric] = filtered_df
 
     return d
 
 
-def load_data(data_repo_path=None, datastack='forced'):
+def load_data(data_repo_path=None, datastack='unforced'):
     # current_directory = os.path.dirname(os.path.abspath(__file__))
     # root_directory = os.path.split(current_directory)[0]
 
@@ -133,7 +125,6 @@ def load_data(data_repo_path=None, datastack='forced'):
     if not os.path.exists(data_repo_path):
         raise ValueError('Data Repo Path does not exist.')
 
-    datastack = 'qaDashboardCoaddTable'  # + datastack -- disabled forced/unforced for now
     d = init_dataset(data_repo_path, datastack=datastack)
 
     return d
@@ -285,8 +276,8 @@ class QuickLookComponent(Component):
 
         # Setup Variables
         global datasets
-        global datavisits
-        global filtered_datavisits
+        #global datavisits
+        #global filtered_datavisits
 
         self.store.active_dataset = Dataset('')
         self.skyplot_list = []
@@ -295,8 +286,8 @@ class QuickLookComponent(Component):
 
         datasets = {}
         filtered_datasets = {}
-        datavisits = {}
-        filtered_datavisits = {}
+        #datavisits = {}
+        #filtered_datavisits = {}
 
         # Setup UI
         self._switch_view_mode()
@@ -606,6 +597,7 @@ class QuickLookComponent(Component):
                    .get_coadd_ddf_by_filter_metric(filter_type,
                                                    metrics=metrics,
                                                    tracts=self.store.active_tracts,
+                                                   coadd_version=self.store.active_dataset.coadd_version,
                                                    warnings=warnings))
         if warnings:
             msg = ';'.join(warnings)
@@ -624,16 +616,16 @@ class QuickLookComponent(Component):
                 ddf = ddf.query(query_expr).persist()
                 filtered_datasets[filter_type] = ddf
 
-        return create_hv_dataset(ddf)
+        stats = self.store.active_dataset.stats[f'coadd_{self.store.active_dataset.coadd_version}']
+        if self.store.active_tracts:
+            stats = stats.loc[filter_type, self.store.active_tracts, :].reset_index(['filter', 'tract'], drop=True)
+        else:
+            stats = stats.loc[filter_type, :, :].reset_index(['filter', 'tract'], drop=True)
+
+        return create_hv_dataset(ddf, stats=stats)
 
     def get_datavisits(self):
-        global datavisits
-        global filtered_datavisits
-        # if self.query_filter == '' and len(self.selected_flag_filters) == 0:
-        if len(self.selected_flag_filters) == 0:
-            return datavisits
-        else:
-            return filtered_datavisits
+        return store.active_dataset.stats['visit']
 
     def add_message_from_error(self, title, info, exception_obj, level='error'):
 

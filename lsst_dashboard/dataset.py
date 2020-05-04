@@ -6,6 +6,7 @@ import dask.dataframe as dd
 import os
 
 import numpy as np
+import pandas as pd
 
 from kartothek.io.dask.dataframe import read_dataset_as_ddf
 from storefact import get_store_from_url
@@ -21,31 +22,32 @@ class Dataset:
         d.connect()
         d.init_data()
     """
-    def __init__(self, path, tracts=None, filters=None):
-        self.conn = None
+    def __init__(self, path, coadd_version='unforced'):
         self.path = Path(path)
         self.coadd = {}
         self.visits = None
         self.visits_by_metric = {}
-        self.metadata = {}
         self.metrics = []
-        self.failures = {}
+        self.failures = {} # this functionality no longer works
         self.flags = []
-        self.tracts = tracts
-        self.filters = filters if filters is not None else []
+        self.filters = []
+        self.tracts = []
+        self.stats = {}
+        self.coadd_version = coadd_version
 
     def connect(self):
+        print('-- read coadd/visits summary stats tables and generate metadata')
+        self.read_summary_stats()
+        # use coadd table to populate filters & tracts
+        coadd_version = self.coadd_version
+        self.filters = list(self.stats[f'coadd_{coadd_version}'].index.unique(level=0))
+        self.tracts = list(self.stats[f'coadd_{coadd_version}'].index.unique(level=1))
 
-        self.parse_metadata_from_file()
-
-        print("-- read coadd table --")
-        self.fetch_coadd_table()  # currently ignoring forced/unforced
+        print(f"-- read {coadd_version} coadd table --")
+        self.fetch_coadd_table(coadd_version=coadd_version)
 
         print("-- generate other metadata fields --")
         self.post_process_metadata()
-
-        print("-- read visit data --")
-        self.fetch_visits_by_metric()
 
         print("-- done with reads --")
 
@@ -82,8 +84,6 @@ class Dataset:
 
         coadd_df = (read_dataset_as_ddf(**karto_kwargs)
                     .repartition(partition_size="4GB")
-                    .replace(np.inf, np.nan)
-                    .replace(-np.inf, np.nan)
                     .dropna(how='any')
                     .set_index('filter')
                     .persist())
@@ -118,19 +118,12 @@ class Dataset:
 
         return coadd_df.drop_duplicates().count().compute()["patch"]
 
-    def parse_metadata_from_file(self):
-        if self.path.joinpath(METADATA_FILENAME).exists():
-            self.metadata_path = self.path.joinpath(METADATA_FILENAME)
-        else:
-            self.metadata_path = Path(os.environ.get("LSST_META", os.curdir)).joinpath(
-                self.path.name, METADATA_FILENAME
-            )
+    def read_summary_stats(self):
+        for table in ['CoaddTable_unforced', 'CoaddTable_forced', 'VisitTable']:
+            name = table.replace('Table', '').lower()
+            path = self.path.joinpath(f'analysis{table}_stats.parq')
+            self.stats[name] = pd.read_parquet(path)
 
-        with self.metadata_path.open("r") as f:
-            self.metadata = yaml.load(f, Loader=yaml.SafeLoader)
-            self.failures = self.metadata.get("failures", {})
-            if self.tracts is None:
-                self.tracts = list(set(x for v in self.metadata["visits"].values() for x in v.keys()))
 
     def fetch_coadd_table(self, coadd_version="unforced"):
         table = "qaDashboardCoaddTable"
@@ -143,26 +136,15 @@ class Dataset:
             predicates=predicates, dataset_uuid=dataset, store=store, table="table"
         )
 
-        # hack label in ...
-        coadd_df["label"] = "star"
-
         self.coadd[table] = coadd_df
 
     def post_process_metadata(self):
         df = self.coadd["qaDashboardCoaddTable"]
         self.flags = df.columns[df.dtypes == bool].to_list()
-        self.filters = list(self.metadata["visits"].keys())
         self.metrics = (
             set(df.columns.to_list())
             - set(self.flags)
-            - set(["patch", "dec", "label", "psfMag", "ra", "filter", "dataset", "dir0", "tract"])
-        )
-
-    def fetch_visits(self):
-        store = partial(get_store_from_url, "hfs://" + str(self.path))
-        predicates = [[("tract", "in", self.tracts)]]
-        self.visits = read_dataset_as_ddf(
-            predicates=predicates, dataset_uuid="analysisVisitTable", store=store, table="table"
+            - set(["patch", "dec", "psfMag", "ra", "filter", "dataset", "tract"])
         )
 
     def get_visits_by_metric_filter(self, filt, metric):
@@ -200,8 +182,6 @@ class Dataset:
             columns=columns,
             table="table",
         )
-        # hack label in ...
-        visits_ddf["label"] = "star"
 
         return visits_ddf[visits_ddf[metric].notnull()]
 
