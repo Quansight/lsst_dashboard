@@ -175,10 +175,14 @@ class DatasetPartitioner(object):
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
 
-    def df_generator(self, dataIds, filenames, columns):
+    def df_generator(self, dataIds, filenames, columns, filt=None):
+        if filt is None:
+            desc = f"Building dask dataframe for {self.dataset}"
+        else:
+            desc = f"Building dask dataframe for {self.dataset} ({filt})"
         for filename, dataId in tqdm(
             zip(filenames, dataIds),
-            desc=f"Building dask dataframe for {self.dataset}",
+            desc=desc,
             total=len(dataIds),
         ):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
@@ -196,7 +200,7 @@ class DatasetPartitioner(object):
         columns = self.get_columns()
 
         if len(dataIds) > 0:
-            df = dd.from_delayed(self.df_generator(filt, dataIds, filenames, columns))
+            df = dd.from_delayed(self.df_generator(dataIds, filenames, columns, filt=filt))
 
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
