@@ -38,7 +38,7 @@ def launch_dask_cluster(queue, nodes, localcluster):
     """
     Usage from script:
         from distributed import Client
-        from lsst_dashboard.cli import launch_dask_cluster                                                                                                                                                 
+        from lsst_dashboard.cli import launch_dask_cluster
         cluster, port = launch_dask_cluster('normal', 6, False)
         client = Client(cluster)
     """
@@ -88,10 +88,10 @@ def launch_dask_cluster(queue, nodes, localcluster):
 
 @click.command()
 @click.option(
-    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine",
+    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
 )
 @click.option(
-    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine",
+    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine"
 )
 @click.option(
     "--localcluster",
@@ -120,10 +120,10 @@ def start_dashboard(queue, nodes, localcluster):
 @click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
 @click.option(
-    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine",
+    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
 )
 @click.option(
-    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine",
+    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine"
 )
 @click.option(
     "--localcluster",
@@ -139,11 +139,7 @@ def repartition(butler_path, destination_path, sample_frac, num_buckets, queue, 
     client.wait_for_workers(1)
 
     print(f"### repartitioning data from {butler_path}")
-    from lsst_dashboard.partition import (
-        CoaddForcedPartitioner,
-        CoaddUnforcedPartitioner,
-        VisitPartitioner,
-    )
+    from lsst_dashboard.partition import CoaddForcedPartitioner, CoaddUnforcedPartitioner, VisitPartitioner
 
     if destination_path is None:
         destination_path = f"{butler_path}/ktk"

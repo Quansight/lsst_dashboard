@@ -82,13 +82,7 @@ class Dataset:
             predicates=predicates, dataset_uuid=dataset, columns=columns, store=store, table="table",
         )
 
-        coadd_df = (
-            read_dataset_as_ddf(**karto_kwargs)
-            .repartition(partition_size="4GB")
-            .dropna(how="any")
-            .set_index("filter")
-            .persist()
-        )
+        coadd_df = read_dataset_as_ddf(**karto_kwargs).dropna(how="any").compute()
 
         return coadd_df
 
@@ -165,11 +159,13 @@ class Dataset:
             "psfMag",
         ] + [metric]
 
-        if visit:
-            predicates = [[("filter", "==", filt), ("visit", "==", visit)]]
-        else:
-            predicates = [[("filter", "==", filt)]]
-
+        visits_ddf = read_dataset_as_ddf(
+            dataset_uuid="analysisVisitTable",
+            predicates=[[("filter", "==", filt)]],
+            store=store,
+            columns=columns,
+            table="table",
+        )
         store = partial(get_store_from_url, "hfs://" + str(self.path))
 
         columns = [
