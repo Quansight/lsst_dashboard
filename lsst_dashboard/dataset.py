@@ -84,13 +84,7 @@ class Dataset:
             predicates=predicates, dataset_uuid=dataset, columns=columns, store=store, table="table"
         )
 
-        coadd_df = (
-            read_dataset_as_ddf(**karto_kwargs)
-            .repartition(partition_size="4GB")
-            .dropna(how="any")
-            .set_index("filter")
-            .persist()
-        )
+        coadd_df = read_dataset_as_ddf(**karto_kwargs).dropna(how="any").compute()
 
         return coadd_df
 

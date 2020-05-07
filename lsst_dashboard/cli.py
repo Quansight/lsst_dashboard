@@ -38,7 +38,7 @@ def launch_dask_cluster(queue, nodes, localcluster):
     """
     Usage from script:
         from distributed import Client
-        from lsst_dashboard.cli import launch_dask_cluster                                                                                                                                                 
+        from lsst_dashboard.cli import launch_dask_cluster
         cluster, port = launch_dask_cluster('normal', 6, False)
         client = Client(cluster)
     """
