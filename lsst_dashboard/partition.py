@@ -64,7 +64,7 @@ class DatasetPartitioner(object):
     categories = ["filter", "tract"]
     bucket_by = "patch"
     _default_dataset = None
-    df_chunk_size = 10
+    df_chunk_size = 20
 
     def __init__(
         self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8,
@@ -332,7 +332,7 @@ class VisitPartitioner(DatasetPartitioner):
     categories = None  # ["filter", "tract"] Some visit datasets are erroring on categorization
     bucket_by = "ccd"
     _default_dataset = "analysisVisitTable"
-    df_chunk_size = 30
+    df_chunk_size = 80
 
     def get_metric_columns(self):
         return list(
