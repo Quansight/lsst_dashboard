@@ -22,13 +22,14 @@ class Dataset:
         d.connect()
         d.init_data()
     """
-    def __init__(self, path, coadd_version='unforced'):
+
+    def __init__(self, path, coadd_version="unforced"):
         self.path = Path(path)
         self.coadd = {}
         self.visits = None
         self.visits_by_metric = {}
         self.metrics = []
-        self.failures = {} # this functionality no longer works
+        self.failures = {}  # this functionality no longer works
         self.flags = []
         self.filters = []
         self.tracts = []
@@ -36,12 +37,12 @@ class Dataset:
         self.coadd_version = coadd_version
 
     def connect(self):
-        print('-- read coadd/visits summary stats tables and generate metadata')
+        print("-- read coadd/visits summary stats tables and generate metadata")
         self.read_summary_stats()
         # use coadd table to populate filters & tracts
         coadd_version = self.coadd_version
-        self.filters = list(self.stats[f'coadd_{coadd_version}'].index.unique(level=0))
-        self.tracts = list(self.stats[f'coadd_{coadd_version}'].index.unique(level=1))
+        self.filters = list(self.stats[f"coadd_{coadd_version}"].index.unique(level=0))
+        self.tracts = list(self.stats[f"coadd_{coadd_version}"].index.unique(level=1))
 
         print(f"-- read {coadd_version} coadd table --")
         self.fetch_coadd_table(coadd_version=coadd_version)
@@ -82,10 +83,11 @@ class Dataset:
             predicates=predicates, dataset_uuid=dataset, columns=columns, store=store, table="table"
         )
 
-        coadd_df = (read_dataset_as_ddf(**karto_kwargs)
-                    .dropna(how='any')
-                    .set_index('filter')
-                    .compute())
+        coadd_df = (
+            read_dataset_as_ddf(**karto_kwargs).dropna(how="any")
+            # .set_index('filter')
+            .compute()
+        )
 
         return coadd_df
 
@@ -118,11 +120,10 @@ class Dataset:
         return coadd_df.drop_duplicates().count().compute()["patch"]
 
     def read_summary_stats(self):
-        for table in ['CoaddTable_unforced', 'CoaddTable_forced', 'VisitTable']:
-            name = table.replace('Table', '').lower()
-            path = self.path.joinpath(f'analysis{table}_stats.parq')
+        for table in ["CoaddTable_unforced", "CoaddTable_forced", "VisitTable"]:
+            name = table.replace("Table", "").lower()
+            path = self.path.joinpath(f"analysis{table}_stats.parq")
             self.stats[name] = pd.read_parquet(path)
-
 
     def fetch_coadd_table(self, coadd_version="unforced"):
         table = "qaDashboardCoaddTable"
@@ -148,17 +149,28 @@ class Dataset:
 
     def get_visits_by_metric_filter(self, filt, metric):
 
-        store = partial(get_store_from_url, 'hfs://' + str(self.path))
+        store = partial(get_store_from_url, "hfs://" + str(self.path))
 
-        columns = ['filter', 'tract', 'visit', 'calib_psf_used',
-                   'calib_psf_candidate', 'calib_photometry_reserved',
-                   'qaBad_flag', 'ra', 'dec', 'psfMag'] + [metric]
+        columns = [
+            "filter",
+            "tract",
+            "visit",
+            "calib_psf_used",
+            "calib_psf_candidate",
+            "calib_photometry_reserved",
+            "qaBad_flag",
+            "ra",
+            "dec",
+            "psfMag",
+        ] + [metric]
 
-        visits_ddf = read_dataset_as_ddf(dataset_uuid="analysisVisitTable",
-                                         predicates=[[('filter', '==', filt)]],
-                                         store=store,
-                                         columns=columns,
-                                         table='table')
+        visits_ddf = read_dataset_as_ddf(
+            dataset_uuid="analysisVisitTable",
+            predicates=[[("filter", "==", filt)]],
+            store=store,
+            columns=columns,
+            table="table",
+        )
         store = partial(get_store_from_url, "hfs://" + str(self.path))
 
         columns = [
