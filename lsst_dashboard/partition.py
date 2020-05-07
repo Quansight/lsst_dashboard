@@ -247,7 +247,7 @@ class DatasetPartitioner(object):
             for filt in self.filters:
                 self.partition_filt(filt, chunk_dfs=chunk_dfs)
         else:
-            df = get_df(self.dataIds, self.filenames)
+            df = self.get_df(self.dataIds, self.filenames)
             print(f"... ...ktk repartitioning {self.dataset}")
             graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
             graph.compute()
