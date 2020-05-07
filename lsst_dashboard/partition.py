@@ -225,18 +225,32 @@ class DatasetPartitioner(object):
             partition_on=self.partition_on,
         )
 
-    def partition_filt(self, filt):
+    def partition_filt(self, filt, chunk_dfs=True):
         """Write partitioned dataset using kartothek
         """
-        for i, df in enumerate(self.iter_df_chunks(filt)):
+        if chunk_dfs:
+            for i, df in enumerate(self.iter_df_chunks(filt)):
+                if df is not None:
+                    print(f"... ...ktk repartitioning {self.dataset} ({filt}, chunk {i + 1})")
+                    graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+                    graph.compute()
+        else:
+            df = get_df(self.dataIds_by_filter[filt], self.filenames_by_filter[filt])
+
             if df is not None:
                 print(f"... ...ktk repartitioning {self.dataset} ({filt}, chunk {i + 1})")
                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
                 graph.compute()
 
-    def partition(self):
-        for filt in self.filters:
-            self.partition_filt(filt)
+    def partition(self, chunk_by_filter=True, chunk_dfs=True):
+        if chunk_by_filter:
+            for filt in self.filters:
+                self.partition_filt(filt, chunk_dfs=chunk_dfs)
+        else:
+            df = get_df(self.dataIds, self.filenames)
+            print(f"... ...ktk repartitioning {self.dataset}")
+            graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+            graph.compute()
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
