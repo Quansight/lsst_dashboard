@@ -84,7 +84,7 @@ class DatasetPartitioner(object):
 
         self._store = None
         self.engine = engine
-        self.metadata = self.butler.get("qaDashboard_metadata")
+        self.metadata = self.butler.get("qaDashboard_info")
 
         self.dataIds = [
             dataId for dataId in self.iter_dataId() if self.butler.datasetExists(self.dataset, dataId)
