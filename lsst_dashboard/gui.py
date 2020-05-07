@@ -51,7 +51,7 @@ sample_data_directory = "sample_data/DM-23243-KTK-1Perc"
 
 def create_hv_dataset(ddf, stats, percentile=(1, 99)):
 
-    _idNames = ("patch", "tract")
+    _idNames = ("patch", "tract", "filter")
     _kdims = ("ra", "dec", "psfMag")
     _flags = [c for c in ddf.columns if ddf[c].dtype == np.dtype("bool")]
 
