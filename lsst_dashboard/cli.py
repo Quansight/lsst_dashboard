@@ -118,6 +118,8 @@ def start_dashboard(queue, nodes, localcluster):
 @click.argument("destination_path", required=False)
 @click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
+@click.option("--chunk_by_filter", default=False)
+@click.option("--chunk_dfs", default=False)
 @click.option(
     "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
 )
@@ -129,7 +131,17 @@ def start_dashboard(queue, nodes, localcluster):
     is_flag=True,
     help="Launches a localcluster instead of slurmcluster, default on local machine",
 )
-def repartition(butler_path, destination_path, sample_frac, num_buckets, queue, nodes, localcluster):
+def repartition(
+    butler_path,
+    destination_path,
+    sample_frac,
+    num_buckets,
+    chunk_by_filter,
+    chunk_dfs,
+    queue,
+    nodes,
+    localcluster,
+):
     """Repartitions a Butler Dataset for use with LSST Data Explorer using a Dask cluster"""
     cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
@@ -143,27 +155,29 @@ def repartition(butler_path, destination_path, sample_frac, num_buckets, queue, 
     if destination_path is None:
         destination_path = f"{butler_path}/ktk"
 
+    partition_kws = dict(chunk_by_filter=chunk_by_filter, chunk_dfs=chunk_dfs)
+
     print(f"...partitioned data will be written to {destination_path}")
 
     print("...partitioning coadd forced data")
     coadd_forced = CoaddForcedPartitioner(
         butler_path, destination_path, sample_frac=sample_frac, num_buckets=num_buckets
     )
-    coadd_forced.partition()
+    coadd_forced.partition(**partition_kws)
     coadd_forced.write_stats()
 
     print("...partitioning coadd unforced data")
     coadd_unforced = CoaddUnforcedPartitioner(
         butler_path, destination_path, sample_frac=sample_frac, num_buckets=num_buckets
     )
-    coadd_unforced.partition()
+    coadd_unforced.partition(**partition_kws)
     coadd_unforced.write_stats()
 
     print("...partitioning visit data")
     visits = VisitPartitioner(
         butler_path, destination_path, sample_frac=sample_frac, num_buckets=num_buckets
     )
-    visits.partition()
+    visits.partition(**partition_kws)
     visits.write_stats()
 
     print("...partitioning complete")
