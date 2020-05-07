@@ -65,7 +65,9 @@ class DatasetPartitioner(object):
     bucket_by = "patch"
     _default_dataset = None
 
-    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8):
+    def __init__(
+        self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8
+    ):
 
         self._butler = Butler(butlerpath)
         if dataset is None:
@@ -148,14 +150,15 @@ class DatasetPartitioner(object):
 
         # TODO I think the partitioning destroys the original indexing if the index numbers are important we may need to do a reset_index()
 
-        df = (df.assign(
-                    ra=da.rad2deg(df.coord_ra),
-                    dec=da.rad2deg(df.coord_dec),
-                    psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
-                )
-                .replace(np.inf, np.nan)
-                .replace(-np.inf, np.nan)
-                .rename(columns={"patchId": "patch", "ccdId": "ccd"})
+        df = (
+            df.assign(
+                ra=da.rad2deg(df.coord_ra),
+                dec=da.rad2deg(df.coord_dec),
+                psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+            )
+            .replace(np.inf, np.nan)
+            .replace(-np.inf, np.nan)
+            .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
         if self.categories:
@@ -180,11 +183,7 @@ class DatasetPartitioner(object):
             desc = f"Building dask dataframe for {self.dataset}"
         else:
             desc = f"Building dask dataframe for {self.dataset} ({filt})"
-        for filename, dataId in tqdm(
-            zip(filenames, dataIds),
-            desc=desc,
-            total=len(dataIds),
-        ):
+        for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             yield df
@@ -333,7 +332,7 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
 class VisitPartitioner(DatasetPartitioner):
     partition_on = ("filter", "tract", "visit")
-    categories = None # ["filter", "tract"] Some visit datasets are erroring on categorization
+    categories = None  # ["filter", "tract"] Some visit datasets are erroring on categorization
     bucket_by = "ccd"
     _default_dataset = "analysisVisitTable"
 
