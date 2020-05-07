@@ -588,7 +588,7 @@ class QuickLookComponent(Component):
         global filtered_datasets
 
         warnings = []
-        ddf = self.store.active_dataset.get_coadd_ddf_by_filter_metric(
+        df = self.store.active_dataset.get_coadd_ddf_by_filter_metric(
             filter_type,
             metrics=metrics,
             tracts=self.store.active_tracts,
@@ -599,16 +599,16 @@ class QuickLookComponent(Component):
             msg = ";".join(warnings)
             self.add_status_message("Selected Tracts Warning", msg, level="error")
 
-        datasets[filter_type] = ddf
-        filtered_datasets[filter_type] = ddf
+        datasets[filter_type] = df
+        filtered_datasets[filter_type] = df
 
         if self.query_filter or len(self.selected_flag_filters) > 0:
 
             query_expr = self._assemble_query_expression()
 
             if query_expr:
-                ddf = ddf.query(query_expr).persist()
-                filtered_datasets[filter_type] = ddf
+                df = df.query(query_expr)
+                filtered_datasets[filter_type] = df
 
         stats = self.store.active_dataset.stats[f"coadd_{self.store.active_dataset.coadd_version}"]
         if self.store.active_tracts:
@@ -618,7 +618,7 @@ class QuickLookComponent(Component):
         else:
             stats = stats.loc[filter_type, :, :].reset_index(["filter", "tract"], drop=True)
 
-        return create_hv_dataset(ddf, stats=stats)
+        return create_hv_dataset(df, stats=stats)
 
     def get_datavisits(self):
         return store.active_dataset.stats["visit"]
