@@ -231,9 +231,8 @@ class DatasetPartitioner(object):
         for i, df in enumerate(self.iter_df_chunks(filt)):
             if df is not None:
                 print(f"... ...ktk repartitioning {self.dataset} ({filt}, chunk {i + 1})")
-
-    #                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
-    #                 graph.compute()
+                graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+                graph.compute()
 
     def partition(self):
         for filt in self.filters:
