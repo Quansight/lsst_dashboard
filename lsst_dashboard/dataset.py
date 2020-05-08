@@ -83,13 +83,15 @@ class Dataset:
             predicates=predicates, dataset_uuid=dataset, columns=columns, store=store, table="table"
         )
 
+        print(f"...loading dataset ({filter_name}, {metrics})...")
         coadd_df = (
             read_dataset_as_ddf(**karto_kwargs).dropna(how="any")
             # .set_index('filter')
             .compute()
         )
+        print("loaded.")
 
-        coadd_df = dd.from_pandas(coadd_df, chunksize=100000)
+        # coadd_df = dd.from_pandas(coadd_df, chunksize=100000)
 
         return coadd_df
 
