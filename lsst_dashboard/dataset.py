@@ -89,6 +89,8 @@ class Dataset:
             .compute()
         )
 
+        coadd_df = dd.from_pandas(coadd_df, chunksize=100000)
+
         return coadd_df
 
     def get_patch_count(self, filters, tracts, coadd_version="unforced"):
