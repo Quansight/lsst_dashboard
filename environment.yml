@@ -9,15 +9,15 @@ channels:
 dependencies:
     - python>=3.7
     - param
-    - panel>=0.8
-    - holoviews
+    - panel>=0.9.5
+    - holoviews>=1.13.3a1
     - hvplot
     - geoviews
     - numpy
     - pandas
     - dask
-    - distributed
-    - dask-jobqueue
+    - distributed>=2.16
+    - dask-jobqueue>=0.7.1
     - datashader
     - kartothek
     - colorcet
