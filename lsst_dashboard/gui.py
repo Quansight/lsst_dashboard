@@ -67,7 +67,7 @@ def create_hv_dataset(ddf, stats, percentile=(1, 99)):
             if c in ("ra", "dec", "psfMag"):
                 cmin, cmax = stats[c]["min"].min(), stats[c]["max"].max()
                 c = hv.Dimension(c, range=(cmin, cmax))
-            elif c in ("filter", "patch"):
+            elif c in ("filter", "patch", "tract"):
                 cvalues = list(ddf[c].unique())
                 c = hv.Dimension(c, values=cvalues)
             elif ddf[c].dtype.kind == "b":
@@ -76,7 +76,7 @@ def create_hv_dataset(ddf, stats, percentile=(1, 99)):
         else:
             if percentile is not None:
                 p0, p1 = percentile
-                if f"{p0}%" in stats.index and f"{p1}%" in stats.index:
+                if c in stats.columns and f"{p0}%" in stats.index and f"{p1}%" in stats.index:
                     cmin, cmax = stats[c][f"{p0}%"].min(), stats[c][f"{p1}%"].max()
                 else:
                     print("percentiles not found in stats, computing")
@@ -256,11 +256,7 @@ class QuickLookComponent(Component):
         self.list_layout = pn.Column(sizing_mode="stretch_width")
         self.detail_plots_layout = pn.Column(sizing_mode="stretch_width")
 
-        self.coadd_toggle = pn.widgets.RadioButtonGroup(
-            options=["Coadd View", "Visit View"], disabled=True, align="end", margin=(5, 0), width=250
-        )
-        self.coadd_toggle.param.watch(self._update_selected_metrics_by_filter, ["value"])
-
+        self._coadd_toggles = {}
         self._filter_streams = {}
         self._skyplot_range_stream = RangeXY()
         self._scatter_range_stream = RangeXY()
@@ -598,20 +594,26 @@ class QuickLookComponent(Component):
         global datasets
         global filtered_datasets
 
-        warnings = []
-        df = self.store.active_dataset.get_coadd_ddf_by_filter_metric(
-            filter_type,
-            metrics=metrics,
-            tracts=self.store.active_tracts,
-            coadd_version=self.store.active_dataset.coadd_version,
-            warnings=warnings,
-        )
-        if warnings:
-            msg = ";".join(warnings)
-            self.add_status_message("Selected Tracts Warning", msg, level="error")
+        if visits:
+            visit = int(visits[0])
+            ddf = self.store.active_dataset.get_visits_by_metric_filter(
+                filter_type, metrics, visit
+            ).persist()
+        else:
+            warnings = []
+            ddf = self.store.active_dataset.get_coadd_ddf_by_filter_metric(
+                filter_type,
+                metrics=metrics,
+                tracts=self.store.active_tracts,
+                coadd_version=self.store.active_dataset.coadd_version,
+                warnings=warnings,
+            )
+            if warnings:
+                msg = ";".join(warnings)
+                self.add_status_message("Selected Tracts Warning", msg, level="error")
 
-        datasets[filter_type] = df
-        filtered_datasets[filter_type] = df
+        datasets[filter_type] = ddf
+        filtered_datasets[filter_type] = ddf
 
         if self.query_filter or len(self.selected_flag_filters) > 0:
 
@@ -643,15 +645,23 @@ class QuickLookComponent(Component):
         logger.error(msg_body)
         self.add_status_message(title, msg_body, level=level, duration=10)
 
-    def _toggle_coadd_view(self, **kwargs):
+    def _reset_visits(self, filt, event):
+        if event.new != "Coadd View":
+            return
+        for sel in self._visits_selections.values():
+            sel.update(values=[], index=[])
+        self._coadd_toggles[filt].disabled = True
+
+    def _toggle_coadd_view(self, filt, **kwargs):
+        toggle = self._coadd_toggles[filt]
         for stream in self._visits_selections.values():
             if stream.values:
                 kwargs = {"disabled": False}
-                if self.coadd_toggle.disabled:
+                if toggle.disabled:
                     kwargs["value"] = "Visit View"
-                self.coadd_toggle.set_param(**kwargs)
+                toggle.set_param(**kwargs)
                 return
-        self.coadd_toggle.set_param(disabled=True, value="Coadd View")
+        toggle.set_param(disabled=True, value="Coadd View")
 
     @param.depends("selected_metrics_by_filter", watch=True)
     # @profile(immediate=True)
@@ -672,7 +682,7 @@ class QuickLookComponent(Component):
                     selection = self._visits_selections[key]
                 else:
                     selection = Selection(dimension=0)
-                    selection.add_subscriber(self._toggle_coadd_view, 0.1)
+                    selection.add_subscriber(partial(self._toggle_coadd_view, filt), 0.1)
                     self._visits_selections[key] = selection
                     streams = []
                     for (f, m), stream in self._visits_selections.items():
@@ -682,6 +692,19 @@ class QuickLookComponent(Component):
                         stream._subscribers = stream._subscribers[:1]
                         streams.append(stream)
                     link_streams(*streams)
+
+            if filt not in self._coadd_toggles:
+                self._coadd_toggles[filt] = toggle = pn.widgets.RadioButtonGroup(
+                    options=["Coadd View", "Visit View"],
+                    disabled=True,
+                    align="end",
+                    margin=(5, 0),
+                    width=250,
+                )
+                toggle.param.watch(partial(self._reset_visits, filt), ["value"])
+                toggle.param.watch(self._update_selected_metrics_by_filter, ["value"])
+            else:
+                toggle = self._coadd_toggles[filt]
 
             top_plot = None
             try:
@@ -693,7 +716,7 @@ class QuickLookComponent(Component):
                     errors,
                     selections=self._visits_selections,
                 )
-                if selection.values and self.coadd_toggle:
+                if selection.values and toggle:
                     title = "Visit View %s" % selection.values[0]
                 else:
                     title = "Coadd View"
@@ -707,7 +730,7 @@ class QuickLookComponent(Component):
                 self.add_message_from_error("Visits Plot Error", "", e)
 
             self.plot_top = top_plot
-            detail_plots[filt] = [top_plot]
+            detail_plots[filt] = [toggle, top_plot]
 
             if filt in self._filter_streams:
                 filter_stream = self._filter_streams[filt]
@@ -804,7 +827,7 @@ class QuickLookComponent(Component):
             self._plot_top[:] = [self.plot_top]
             self.list_layout[:] = [p for _, p in self.plots_list]
             self._plot_layout[:] = [self.list_layout]
-            self.detail_plots_layout[:] = [self.coadd_toggle, self._detail_tabs]
+            self.detail_plots_layout[:] = [self._detail_tabs]
 
     def on_overview_selected_tracts_updated(self, tracts):
 

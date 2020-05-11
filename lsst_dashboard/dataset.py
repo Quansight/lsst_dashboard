@@ -1,5 +1,7 @@
+import operator
 import yaml
-from functools import partial
+
+from functools import partial, reduce
 from pathlib import Path
 
 import dask.dataframe as dd
@@ -142,9 +144,22 @@ class Dataset:
             - set(["patch", "dec", "psfMag", "ra", "filter", "dataset", "tract"])
         )
 
-    def get_visits_by_metric_filter(self, filt, metric, visit=None):
+    def get_visits_by_metric_filter(self, filt, metrics, visit=None):
 
         store = partial(get_store_from_url, "hfs://" + str(self.path))
+
+        columns = [
+            "filter",
+            "tract",
+            "visit",
+            "calib_psf_used",
+            "calib_psf_candidate",
+            "calib_photometry_reserved",
+            "qaBad_flag",
+            "ra",
+            "dec",
+            "psfMag",
+        ] + metrics
 
         columns = [
             "filter",
@@ -179,7 +194,7 @@ class Dataset:
             "ra",
             "dec",
             "psfMag",
-        ] + [metric]
+        ] + metrics
 
         visits_ddf = read_dataset_as_ddf(
             dataset_uuid="analysisVisitTable",
@@ -189,14 +204,15 @@ class Dataset:
             table="table",
         )
 
-        return visits_ddf[visits_ddf[metric].notnull()]
+        filters = reduce(operator.and_, (visits_ddf[m].notnull() for m in metrics))
+        return visits_ddf[filters]
 
     def fetch_visits_by_metric(self):
         for filt in self.filters:
             self.visits_by_metric[filt] = {}
             for metric in self.metrics:
                 try:
-                    ddf = self.get_visits_by_metric_filter(filt, metric)
+                    ddf = self.get_visits_by_metric_filter(filt, [metric])
                 except:
                     # raise
                     print("WARNING: problem loading visits for {} metric and {} filter".format(metric, filt))
