@@ -46,7 +46,11 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
-sample_data_directory = "sample_data/DM-23243-KTK-1Perc"
+sample_data_directory = "sample_data/DM-21335-New2-KTK-1Perc"
+
+
+def debug(msg):
+    print("QuickLookComponent" + msg)
 
 
 def create_hv_dataset(ddf, stats, percentile=(1, 99)):
@@ -199,8 +203,7 @@ class QuickLookComponent(Component):
         super().__init__(**param)
 
         self.store = store
-
-        self.overview = create_overview(self.on_tracts_updated)
+        self.overview = create_overview(self.on_overview_selected_tracts_updated, active_tracts=[])
 
         self._clear_metrics_button = pn.widgets.Button(name="Clear", width=30, align="end")
         self._clear_metrics_button.on_click(self._on_clear_metrics)
@@ -287,6 +290,7 @@ class QuickLookComponent(Component):
         datastack = "unforced" if "unforced" in dstack_switch_val else "forced"
         try:
             self.store.active_dataset = load_data(self.data_repository, datastack)
+            self.overview.active_tracts = self.store.active_dataset.tracts
 
         except Exception as e:
             self.update_display()
@@ -755,7 +759,7 @@ class QuickLookComponent(Component):
             self._plot_layout[:] = [self.list_layout]
             self.detail_plots_layout[:] = [self._detail_tabs]
 
-    def on_tracts_updated(self, tracts):
+    def on_overview_selected_tracts_updated(self, tracts):
 
         if self.store.active_tracts != tracts:
             self.store.active_tracts = tracts
@@ -769,6 +773,7 @@ class QuickLookComponent(Component):
             print("TRACTS UPDATED!!!!!! {}".format(tracts))
 
     def jinja(self):
+        debug("jinja")
 
         tmpl = pn.Template(dashboard_html_template)
 
@@ -795,6 +800,8 @@ class QuickLookComponent(Component):
 
         clear_button_row = pn.Row(self._clear_metrics_button)
 
+        overview_map = self.overview.panel()
+
         components = [
             ("metrics_clear_button", clear_button_row),
             ("data_repo_path", data_repo_row),
@@ -809,7 +816,7 @@ class QuickLookComponent(Component):
             ("plot_top", None),
             ("metrics_plots", self.detail_plots_layout),
             ("skyplot_metrics_plots", self.skyplot_layout),
-            ("overview_plots", self.overview),
+            ("overview_plots", overview_map),
             (
                 "flags",
                 pn.Column(
