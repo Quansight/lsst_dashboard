@@ -178,7 +178,7 @@ class OverviewApp(param.Parameterized):
             # declare polygons
             self.polys = hv.Polygons(data, vdims=['metric', 'tract']).opts(
                 tools=['hover', 'tap'],
-                line_width=3, active_tools=['wheel_zoom', 'tap'],
+                line_width=0, active_tools=['wheel_zoom', 'tap'],
                 colorbar=True, title=self.metric, color='metric')
 
             # Declare Tap stream with polys as source and initial values
