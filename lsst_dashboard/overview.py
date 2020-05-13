@@ -181,7 +181,7 @@ class OverviewApp(param.Parameterized):
             # declare polygons
             self.polys = hv.Polygons(data, vdims=["metric", "tract"]).opts(
                 tools=["hover", "tap"],
-                line_width=3,
+                line_width=0,
                 active_tools=["wheel_zoom", "tap"],
                 colorbar=True,
                 title=self.metric,
