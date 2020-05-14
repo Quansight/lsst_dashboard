@@ -46,7 +46,11 @@ filtered_datasets = []
 datavisits = []
 filtered_datavisits = []
 
-sample_data_directory = "sample_data/DM-23243-KTK-1Perc"
+sample_data_directory = 'sample_data/DM-21335-New2-KTK-1Perc'
+
+
+def debug(msg):
+    print('QuickLookComponent' + msg)
 
 
 def create_hv_dataset(ddf, stats, percentile=(1, 99)):
@@ -101,6 +105,7 @@ def init_dataset(data_repo_path, datastack="forced", **kwargs):
 
     d = Dataset(data_repo_path, coadd_version=datastack, **kwargs)
     d.connect()
+
 
     global store
     store.active_dataset = d
@@ -199,8 +204,8 @@ class QuickLookComponent(Component):
         super().__init__(**param)
 
         self.store = store
-
-        self.overview = create_overview(self.on_tracts_updated)
+        self.overview = create_overview(self.on_overview_selected_tracts_updated,
+                                        active_tracts=[])
 
         self._clear_metrics_button = pn.widgets.Button(name="Clear", width=30, align="end")
         self._clear_metrics_button.on_click(self._on_clear_metrics)
@@ -286,7 +291,9 @@ class QuickLookComponent(Component):
         dstack_switch_val = self._switch_stack.value.lower()
         datastack = "unforced" if "unforced" in dstack_switch_val else "forced"
         try:
-            self.store.active_dataset = load_data(self.data_repository, datastack)
+            self.store.active_dataset = load_data(self.data_repository,
+                                                  datastack)
+            self.overview.active_tracts = self.store.active_dataset.tracts
 
         except Exception as e:
             self.update_display()
@@ -755,7 +762,7 @@ class QuickLookComponent(Component):
             self._plot_layout[:] = [self.list_layout]
             self.detail_plots_layout[:] = [self._detail_tabs]
 
-    def on_tracts_updated(self, tracts):
+    def on_overview_selected_tracts_updated(self, tracts):
 
         if self.store.active_tracts != tracts:
             self.store.active_tracts = tracts
@@ -768,7 +775,9 @@ class QuickLookComponent(Component):
             self.update_info_counts()
             print("TRACTS UPDATED!!!!!! {}".format(tracts))
 
+
     def jinja(self):
+        debug('jinja')
 
         tmpl = pn.Template(dashboard_html_template)
 
@@ -795,6 +804,8 @@ class QuickLookComponent(Component):
 
         clear_button_row = pn.Row(self._clear_metrics_button)
 
+        overview_map = self.overview.panel()
+
         components = [
             ("metrics_clear_button", clear_button_row),
             ("data_repo_path", data_repo_row),
@@ -806,28 +817,22 @@ class QuickLookComponent(Component):
             ("metrics_selectors", self._metric_layout),
             # ('metrics_plots', self._plot_layout),
             # ('plot_top', self._plot_top),
-            ("plot_top", None),
-            ("metrics_plots", self.detail_plots_layout),
-            ("skyplot_metrics_plots", self.skyplot_layout),
-            ("overview_plots", self.overview),
-            (
-                "flags",
-                pn.Column(
-                    pn.Row(self.flag_filter_select, self.flag_state_select),
-                    pn.Row(self.flag_submit),
-                    pn.Row(self.flag_filter_selected),
-                    pn.Row(self.flag_remove),
-                ),
-            ),
-            (
-                "query_filter",
-                pn.Column(
-                    query_filter_widget,
-                    query_filter_active_widget,
-                    pn.Row(self.query_filter_clear, self.query_filter_submit),
-                ),
-            ),
-            ("new_column", pn.Column(new_column_widget, pn.Row(self.new_column_submit)),),
+            ('plot_top', None),
+            ('metrics_plots', self.detail_plots_layout),
+
+            ('skyplot_metrics_plots', self.skyplot_layout),
+            ('overview_plots', overview_map),
+            ('flags', pn.Column(pn.Row(self.flag_filter_select,
+                                       self.flag_state_select),
+                                pn.Row(self.flag_submit),
+                                pn.Row(self.flag_filter_selected),
+                                pn.Row(self.flag_remove))),
+            ('query_filter', pn.Column(query_filter_widget,
+                                       query_filter_active_widget,
+                                       pn.Row(self.query_filter_clear,
+                                              self.query_filter_submit))),
+            ('new_column', pn.Column(new_column_widget,
+                                     pn.Row(self.new_column_submit)),),
         ]
 
         for l, c in components:

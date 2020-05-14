@@ -20,7 +20,6 @@ class Dataset:
     USAGE:
         d = Dataset(path)
         d.connect()
-        d.init_data()
     """
 
     def __init__(self, path, coadd_version="unforced"):
@@ -151,7 +150,27 @@ class Dataset:
             - set(["patch", "dec", "psfMag", "ra", "filter", "dataset", "tract"])
         )
 
-    def get_visits_by_metric_filter(self, filt, metric):
+    def get_visits_by_metric_filter(self, filt, metric, visit=None):
+
+        store = partial(get_store_from_url, "hfs://" + str(self.path))
+
+        columns = [
+            "filter",
+            "tract",
+            "visit",
+            "calib_psf_used",
+            "calib_psf_candidate",
+            "calib_photometry_reserved",
+            "qaBad_flag",
+            "ra",
+            "dec",
+            "psfMag",
+        ] + [metric]
+
+        if visit:
+            predicates = [[('filter', '==', filt), ('visit', '==', visit)]]
+        else:
+            predicates = [[('filter', '==', filt)]]
 
         store = partial(get_store_from_url, "hfs://" + str(self.path))
 
@@ -170,29 +189,7 @@ class Dataset:
 
         visits_ddf = read_dataset_as_ddf(
             dataset_uuid="analysisVisitTable",
-            predicates=[[("filter", "==", filt)]],
-            store=store,
-            columns=columns,
-            table="table",
-        )
-        store = partial(get_store_from_url, "hfs://" + str(self.path))
-
-        columns = [
-            "filter",
-            "tract",
-            "visit",
-            "calib_psf_used",
-            "calib_psf_candidate",
-            "calib_photometry_reserved",
-            "qaBad_flag",
-            "ra",
-            "dec",
-            "psfMag",
-        ] + [metric]
-
-        visits_ddf = read_dataset_as_ddf(
-            dataset_uuid="analysisVisitTable",
-            predicates=[[("filter", "==", filt)]],
+            predicates=predicates,
             store=store,
             columns=columns,
             table="table",
