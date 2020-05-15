@@ -135,6 +135,13 @@ class OverviewApp(param.Parameterized):
     def update_tract_widget(self):
         debug("OverviewApp.update_tract_widget()")
         """When tracts are selected on the map, display the tract numbers in the widget"""
+        # get the selected polygons, convert to tract strings
+        if self.geoviews:
+            tract_list = list(self.polys.iloc[self.stream.index].data.tract)
+            self.selected_tract_str = ",".join([str(t) for t in tract_list])
+        else:
+            tract_dict = self.polys.iloc[self.stream.index].data
+            self.selected_tract_str = ",".join([str(t["tract"]) for t in tract_dict])
 
         tract_dict = self.polys.iloc[self.stream.index].data
         self.selected_tract_str = ",".join([str(t["tract"]) for t in tract_dict])

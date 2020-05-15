@@ -205,6 +205,8 @@ class QuickLookComponent(Component):
         self.store = store
         self.overview = create_overview(self.on_overview_selected_tracts_updated, active_tracts=[])
 
+        self.overview = create_overview(self.on_tracts_updated)
+
         self._clear_metrics_button = pn.widgets.Button(name="Clear", width=30, align="end")
         self._clear_metrics_button.on_click(self._on_clear_metrics)
 

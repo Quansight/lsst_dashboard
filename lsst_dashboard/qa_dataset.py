@@ -127,7 +127,7 @@ class QADataset(object):
         self._ds = ds
 
     def skyPoints(
-        self, vdim, maxMag, label="star", magCol="psfMag", filter_range=None, flags=None, bad_flags=None,
+        self, vdim, maxMag, label="star", magCol="psfMag", filter_range=None, flags=None, bad_flags=None
     ):
         """Points object with ra, dec as key dimensions and requested value dimension
 
@@ -203,11 +203,7 @@ class QADataset(object):
         ra_min, ra_max = self.df.ra.quantile([0, 1])
         dec_min, dec_max = self.df.dec.quantile([0, 1])
 
-        ranges = {
-            vdim: (y_min, y_max),
-            "ra": (ra_min, ra_max),
-            "dec": (dec_min, dec_max),
-        }
+        ranges = {vdim: (y_min, y_max), "ra": (ra_min, ra_max), "dec": (dec_min, dec_max)}
         if range_override is not None:
             ranges.update(range_override)
 
