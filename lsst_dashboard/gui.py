@@ -77,9 +77,7 @@ def create_hv_dataset(ddf, stats, percentile=(1, 99)):
                 else:
                     print("percentiles not found in stats, computing")
                     darray = ddf[c].values
-                    cmin, cmax = da.compute(
-                        da.percentile(darray, p0)[0], da.percentile(darray, p1)[0]
-                    )
+                    cmin, cmax = da.compute(da.percentile(darray, p0)[0], da.percentile(darray, p1)[0])
             else:
                 cmin, cmax = stats[c]["min"].min(), stats[c]["max"].max()
             c = hv.Dimension(c, range=(cmin, cmax))
@@ -156,17 +154,13 @@ def get_unique_object_count():
 
 class QuickLookComponent(Component):
 
-    data_repository = param.String(
-        default=sample_data_directory, label=None, allow_None=True
-    )
+    data_repository = param.String(default=sample_data_directory, label=None, allow_None=True)
 
     query_filter = param.String(label="Query Expression")
 
     query_filter_active = param.String(label="Active Query Filter", default="")
 
-    active_query_by_filter = param.Dict(
-        default={f: "" for f in store.active_dataset.filters}
-    )
+    active_query_by_filter = param.Dict(default={f: "" for f in store.active_dataset.filters})
 
     new_column_expr = param.String(label="Data Column Expression")
 
@@ -186,9 +180,7 @@ class QuickLookComponent(Component):
 
     selected = param.Tuple(default=(None, None, None, None), length=4)
 
-    selected_metrics_by_filter = param.Dict(
-        default={f: [] for f in store.active_dataset.filters}
-    )
+    selected_metrics_by_filter = param.Dict(default={f: [] for f in store.active_dataset.filters})
 
     selected_flag_filters = param.Dict(default={})
 
@@ -210,54 +202,36 @@ class QuickLookComponent(Component):
 
         self.overview = create_overview(self.on_tracts_updated)
 
-        self._clear_metrics_button = pn.widgets.Button(
-            name="Clear", width=30, align="end"
-        )
+        self._clear_metrics_button = pn.widgets.Button(name="Clear", width=30, align="end")
         self._clear_metrics_button.on_click(self._on_clear_metrics)
 
-        self._submit_repository = pn.widgets.Button(
-            name="Load Data", width=50, align="end"
-        )
+        self._submit_repository = pn.widgets.Button(name="Load Data", width=50, align="end")
         self._submit_repository.on_click(self._on_load_data_repository)
 
-        self._submit_comparison = pn.widgets.Button(
-            name="Submit", width=50, align="end"
-        )
+        self._submit_comparison = pn.widgets.Button(name="Submit", width=50, align="end")
         self._submit_comparison.on_click(self._update)
 
         self.flag_filter_select = pn.widgets.Select(
             name="Add Flag Filter", width=160, options=self.store.active_dataset.flags
         )
 
-        self.flag_state_select = pn.widgets.Select(
-            name="Flag State", width=75, options=["True", "False"]
-        )
+        self.flag_state_select = pn.widgets.Select(name="Flag State", width=75, options=["True", "False"])
 
-        self.flag_submit = pn.widgets.Button(
-            name="Add Flag Filter", width=10, height=30, align="end"
-        )
+        self.flag_submit = pn.widgets.Button(name="Add Flag Filter", width=10, height=30, align="end")
         self.flag_submit.on_click(self.on_flag_submit_click)
 
-        self.flag_filter_selected = pn.widgets.Select(
-            name="Active Flag Filters", width=250
-        )
+        self.flag_filter_selected = pn.widgets.Select(name="Active Flag Filters", width=250)
 
-        self.flag_remove = pn.widgets.Button(
-            name="Remove Flag Filter", width=50, height=30, align="end"
-        )
+        self.flag_remove = pn.widgets.Button(name="Remove Flag Filter", width=50, height=30, align="end")
         self.flag_remove.on_click(self.on_flag_remove_click)
 
-        self.query_filter_submit = pn.widgets.Button(
-            name="Run Query Filter", width=100, align="end"
-        )
+        self.query_filter_submit = pn.widgets.Button(name="Run Query Filter", width=100, align="end")
         self.query_filter_submit.on_click(self.on_run_query_filter_click)
 
         self.query_filter_clear = pn.widgets.Button(name="Clear", width=50, align="end")
         self.query_filter_clear.on_click(self.on_query_filter_clear)
 
-        self.new_column_submit = pn.widgets.Button(
-            name="Define New Column", width=100, align="end"
-        )
+        self.new_column_submit = pn.widgets.Button(name="Define New Column", width=100, align="end")
         self.new_column_submit.on_click(self.on_define_new_column_click)
 
         self.status_message = pn.pane.HTML(sizing_mode="stretch_width", max_height=10)
@@ -270,14 +244,10 @@ class QuickLookComponent(Component):
         self._switch_stack = self._create_switch_datastack_buttons()
         self._plot_top = pn.Row(sizing_mode="stretch_width", margin=(10, 10, 10, 10))
 
-        self._plot_layout = pn.Column(
-            sizing_mode="stretch_width", margin=(10, 10, 10, 10)
-        )
+        self._plot_layout = pn.Column(sizing_mode="stretch_width", margin=(10, 10, 10, 10))
 
         self._skyplot_tabs = pn.Tabs(sizing_mode="stretch_both")
-        self.skyplot_layout = pn.Column(
-            sizing_mode="stretch_width", margin=(10, 10, 10, 10)
-        )
+        self.skyplot_layout = pn.Column(sizing_mode="stretch_width", margin=(10, 10, 10, 10))
 
         self._detail_tabs = pn.Tabs(sizing_mode="stretch_both")
         self.list_layout = pn.Column(sizing_mode="stretch_width")
@@ -311,9 +281,7 @@ class QuickLookComponent(Component):
         self.update_display()
 
         # Load Data
-        self.add_status_message(
-            "Load Data Start...", self.data_repository, level="info"
-        )
+        self.add_status_message("Load Data Start...", self.data_repository, level="info")
 
         dstack_switch_val = self._switch_stack.value.lower()
         datastack = "unforced" if "unforced" in dstack_switch_val else "forced"
@@ -325,9 +293,7 @@ class QuickLookComponent(Component):
             self.add_message_from_error("Data Loading Error", self.data_repository, e)
             raise
 
-        self.add_status_message(
-            "Data Ready", self.data_repository, level="success", duration=3
-        )
+        self.add_status_message("Data Ready", self.data_repository, level="success", duration=3)
 
         # Update UI
         self.flag_filter_select.options = self.store.active_dataset.flags
@@ -378,9 +344,7 @@ class QuickLookComponent(Component):
         flag_state = self.flag_state_select.value == "True"
         self.selected_flag_filters.update({flag_name: flag_state})
         self.param.trigger("selected_flag_filters")
-        self.add_status_message(
-            "Added Flag Filter", "{} : {}".format(flag_name, flag_state), level="info"
-        )
+        self.add_status_message("Added Flag Filter", "{} : {}".format(flag_name, flag_state), level="info")
 
     def on_flag_remove_click(self, event):
         flag_name = self.flag_filter_selected.value.split()[0]
@@ -408,11 +372,7 @@ class QuickLookComponent(Component):
 
     def _create_switch_view_buttons(self):
         radio_group = pn.widgets.RadioBoxGroup(
-            name="SwitchView",
-            options=self.view_mode,
-            align="center",
-            value=self.view_mode[0],
-            inline=True,
+            name="SwitchView", options=self.view_mode, align="center", value=self.view_mode[0], inline=True,
         )
         radio_group.param.watch(self._switch_view_mode, ["value"])
         return radio_group
@@ -451,12 +411,7 @@ class QuickLookComponent(Component):
         return outel.format(box_css, fval, name)
 
     @param.depends(
-        "tract_count",
-        "patch_count",
-        "visit_count",
-        "filter_count",
-        "unique_object_count",
-        watch=True,
+        "tract_count", "patch_count", "visit_count", "filter_count", "unique_object_count", watch=True,
     )
     def _update_info(self):
         """
@@ -510,9 +465,9 @@ class QuickLookComponent(Component):
             box_css, msg.get("title"), msg.get("body")
         )
 
-        return (
-            '<li id="{}" class="status-message nav-item">' "{}" "{}" "</lil>"
-        ).format(msg_id, remove_msg_func, text)
+        return ('<li id="{}" class="status-message nav-item">' "{}" "{}" "</lil>").format(
+            msg_id, remove_msg_func, text
+        )
 
     def gen_clear_func(self, msg):
         async def clear_message():
@@ -547,16 +502,12 @@ class QuickLookComponent(Component):
         self.status_message.object = '<ul style="{}">{}</ul>'.format(queue_css, html)
 
     def execute_js_script(self, js_body):
-        script = (
-            "<script>(function() { " + js_body + "})()</script>"
-        )  # to work with panel 0.7
+        script = "<script>(function() { " + js_body + "})()</script>"  # to work with panel 0.7
         self.adhoc_js.object = script
 
     def get_patch_count(self):
         filters = self.selected_metrics_by_filter.keys()
-        return self.store.active_dataset.get_patch_count(
-            filters, self.store.active_tracts
-        )
+        return self.store.active_dataset.get_patch_count(filters, self.store.active_tracts)
 
     def get_tract_count(self):
         return len(self.store.active_tracts)
@@ -581,11 +532,7 @@ class QuickLookComponent(Component):
         """
         Populates the _metrics Row with metrics loaded from the repository
         """
-        panels = [
-            MetricPanel(
-                metric="LSST", filters=self.store.active_dataset.filters, parent=self
-            )
-        ]
+        panels = [MetricPanel(metric="LSST", filters=self.store.active_dataset.filters, parent=self)]
         self._metric_panels = panels
 
         self._metric_layout.objects = [p.panel() for p in panels]
@@ -597,9 +544,7 @@ class QuickLookComponent(Component):
 
     @param.depends("selected_flag_filters", watch=True)
     def _update_selected_flags(self):
-        selected_flags = [
-            "{} : {}".format(f, v) for f, v in self.selected_flag_filters.items()
-        ]
+        selected_flags = ["{} : {}".format(f, v) for f, v in self.selected_flag_filters.items()]
         self.flag_filter_selected.options = selected_flags
         self.filter_main_dataframe()
 
@@ -665,17 +610,13 @@ class QuickLookComponent(Component):
                 ddf = ddf.query(query_expr).persist()
                 filtered_datasets[filter_type] = ddf
 
-        stats = self.store.active_dataset.stats[
-            f"coadd_{self.store.active_dataset.coadd_version}"
-        ]
+        stats = self.store.active_dataset.stats[f"coadd_{self.store.active_dataset.coadd_version}"]
         if self.store.active_tracts:
             stats = stats.loc[filter_type, self.store.active_tracts, :].reset_index(
                 ["filter", "tract"], drop=True
             )
         else:
-            stats = stats.loc[filter_type, :, :].reset_index(
-                ["filter", "tract"], drop=True
-            )
+            stats = stats.loc[filter_type, :, :].reset_index(["filter", "tract"], drop=True)
 
         return create_hv_dataset(ddf, stats=stats)
 
@@ -706,15 +647,11 @@ class QuickLookComponent(Component):
             top_plot = None
             try:
                 errors = []
-                top_plot = visits_plot(
-                    dvisits, self.selected_metrics_by_filter, filt, errors
-                )
+                top_plot = visits_plot(dvisits, self.selected_metrics_by_filter, filt, errors)
                 if errors:
                     msg = "exhibiting metrics {} failed"
                     msg = msg.format(" ".join(errors))
-                    self.add_status_message(
-                        "Visits Plot Warning", msg, level="error", duration=10
-                    )
+                    self.add_status_message("Visits Plot Warning", msg, level="error", duration=10)
             except Exception as e:
                 self.add_message_from_error("Visits Plot Error", "", e)
 
@@ -730,10 +667,7 @@ class QuickLookComponent(Component):
                 # Sky plots
                 skyplot_name = filt + " - " + metric
                 plot_sky = skyplot(
-                    dset,
-                    filter_stream=filter_stream,
-                    range_stream=self._skyplot_range_stream,
-                    vdim=metric,
+                    dset, filter_stream=filter_stream, range_stream=self._skyplot_range_stream, vdim=metric,
                 )
                 if skyplot_name in existing_skyplots:
                     sky_panel = existing_sky_plots[skyplot_name]
@@ -794,10 +728,7 @@ class QuickLookComponent(Component):
         self.attempt_to_clear(self.skyplot_layout)
 
         if self._switch_view.value == "Skyplot View":
-            cmd = (
-                """$( ".skyplot-plot-area" ).show();"""
-                """$( ".metrics-plot-area" ).hide();"""
-            )
+            cmd = """$( ".skyplot-plot-area" ).show();""" """$( ".metrics-plot-area" ).hide();"""
             self.execute_js_script(cmd)
             clear_dynamicmaps(self._skyplot_tabs)
             self._skyplot_tabs[:] = self.skyplot_list
@@ -896,10 +827,7 @@ class QuickLookComponent(Component):
                     pn.Row(self.query_filter_clear, self.query_filter_submit),
                 ),
             ),
-            (
-                "new_column",
-                pn.Column(new_column_widget, pn.Row(self.new_column_submit)),
-            ),
+            ("new_column", pn.Column(new_column_widget, pn.Row(self.new_column_submit)),),
         ]
 
         for l, c in components:
@@ -925,9 +853,7 @@ class MetricPanel(param.Parameterized):
         super().__init__(**params)
 
         self._streams = []
-        self._chkbox_groups = [
-            (filt, self._create_metric_checkbox_group(filt)) for filt in self.filters
-        ]
+        self._chkbox_groups = [(filt, self._create_metric_checkbox_group(filt)) for filt in self.filters]
 
     def _create_metric_checkbox_group(self, filt):
 

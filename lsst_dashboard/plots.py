@@ -177,19 +177,14 @@ class filterpoints(Operation):
 
     def _process(self, dset, key=None):
         dset = filter_dset(
-            dset,
-            flags=self.p.flags,
-            bad_flags=self.p.bad_flags,
-            filter_range=self.p.filter_range,
+            dset, flags=self.p.flags, bad_flags=self.p.bad_flags, filter_range=self.p.filter_range,
         )
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
         pts = hv.Points(dset, kdims=kdims, vdims=vdims)
         if self.p.set_title:
             ydata = dset.data[self.p.ydim]
-            title = "mean = {:.3f}, std = {:.3f} ({:.0f})".format(
-                ydata.mean(), ydata.std(), len(ydata)
-            )
+            title = "mean = {:.3f}, std = {:.3f} ({:.0f})".format(ydata.mean(), ydata.std(), len(ydata))
             pts = pts.relabel(title)
         return pts
 
@@ -215,10 +210,7 @@ class summary_table(Operation):
     def _process(self, dset, key=None):
 
         ds = filter_dset(
-            dset,
-            filter_range=self.p.filter_range,
-            flags=self.p.flags,
-            bad_flags=self.p.bad_flags,
+            dset, filter_range=self.p.filter_range, flags=self.p.flags, bad_flags=self.p.bad_flags,
         )
         if self.p.ydim is None:
             cols = [dim.name for dim in dset.vdims]
@@ -413,38 +405,25 @@ class scattersky(ParameterizedFunction):
                     ranges[self.p.ydim] = y_range
                 return dset.redim.range(**ranges) if ranges else dset
 
-            dset_scatter = dset.apply(
-                redim_scatter, streams=[self.p.scatter_range_stream]
-            )
+            dset_scatter = dset.apply(redim_scatter, streams=[self.p.scatter_range_stream])
             link_streams(self.p.scatter_range_stream, scatter_range)
         else:
             dset_scatter = dset
         scatter_pts = dset_scatter.apply(
-            filterpoints,
-            streams=[self.p.filter_stream],
-            xdim=self.p.xdim,
-            ydim=self.p.ydim,
+            filterpoints, streams=[self.p.filter_stream], xdim=self.p.xdim, ydim=self.p.ydim,
         )
         scatter_streams = [scatter_range, PlotSize()]
         scatter_rasterize = rasterize.instance(
             streams=scatter_streams, x_sampling=x_sampling, y_sampling=y_sampling
         )
         cmap = (
-            process_cmap(self.p.scatter_cmap)[:250]
-            if self.p.scatter_cmap == "fire"
-            else self.p.scatter_cmap
+            process_cmap(self.p.scatter_cmap)[:250] if self.p.scatter_cmap == "fire" else self.p.scatter_cmap
         )
         scatter_rasterized = apply_when(
-            scatter_pts,
-            operation=scatter_rasterize,
-            predicate=lambda pts: len(pts) > self.p.max_points,
+            scatter_pts, operation=scatter_rasterize, predicate=lambda pts: len(pts) > self.p.max_points,
         ).opts(
-            opts.Image(
-                clim=(1, np.nan), clipping_colors={"min": "transparent"}, cmap=cmap
-            ),
-            opts.Points(
-                clim=(1, np.nan), clipping_colors={"min": "transparent"}, cmap=cmap
-            ),
+            opts.Image(clim=(1, np.nan), clipping_colors={"min": "transparent"}, cmap=cmap),
+            opts.Points(clim=(1, np.nan), clipping_colors={"min": "transparent"}, cmap=cmap),
             opts.Overlay(hooks=[partial(reset_hook, x_range=x_range, y_range=y_range)]),
         )
 
@@ -465,11 +444,7 @@ class scattersky(ParameterizedFunction):
         else:
             dset_sky = dset
         sky_pts = dset_sky.apply(
-            filterpoints,
-            xdim="ra",
-            ydim="dec",
-            set_title=False,
-            streams=[self.p.filter_stream],
+            filterpoints, xdim="ra", ydim="dec", set_title=False, streams=[self.p.filter_stream],
         )
         skyplot_streams = [sky_range, PlotSize()]
         sky_rasterize = rasterize.instance(
@@ -479,40 +454,29 @@ class scattersky(ParameterizedFunction):
             y_sampling=dec_sampling,
         )
         sky_rasterized = apply_when(
-            sky_pts,
-            operation=sky_rasterize,
-            predicate=lambda pts: len(pts) > self.p.max_points,
+            sky_pts, operation=sky_rasterize, predicate=lambda pts: len(pts) > self.p.max_points,
         ).opts(
             opts.Image(bgcolor="black", cmap=self.p.sky_cmap, symmetric=True),
             opts.Points(bgcolor="black", cmap=self.p.sky_cmap, symmetric=True),
-            opts.Overlay(
-                hooks=[partial(reset_hook, x_range=ra_range, y_range=dec_range)]
-            ),
+            opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range, y_range=dec_range)]),
         )
 
         # Set up BoundsXY streams to listen to box_select events and notify FilterStream
         scatter_select = BoundsXY(source=scatter_pts)
         scatter_notifier = partial(
-            notify_stream,
-            filter_stream=self.p.filter_stream,
-            xdim=self.p.xdim,
-            ydim=self.p.ydim,
+            notify_stream, filter_stream=self.p.filter_stream, xdim=self.p.xdim, ydim=self.p.ydim,
         )
         scatter_select.add_subscriber(scatter_notifier)
 
         sky_select = BoundsXY(source=sky_pts)
-        sky_notifier = partial(
-            notify_stream, filter_stream=self.p.filter_stream, xdim="ra", ydim="dec"
-        )
+        sky_notifier = partial(notify_stream, filter_stream=self.p.filter_stream, xdim="ra", ydim="dec")
         sky_select.add_subscriber(sky_notifier)
 
         # Reset
         reset = PlotReset(source=sky_pts)
         reset.add_subscriber(
             partial(
-                reset_stream,
-                self.p.filter_stream,
-                [self.p.sky_range_stream, self.p.scatter_range_stream],
+                reset_stream, self.p.filter_stream, [self.p.sky_range_stream, self.p.scatter_range_stream],
             )
         )
 
@@ -540,9 +504,7 @@ class scattersky(ParameterizedFunction):
             sky_p = sky_rasterized
 
         if self.p.show_table:
-            table = dset.apply(
-                summary_table, ydim=self.p.ydim, streams=[self.p.filter_stream]
-            )
+            table = dset.apply(summary_table, ydim=self.p.ydim, streams=[self.p.filter_stream])
             table = table.opts()
             layout = table + scatter_p + sky_p
         else:
@@ -618,14 +580,11 @@ class skypoints(Operation):
 
     def _process(self, dset, key=None):
         dset = filter_dset(
-            dset,
-            filter_range=self.p.filter_range,
-            flags=self.p.flags,
-            bad_flags=self.p.bad_flags,
+            dset, filter_range=self.p.filter_range, flags=self.p.flags, bad_flags=self.p.bad_flags,
         )
-        return hv.Points(
-            dset, [dset.get_dimension("ra"), dset.get_dimension("dec")], dset.vdims
-        ).opts(responsive=True)
+        return hv.Points(dset, [dset.get_dimension("ra"), dset.get_dimension("dec")], dset.vdims).opts(
+            responsive=True
+        )
 
 
 class skyplot(ParameterizedFunction):
@@ -743,15 +702,10 @@ class skyplot(ParameterizedFunction):
         reset.add_subscriber(partial(reset_stream, None, [self.p.range_stream]))
 
         rasterize_inst = rasterize.instance(
-            aggregator=aggregator,
-            streams=streams,
-            x_sampling=xsampling,
-            y_sampling=ysampling,
+            aggregator=aggregator, streams=streams, x_sampling=xsampling, y_sampling=ysampling,
         )
         raster_pts = apply_when(
-            pts,
-            operation=rasterize_inst,
-            predicate=lambda pts: len(pts) > self.p.max_points,
+            pts, operation=rasterize_inst, predicate=lambda pts: len(pts) > self.p.max_points,
         )
         return raster_pts.opts(
             opts.Image(
@@ -771,9 +725,7 @@ class skyplot(ParameterizedFunction):
                 tools=["hover"],
                 symmetric=True,
             ),
-            opts.Overlay(
-                hooks=[partial(reset_hook, x_range=ra_range, y_range=dec_range)]
-            ),
+            opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range, y_range=dec_range)]),
         )
 
 
@@ -790,9 +742,7 @@ class skyplot_layout(ParameterizedFunction):
         pointer = hv.streams.PointerXY(x=0, y=0)
         cross_opts = dict(style={"line_width": 1, "color": "black"})
         cross_dmap = hv.DynamicMap(
-            lambda x, y: (
-                hv.VLine(x).opts(**cross_opts) * hv.HLine(y).opts(**cross_opts)
-            ),
+            lambda x, y: (hv.VLine(x).opts(**cross_opts) * hv.HLine(y).opts(**cross_opts)),
             streams=[pointer],
         )
         plots = []

@@ -79,11 +79,7 @@ class Dataset:
         store = partial(get_store_from_url, "hfs://" + str(self.path))
 
         karto_kwargs = dict(
-            predicates=predicates,
-            dataset_uuid=dataset,
-            columns=columns,
-            store=store,
-            table="table",
+            predicates=predicates, dataset_uuid=dataset, columns=columns, store=store, table="table",
         )
 
         coadd_df = (
@@ -117,16 +113,10 @@ class Dataset:
         if predicates:
 
             coadd_df = read_dataset_as_ddf(
-                predicates=[predicates],
-                dataset_uuid=dataset,
-                columns=columns,
-                store=store,
-                table="table",
+                predicates=[predicates], dataset_uuid=dataset, columns=columns, store=store, table="table",
             )
         else:
-            coadd_df = read_dataset_as_ddf(
-                dataset_uuid=dataset, columns=columns, store=store, table="table"
-            )
+            coadd_df = read_dataset_as_ddf(dataset_uuid=dataset, columns=columns, store=store, table="table")
 
         return coadd_df.drop_duplicates().count().compute()["patch"]
 
@@ -213,11 +203,7 @@ class Dataset:
                     ddf = self.get_visits_by_metric_filter(filt, metric)
                 except:
                     # raise
-                    print(
-                        "WARNING: problem loading visits for {} metric and {} filter".format(
-                            metric, filt
-                        )
-                    )
+                    print("WARNING: problem loading visits for {} metric and {} filter".format(metric, filt))
                     ddf = None
 
                 self.visits_by_metric[filt][metric] = ddf

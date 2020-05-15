@@ -88,14 +88,10 @@ def launch_dask_cluster(queue, nodes, localcluster):
 
 @click.command()
 @click.option(
-    "--queue",
-    default="debug",
-    help="Slurm Queue to use (default=debug), ignored on local machine",
+    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine",
 )
 @click.option(
-    "--nodes",
-    default=2,
-    help="Number of compute nodes to launch (default=2), ignored on local machine",
+    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine",
 )
 @click.option(
     "--localcluster",
@@ -111,9 +107,7 @@ def start_dashboard(queue, nodes, localcluster):
     print(f"Dask Cluster: {cluster}")
     print(f"Waiting for at least one worker")
     client.wait_for_workers(1)
-    print(
-        f"### starting lsst data explorer at http://localhost:{lsst_dashboard_port} ###"
-    )
+    print(f"### starting lsst data explorer at http://localhost:{lsst_dashboard_port} ###")
 
     from lsst_dashboard.gui import dashboard
 
@@ -123,28 +117,20 @@ def start_dashboard(queue, nodes, localcluster):
 @click.command()
 @click.argument("butler_path")
 @click.argument("destination_path", required=False)
-@click.option(
-    "--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]"
-)
+@click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
 @click.option(
-    "--queue",
-    default="debug",
-    help="Slurm Queue to use (default=debug), ignored on local machine",
+    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine",
 )
 @click.option(
-    "--nodes",
-    default=2,
-    help="Number of compute nodes to launch (default=2), ignored on local machine",
+    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine",
 )
 @click.option(
     "--localcluster",
     is_flag=True,
     help="Launches a localcluster instead of slurmcluster, default on local machine",
 )
-def repartition(
-    butler_path, destination_path, sample_frac, num_buckets, queue, nodes, localcluster
-):
+def repartition(butler_path, destination_path, sample_frac, num_buckets, queue, nodes, localcluster):
     """Repartitions a Butler Dataset for use with LSST Data Explorer using a Dask cluster"""
     cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)

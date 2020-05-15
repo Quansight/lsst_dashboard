@@ -12,9 +12,7 @@ def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[], statistic="me
     del dset_filt["visit"]
     dset_filt = dset_filt.groupby("visit").median().sort_index()
 
-    plot_filt = visits_plot_per_filter(
-        dset_filt, metrics, filt, statistic, errors=errors
-    )
+    plot_filt = visits_plot_per_filter(dset_filt, metrics, filt, statistic, errors=errors)
     return plot_filt
 
 
@@ -35,9 +33,7 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, statistic, errors=[]):
             df = dsets_filter[metric].reset_index()
             col_stat = f"{metric}_{statistic}"
             df.rename(columns={metric: col_stat}, inplace=True)
-            plot_metric = visits_plot_per_metric(
-                df, "visit", col_stat, [col_stat, "visit"], filt=filt
-            )
+            plot_metric = visits_plot_per_metric(df, "visit", col_stat, [col_stat, "visit"], filt=filt)
             plot_all = plot_all * plot_metric if plot_all else plot_metric
         except:
             errors.append(metric)

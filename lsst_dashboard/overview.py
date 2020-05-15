@@ -62,14 +62,10 @@ class OverviewApp(param.Parameterized):
         with resources.path(data_package, self.skymap_path) as path:
             self.skymap = gpd.read_file(path).astype(float)
 
-        self.skymap.geometry = self.skymap.apply(
-            lambda x: box(x["x0"], x["y0"], x["x1"], x["y1"]), axis=1
-        )
+        self.skymap.geometry = self.skymap.apply(lambda x: box(x["x0"], x["y0"], x["x1"], x["y1"]), axis=1)
 
         # combine the metrics with the skymap geometry
-        self.df = self.metrics_df.reset_index().rename(
-            columns={"level_0": "filter", "level_1": "tract"}
-        )
+        self.df = self.metrics_df.reset_index().rename(columns={"level_0": "filter", "level_1": "tract"})
         self.df = self.df.join(self.skymap, on="tract")
 
         # get the available metrics
@@ -96,9 +92,7 @@ class OverviewApp(param.Parameterized):
         tract_list = self.tracts_in_widget()
         # convert tracts to poly element indices
         poly_indices = list(
-            df[
-                df.apply(lambda x: True if x["tract"] in tract_list else False, axis=1)
-            ].index
+            df[df.apply(lambda x: True if x["tract"] in tract_list else False, axis=1)].index
         )
         # select the polygons in the plot
         self.stream.event(index=poly_indices)
@@ -133,9 +127,7 @@ class OverviewApp(param.Parameterized):
         # extract the filter from the original data
         self.df_filter = self.df[self.df["filter"] == self.filter_]
         # extract only the provided metric
-        self.df_extracted = self.df_filter[
-            ["tract", "geometry", self.metric, "x0", "x1", "y0", "y1"]
-        ]
+        self.df_extracted = self.df_filter[["tract", "geometry", self.metric, "x0", "x1", "y0", "y1"]]
         # rename the metric column (necessary abstraction for plotting)
         self.df_extracted = self.df_extracted.rename(columns={self.metric: "metric"})
 
@@ -144,8 +136,7 @@ class OverviewApp(param.Parameterized):
         else:
             if self.geoviews:
                 self.polys = gv.Polygons(
-                    gpd.GeoDataFrame(self.df_extracted).set_geometry("geometry"),
-                    vdims=["metric", "tract"],
+                    gpd.GeoDataFrame(self.df_extracted).set_geometry("geometry"), vdims=["metric", "tract"],
                 ).opts(
                     tools=["hover", "tap"],
                     width=self.plot_width,
@@ -184,9 +175,7 @@ class OverviewApp(param.Parameterized):
 
             # Define a RangeXY stream linked to the image (preserving ranges from the previous image)
             self.rangexy = hv.streams.RangeXY(
-                source=self.polys,
-                x_range=self.rangexy.x_range,
-                y_range=self.rangexy.y_range,
+                source=self.polys, x_range=self.rangexy.x_range, y_range=self.rangexy.y_range,
             )
             # set padding (degrees)
             padding = 0
@@ -200,12 +189,8 @@ class OverviewApp(param.Parameterized):
             # convert to google mercator if using geoviews
             # TODO this produces reasonable, but incorrect results
             if self.geoviews:
-                xmin, ymin = ccrs.GOOGLE_MERCATOR.transform_point(
-                    xmin, ymin, ccrs.PlateCarree()
-                )
-                xmax, ymax = ccrs.GOOGLE_MERCATOR.transform_point(
-                    xmax, ymax, ccrs.PlateCarree()
-                )
+                xmin, ymin = ccrs.GOOGLE_MERCATOR.transform_point(xmin, ymin, ccrs.PlateCarree())
+                xmax, ymax = ccrs.GOOGLE_MERCATOR.transform_point(xmax, ymax, ccrs.PlateCarree())
 
             # create hook for reseting to full extent
             def reset_range_hook(plot, element):
@@ -221,9 +206,7 @@ class OverviewApp(param.Parameterized):
                 if index == list():
                     # select all
                     index = list(self.df_extracted.index)
-                return self.polys.iloc[index].opts(
-                    opts.Polygons(xlim=(x0, x1), ylim=(y0, y1))
-                )
+                return self.polys.iloc[index].opts(opts.Polygons(xlim=(x0, x1), ylim=(y0, y1)))
 
             tap_dmap = hv.DynamicMap(tap_histogram, streams=[self.stream, self.rangexy])
 
@@ -235,11 +218,7 @@ class OverviewApp(param.Parameterized):
 
             return self.polys.opts(
                 opts.Polygons(
-                    xlim=(x0, x1),
-                    ylim=(y0, y1),
-                    hooks=[reset_range_hook],
-                    responsive=True,
-                    bgcolor="black",
+                    xlim=(x0, x1), ylim=(y0, y1), hooks=[reset_range_hook], responsive=True, bgcolor="black",
                 )
             )  # TODO: responsive=True isn't changing the width
 
@@ -247,20 +226,13 @@ class OverviewApp(param.Parameterized):
         load_tracts = pn.widgets.Button(name="\u25b6", width=40)
         load_tracts.on_click(self.update_tract_selection)
 
-        pane = pn.Row(
-            self.param.metric, self.param.filter_, self.param.selected_tract_str,
-        )
+        pane = pn.Row(self.param.metric, self.param.filter_, self.param.selected_tract_str,)
         return pane
 
     def panel(self):
         return pn.Column(
             self.left_pane,
-            pn.panel(
-                self.plot,
-                sizing_mode="stretch_both",
-                width_policy="max",
-                height_policy="max",
-            ),
+            pn.panel(self.plot, sizing_mode="stretch_both", width_policy="max", height_policy="max",),
             sizing_mode="stretch_both",
         )
 

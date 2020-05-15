@@ -36,9 +36,7 @@ class Application(param.Parameterized):
 
         text = "<h3><i>%s</i></h3>" % self.title
 
-        self._title = pn.pane.HTML(
-            text, margin=(0, 0), height=50, sizing_mode="stretch_width", style=styles
-        )
+        self._title = pn.pane.HTML(text, margin=(0, 0), height=50, sizing_mode="stretch_width", style=styles)
 
         logo = pn.pane.PNG(self.logo, width=400 // 3, height=150 // 3)
 

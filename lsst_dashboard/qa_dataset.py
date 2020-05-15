@@ -71,9 +71,7 @@ class QADataset(object):
         return self._df
 
     def _makeDataFrame(self):
-        raise NotImplementedError(
-            "Must implement _makeDataFrame if df is not initialized."
-        )
+        raise NotImplementedError("Must implement _makeDataFrame if df is not initialized.")
 
     @property
     def idNames(self):
@@ -84,9 +82,7 @@ class QADataset(object):
         """All boolean columns of dataframe
         """
         if self._flags is None:
-            self._flags = [
-                c for c in self.df.columns if self.df[c].dtype == np.dtype("bool")
-            ]
+            self._flags = [c for c in self.df.columns if self.df[c].dtype == np.dtype("bool")]
         return self._flags
 
     def _getDims(self):
@@ -131,14 +127,7 @@ class QADataset(object):
         self._ds = ds
 
     def skyPoints(
-        self,
-        vdim,
-        maxMag,
-        label="star",
-        magCol="psfMag",
-        filter_range=None,
-        flags=None,
-        bad_flags=None,
+        self, vdim, maxMag, label="star", magCol="psfMag", filter_range=None, flags=None, bad_flags=None,
     ):
         """Points object with ra, dec as key dimensions and requested value dimension
 
@@ -168,13 +157,9 @@ class QADataset(object):
         """
         selectDict = {magCol: (0, maxMag), "label": label}
         ds = self.ds.select(**selectDict)
-        ds = filter_dset(
-            ds, filter_range=filter_range, flags=flags, bad_flags=bad_flags
-        )
+        ds = filter_dset(ds, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
 
-        pts = hv.Points(
-            ds, kdims=["ra", "dec"], vdims=self.vdims + [magCol] + self.idNames
-        )
+        pts = hv.Points(ds, kdims=["ra", "dec"], vdims=self.vdims + [magCol] + self.idNames)
         return pts.options(color_index=vdim)
 
     def skyDmap(
@@ -226,9 +211,7 @@ class QADataset(object):
         if range_override is not None:
             ranges.update(range_override)
 
-        dmap = dmap.redim.values(label=["galaxy", "star"], maxMag=magRange).redim.range(
-            **ranges
-        )
+        dmap = dmap.redim.values(label=["galaxy", "star"], maxMag=magRange).redim.range(**ranges)
         return dmap
 
 
@@ -277,12 +260,8 @@ class MatchedQADataset(QADataset):
         self._ds = None
 
     def _match(self):
-        if not all(
-            [c in self.data1.df.columns for c in ["ra", "dec", "detect_isPrimary"]]
-        ):
-            raise ValueError(
-                "Dataframes must have `detect_isPrimary` flag, " + "as well as ra/dec."
-            )
+        if not all([c in self.data1.df.columns for c in ["ra", "dec", "detect_isPrimary"]]):
+            raise ValueError("Dataframes must have `detect_isPrimary` flag, " + "as well as ra/dec.")
         isPrimary1 = self.data1.df["detect_isPrimary"]
         isPrimary2 = self.data2.df["detect_isPrimary"]
 
