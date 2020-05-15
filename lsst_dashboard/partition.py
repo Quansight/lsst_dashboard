@@ -65,7 +65,15 @@ class DatasetPartitioner(object):
     bucket_by = "patch"
     _default_dataset = None
 
-    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8):
+    def __init__(
+        self,
+        butlerpath,
+        destination=None,
+        dataset=None,
+        engine="pyarrow",
+        sample_frac=None,
+        num_buckets=8,
+    ):
 
         self._butler = Butler(butlerpath)
         if dataset is None:
@@ -85,12 +93,15 @@ class DatasetPartitioner(object):
         self.metadata = self.butler.get("qaDashboard_metadata")
 
         self.dataIds = [
-            dataId for dataId in self.iter_dataId() if self.butler.datasetExists(self.dataset, dataId)
+            dataId
+            for dataId in self.iter_dataId()
+            if self.butler.datasetExists(self.dataset, dataId)
         ]
 
         self.filters = [filt for filt in self.metadata["visits"].keys()]
         self.dataIds_by_filter = {
-            filt: [d for d in self.dataIds if d["filter"] == filt] for filt in self.filters
+            filt: [d for d in self.dataIds if d["filter"] == filt]
+            for filt in self.filters
         }
 
         self._filenames = None
@@ -128,7 +139,9 @@ class DatasetPartitioner(object):
         if self._filenames is None:
             filenames = []
             filenames_by_filter = {filt: [] for filt in self.filters}
-            for dataId in tqdm(self.dataIds, desc=f"Getting filenames for {self.dataset} from Butler"):
+            for dataId in tqdm(
+                self.dataIds, desc=f"Getting filenames for {self.dataset} from Butler"
+            ):
                 filename = self.butler.get(self.dataset, **dataId).filename
                 filenames.append(filename)
                 filenames_by_filter[dataId["filter"]].append(filename)
@@ -148,14 +161,15 @@ class DatasetPartitioner(object):
 
         # TODO I think the partitioning destroys the original indexing if the index numbers are important we may need to do a reset_index()
 
-        df = (df.assign(
-                    ra=da.rad2deg(df.coord_ra),
-                    dec=da.rad2deg(df.coord_dec),
-                    psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
-                )
-                .replace(np.inf, np.nan)
-                .replace(-np.inf, np.nan)
-                .rename(columns={"patchId": "patch", "ccdId": "ccd"})
+        df = (
+            df.assign(
+                ra=da.rad2deg(df.coord_ra),
+                dec=da.rad2deg(df.coord_dec),
+                psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+            )
+            .replace(np.inf, np.nan)
+            .replace(-np.inf, np.nan)
+            .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
         del df["coord_ra"]
@@ -175,7 +189,11 @@ class DatasetPartitioner(object):
     def get_columns(self):
         # return None
         return list(
-            set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
+            set(
+                self.get_metric_columns()
+                + self.get_flag_columns()
+                + ["coord_ra", "coord_dec", "patchId"]
+            )
         )
 
     def get_df(self, filt):
@@ -232,7 +250,10 @@ class DatasetPartitioner(object):
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
-            dataset_uuid=self.dataset, predicates=predicates, store=self.store, columns={"table": columns},
+            dataset_uuid=self.dataset,
+            predicates=predicates,
+            store=self.store,
+            columns={"table": columns},
         )
         #         print(ktk_kwargs)
         if dask:
@@ -254,12 +275,19 @@ class DatasetPartitioner(object):
             if raise_exception:
                 raise
             else:
-                print(f"No {self.dataset} data available for {dataId}, columns={columns}")
+                print(
+                    f"No {self.dataset} data available for {dataId}, columns={columns}"
+                )
                 return pd.DataFrame()
 
     def describe_dataId(self, dataId, dask=False, **kwargs):
         df = self.load_dataId(dataId, dask=dask)
-        return df.replace(np.inf, np.nan).replace(-np.inf, np.nan).dropna(how="any").describe(**kwargs)
+        return (
+            df.replace(np.inf, np.nan)
+            .replace(-np.inf, np.nan)
+            .dropna(how="any")
+            .describe(**kwargs)
+        )
 
     def get_stats_list(self, dataIds=None):
         if dataIds is None:
@@ -282,7 +310,8 @@ class DatasetPartitioner(object):
         dfs = []
         for dataId, stats in zip(dataIds, stats_list):
             index = pd.MultiIndex.from_tuples(
-                [(*dataId.values(), s) for s in stats.index], names=[*dataId.keys(), "statistic"]
+                [(*dataId.values(), s) for s in stats.index],
+                names=[*dataId.keys(), "statistic"],
             )
             columns = stats.columns
             df = pd.DataFrame(stats.values, index=index, columns=columns)
@@ -321,7 +350,9 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
 class VisitPartitioner(DatasetPartitioner):
     partition_on = ("filter", "tract", "visit")
-    categories = None # ["filter", "tract"] Some visit datasets are erroring on categorization
+    categories = (
+        None  # ["filter", "tract"] Some visit datasets are erroring on categorization
+    )
     bucket_by = "ccd"
     _default_dataset = "analysisVisitTable"
 
@@ -348,7 +379,11 @@ class VisitPartitioner(DatasetPartitioner):
 
 
 def describe_dataId(
-    dataId, store, dataset, columns=None, percentiles=[0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]
+    dataId,
+    store,
+    dataset,
+    columns=None,
+    percentiles=[0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99],
 ):
     """This wasn't working as a method with client.map because of deserialization problem
     """

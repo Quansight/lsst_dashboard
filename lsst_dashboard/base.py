@@ -1,6 +1,7 @@
 import param
 import panel as pn
 
+
 class Application(param.Parameterized):
     r"""
     The Application class is the top-level object which coordinates
@@ -11,12 +12,18 @@ class Application(param.Parameterized):
     method which returns panel objects which can be composed into the
     overall application layout.
     """
-    
-    body = param.ClassSelector(class_=param.Parameterized, doc="""
-        The Component to render in the application's body.""")
 
-    logo = param.String('https://www.lsst.org/sites/default/files/logos/LSST_web_white.png', doc="""
-        The logo to display in the header.""")
+    body = param.ClassSelector(
+        class_=param.Parameterized,
+        doc="""
+        The Component to render in the application's body.""",
+    )
+
+    logo = param.String(
+        "https://www.lsst.org/sites/default/files/logos/LSST_web_white.png",
+        doc="""
+        The logo to display in the header.""",
+    )
 
     title = param.String(doc="The current title to display in the header")
 
@@ -24,29 +31,29 @@ class Application(param.Parameterized):
         super().__init__(**params)
 
         styles = {
-            'white-space': 'nowrap',
+            "white-space": "nowrap",
         }
 
-        text = '<h3><i>%s</i></h3>' % self.title
+        text = "<h3><i>%s</i></h3>" % self.title
 
-        self._title = pn.pane.HTML(text, margin=(0, 0),
-                                   height=50, sizing_mode='stretch_width',
-                                   style=styles)
+        self._title = pn.pane.HTML(
+            text, margin=(0, 0), height=50, sizing_mode="stretch_width", style=styles
+        )
 
         logo = pn.pane.PNG(self.logo, width=400 // 3, height=150 // 3)
 
         self.header = pn.Row(logo, self._title, max_height=50,)
 
-    @param.depends('title', watch=True)
+    @param.depends("title", watch=True)
     def _update_title(self):
         "Updates the title "
-        self._title.object = '<h3><i>%s</i></h3>' % self.title
+        self._title.object = "<h3><i>%s</i></h3>" % self.title
 
     def get_body_template(self):
         self.body.application = self
         return self.body.jinja()
 
-    @param.depends('body')
+    @param.depends("body")
     def get_body(self):
         self.body.application = self
         return self.body.panel()
@@ -57,8 +64,7 @@ class Application(param.Parameterized):
         if use_jinja:
             return self.get_body_template()
         else:
-            return pn.Column(self.get_body(),
-                             width_policy='max', height_policy='max')
+            return pn.Column(self.get_body(), width_policy="max", height_policy="max")
 
 
 class Component(param.Parameterized):
@@ -70,14 +76,26 @@ class Component(param.Parameterized):
     panel object.
     """
 
-    application = param.ClassSelector(class_=Application, precedence=-1, doc="""
-        The :class:`Application` responsible for rendering the component.""")
+    application = param.ClassSelector(
+        class_=Application,
+        precedence=-1,
+        doc="""
+        The :class:`Application` responsible for rendering the component.""",
+    )
 
-    parent = param.ClassSelector(class_=param.Parameterized, precedence=-1, doc="""
-        The parent :class:`Component` of the the object.""")
+    parent = param.ClassSelector(
+        class_=param.Parameterized,
+        precedence=-1,
+        doc="""
+        The parent :class:`Component` of the the object.""",
+    )
 
-    label = param.String(default='Component', precedence=-1, doc="""
-        A label to identify the Component by.""")
+    label = param.String(
+        default="Component",
+        precedence=-1,
+        doc="""
+        A label to identify the Component by.""",
+    )
 
     __abstract = True
 
@@ -101,21 +119,25 @@ class TabComponent(Component):
     between stages of the \:class\:\`Application\`.
     """
 
-    current = param.ClassSelector(class_=Component, precedence=-1, doc="""
-        The component to display in the current tab..""")
+    current = param.ClassSelector(
+        class_=Component,
+        precedence=-1,
+        doc="""
+        The component to display in the current tab..""",
+    )
 
     objects = param.List(doc="The list of sub-components to render in the tabs.")
 
     def __init__(self, *objects, **params):
         super().__init__(objects=list(objects), **params)
-        self._layout = pn.Tabs(sizing_mode='stretch_both')
-        self._layout.param.watch(self._update_title, 'active')
+        self._layout = pn.Tabs(sizing_mode="stretch_both")
+        self._layout.param.watch(self._update_title, "active")
 
     def _update_title(self, event):
         "Updates the Application title depending on the selected tab."
-        self.application.title = '<h1>%s</h1>' % self.objects[event.new].title()
+        self.application.title = "<h1>%s</h1>" % self.objects[event.new].title()
 
-    @param.depends('application', watch=True)
+    @param.depends("application", watch=True)
     def _init_panel(self):
         "Initializes the layout when the Application is initialized."
         for obj in self.objects:
@@ -125,7 +147,7 @@ class TabComponent(Component):
         if self.current is None and self.objects:
             self.current = self.objects[0]
 
-    @param.depends('current', watch=True)
+    @param.depends("current", watch=True)
     def _update_view(self):
         "Updates the current view whenever the current parameter is set."
         self.current.application = self.application
