@@ -64,9 +64,11 @@ def launch_dask_cluster(queue, nodes, localcluster):
             cores=24,
             processes=procs_per_node,
             memory='128GB',
-            scheduler_port=scheduler_port,
+            scheduler_options={
+                'port': scheduler_port,
+                'dashboard_address':f":{dask_dashboard_port}"
+                },
             extra=[f'--worker-port {":".join(str(p) for p in DASK_ALLOWED_PORTS)}'],
-            dashboard_address=f":{dask_dashboard_port}",
         )
 
         print(f'...requesting {nodes} nodes')
