@@ -49,24 +49,24 @@ filtered_datavisits = []
 sample_data_directory = "sample_data/DM-21335-New2-KTK-1Perc"
 
 
-def create_hv_dataset(ddf, stats, percentile=(1, 99)):
+def create_hv_dataset(df, stats, percentile=(1, 99)):
 
     _idNames = ("patch", "tract", "filter")
     _kdims = ("ra", "dec", "psfMag")
-    _flags = [c for c in ddf.columns if ddf[c].dtype == np.dtype("bool")]
+    _flags = [c for c in df.columns if df[c].dtype == np.dtype("bool")]
 
     kdims = []
     vdims = []
 
-    for c in ddf.columns:
+    for c in df.columns:
         if c in _kdims or c in _idNames or c in _flags:
             if c in ("ra", "dec", "psfMag"):
                 cmin, cmax = stats[c]["min"].min(), stats[c]["max"].max()
                 c = hv.Dimension(c, range=(cmin, cmax))
             elif c in ("filter", "patch", "tract"):
-                cvalues = list(ddf[c].unique())
+                cvalues = list(df[c].unique())
                 c = hv.Dimension(c, values=cvalues)
-            elif ddf[c].dtype.kind == "b":
+            elif df[c].dtype.kind == "b":
                 c = hv.Dimension(c, values=[True, False])
             kdims.append(c)
         else:
@@ -76,14 +76,14 @@ def create_hv_dataset(ddf, stats, percentile=(1, 99)):
                     cmin, cmax = stats[c][f"{p0}%"].min(), stats[c][f"{p1}%"].max()
                 else:
                     print("percentiles not found in stats, computing")
-                    darray = ddf[c].values
-                    cmin, cmax = da.compute(da.percentile(darray, p0)[0], da.percentile(darray, p1)[0])
+                    darray = df[c].values
+                    cmin, cmax = (np.percentile(darray, p0)[0], np.percentile(darray, p1)[0])
             else:
                 cmin, cmax = stats[c]["min"].min(), stats[c]["max"].max()
             c = hv.Dimension(c, range=(cmin, cmax))
             vdims.append(c)
 
-    return hv.Dataset(ddf, kdims=kdims, vdims=vdims)
+    return hv.Dataset(df, kdims=kdims, vdims=vdims)
 
 
 class Store(object):
