@@ -77,7 +77,7 @@ def create_hv_dataset(df, stats, percentile=(1, 99)):
                 else:
                     print("percentiles not found in stats, computing")
                     darray = df[c].values
-                    cmin, cmax = (np.percentile(darray, p0)[0], np.percentile(darray, p1)[0])
+                    cmin, cmax = (np.percentile(darray, p0), np.percentile(darray, p1))
             else:
                 cmin, cmax = stats[c]["min"].min(), stats[c]["max"].max()
             c = hv.Dimension(c, range=(cmin, cmax))
