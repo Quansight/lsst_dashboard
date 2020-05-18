@@ -1,4 +1,4 @@
-quicklook = '''
+quicklook = """
 {% extends base %}
 
 <!-- goes in body -->
@@ -119,4 +119,4 @@ body {
 </div>
 {% endblock %}
 {% endblock %}
-'''
+"""
