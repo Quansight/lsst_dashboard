@@ -74,7 +74,7 @@ def launch_dask_cluster(queue, nodes, localcluster):
             + ".ssh/config) to forward ports for view dashboard and dask diagnostics:"
         )
         print(
-            f"\nssh -NfL localhost:{lsst_dashboard_port}:localhost:{lsst_dashboard_port}; ssh -NfL localhost:{dask_dashboard_port}:localhost:{dask_dashboard_port} lsst-dev\n"
+            f"\nssh -NfL localhost:{lsst_dashboard_port}:localhost:{lsst_dashboard_port} lsst-dev; ssh -NfL localhost:{dask_dashboard_port}:localhost:{dask_dashboard_port} lsst-dev\n"
         )
     else:
         from dask.distributed import LocalCluster
