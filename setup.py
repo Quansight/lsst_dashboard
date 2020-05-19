@@ -11,7 +11,7 @@ __name__ == "__main__" and setuptools.setup(
         url="https://github.com/quansight/lsst_dashboard",
         python_requires=">=3.6",
         license="BSD-3-Clause",
-        install_requires=['click'],
+        install_requires=["click"],
         include_package_data=True,
         packages=setuptools.find_packages(),
         entry_points={

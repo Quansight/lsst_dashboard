@@ -17,9 +17,7 @@ from holoviews import opts
 from holoviews.core.operation import Operation
 from holoviews.core.util import isfinite
 from holoviews.operation.element import apply_when
-from holoviews.streams import (
-    BoundsXY, LinkedStream, PlotReset, PlotSize, RangeXY, Selection1D, Stream
-)
+from holoviews.streams import BoundsXY, LinkedStream, PlotReset, PlotSize, RangeXY, Selection1D, Stream
 from holoviews.plotting.bokeh.callbacks import Callback, Selection1DCallback
 from holoviews.plotting.util import process_cmap
 
@@ -57,12 +55,21 @@ class FilterStream(Stream):
     See the demo notebooks for an example of usage.
     """
 
-    filter_range = param.Dict(default={}, doc="""
-        Ranges of parameters to select.""")
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
+    filter_range = param.Dict(
+        default={},
+        doc="""
+        Ranges of parameters to select.""",
+    )
+    flags = param.List(
+        default=[],
+        doc="""
+        Flags to select.""",
+    )
+    bad_flags = param.List(
+        default=[],
+        doc="""
+        Flags to ignore""",
+    )
 
 
 class Selection(Selection1D):
@@ -76,30 +83,30 @@ class Selection(Selection1D):
     values = param.List(default=[], allow_None=True, constant=True)
 
     def __init__(self, **params):
-        if 'dimension' not in params:
+        if "dimension" not in params:
             raise ValueError("Must define a dimension to select values on.")
-        self.dimension = params.pop('dimension')
+        self.dimension = params.pop("dimension")
         super(Selection, self).__init__(**params)
 
 
 class SelectionCallback(Selection1DCallback):
-
     def _process_msg(self, msg):
         msg = super()._process_msg(msg)
-        if 'index' in msg:
+        if "index" in msg:
             el = self.plot.current_frame
             stream = self.streams[0]
-            if len(msg['index']):
-                selection = el.data.iloc[msg['index']]
+            if len(msg["index"]):
+                selection = el.data.iloc[msg["index"]]
                 dim = el.get_dimension(stream.dimension)
-                msg['values'] = list(selection[dim.name])
+                msg["values"] = list(selection[dim.name])
             else:
-                msg['values'] = []
+                msg["values"] = []
         return msg
 
 
-callbacks = Stream._callbacks['bokeh']
+callbacks = Stream._callbacks["bokeh"]
 callbacks[Selection] = SelectionCallback
+
 
 class FlagSetter(Stream):
     """Stream for setting flags
@@ -115,10 +122,18 @@ class FlagSetter(Stream):
     Where `filter_stream` has been previously defined and connected to other plots
     for which you want to see points with certain flags shown/hidden/etc.
     """
-    flags = param.ListSelector(default=[], objects=[], doc="""
-        Flags to select""")
-    bad_flags = param.ListSelector(default=[], doc="""
-        Flags to ignore""")
+
+    flags = param.ListSelector(
+        default=[],
+        objects=[],
+        doc="""
+        Flags to select""",
+    )
+    bad_flags = param.ListSelector(
+        default=[],
+        doc="""
+        Flags to ignore""",
+    )
 
     def __init__(self, filter_stream, **kwargs):
         super(FlagSetter, self).__init__(**kwargs)
@@ -126,6 +141,7 @@ class FlagSetter(Stream):
 
     def event(self, **kwargs):
         self.filter_stream.event(**kwargs)
+
 
 #######################################################################################
 
@@ -136,12 +152,22 @@ class filter_dset(Operation):
     This is used in many applications to define dynamically selected `holoviews.Dataset`
     objects.
     """
-    filter_range = param.Dict(default={}, doc="""
-        Dictionary of filter bounds.""")
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
+
+    filter_range = param.Dict(
+        default={},
+        doc="""
+        Dictionary of filter bounds.""",
+    )
+    flags = param.List(
+        default=[],
+        doc="""
+        Flags to select.""",
+    )
+    bad_flags = param.List(
+        default=[],
+        doc="""
+        Flags to ignore""",
+    )
 
     def _process(self, dset, key=None):
         filter_dict = {} if self.p.filter_range is None else self.p.filter_range.copy()
@@ -159,57 +185,75 @@ class filterpoints(Operation):
     objects.
     """
 
-    filter_range = param.Dict(default={}, doc="""
-        Dictionary of filter bounds.""")
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
-    xdim = param.String(default='x', doc="Name of x-dimension")
-    ydim = param.String(default='y', doc="Name of y-dimension")
+    filter_range = param.Dict(
+        default={},
+        doc="""
+        Dictionary of filter bounds.""",
+    )
+    flags = param.List(
+        default=[],
+        doc="""
+        Flags to select.""",
+    )
+    bad_flags = param.List(
+        default=[],
+        doc="""
+        Flags to ignore""",
+    )
+    xdim = param.String(default="x", doc="Name of x-dimension")
+    ydim = param.String(default="y", doc="Name of y-dimension")
     set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):
-        dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags,
-                           filter_range=self.p.filter_range)
+        dset = filter_dset(
+            dset, flags=self.p.flags, bad_flags=self.p.bad_flags, filter_range=self.p.filter_range
+        )
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
         pts = hv.Points(dset, kdims=kdims, vdims=vdims)
         if self.p.set_title:
             ydata = dset.data[self.p.ydim]
-            title = 'mean = {:.3f}, std = {:.3f} ({:.0f})'.format(ydata.mean(),
-                                                                  ydata.std(),
-                                                                  len(ydata))
+            title = "mean = {:.3f}, std = {:.3f} ({:.0f})".format(ydata.mean(), ydata.std(), len(ydata))
             pts = pts.relabel(title)
         return pts
 
 
 class summary_table(Operation):
     ydim = param.String(default=None)
-    filter_range = param.Dict(default={}, doc="""
-        Dictionary of filter bounds.""")
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
+    filter_range = param.Dict(
+        default={},
+        doc="""
+        Dictionary of filter bounds.""",
+    )
+    flags = param.List(
+        default=[],
+        doc="""
+        Flags to select.""",
+    )
+    bad_flags = param.List(
+        default=[],
+        doc="""
+        Flags to ignore""",
+    )
 
     def _process(self, dset, key=None):
 
-        ds = filter_dset(dset, filter_range=self.p.filter_range,
-                         flags=self.p.flags, bad_flags=self.p.bad_flags)
+        ds = filter_dset(
+            dset, filter_range=self.p.filter_range, flags=self.p.flags, bad_flags=self.p.bad_flags
+        )
         if self.p.ydim is None:
             cols = [dim.name for dim in dset.vdims]
         else:
             cols = [self.p.ydim]
         df = ds.data[cols]
-        return hv.Table(df.describe().loc[['count', 'mean', 'std']])
+        return hv.Table(df.describe().loc[["count", "mean", "std"]])
 
 
 def notify_stream(bounds, filter_stream, xdim, ydim):
     """
     Function to attach to bounds stream as subscriber to notify FilterStream.
     """
-    logger.info('.notify_stream')
+    logger.info(".notify_stream")
     l, b, r, t = bounds
     filter_range = dict(filter_stream.filter_range)
     for dim, (low, high) in [(xdim, (l, r)), (ydim, (b, t))]:
@@ -225,11 +269,11 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
 
 def reset_hook(plot, element, x_range=None, y_range=None):
     if x_range:
-        plot.handles['x_range'].reset_start = x_range[0]
-        plot.handles['x_range'].reset_end = x_range[1]
+        plot.handles["x_range"].reset_start = x_range[0]
+        plot.handles["x_range"].reset_end = x_range[1]
     if y_range:
-        plot.handles['y_range'].reset_start = y_range[0]
-        plot.handles['y_range'].reset_end = y_range[1]
+        plot.handles["y_range"].reset_start = y_range[0]
+        plot.handles["y_range"].reset_end = y_range[1]
 
 
 def reset_stream(filter_stream, range_streams, resetting=True):
@@ -265,42 +309,79 @@ class scattersky(ParameterizedFunction):
     to the average y values of the first plot in each datashaded pixel.
     """
 
-    xdim = param.String(default='x', doc="""
-        Dimension of the dataset to use as x-coordinate""")
+    xdim = param.String(
+        default="x",
+        doc="""
+        Dimension of the dataset to use as x-coordinate""",
+    )
 
-    ydim = param.String(default='y0', doc="""
-        Dimension of the dataset to use as y-coordinate""")
+    ydim = param.String(
+        default="y0",
+        doc="""
+        Dimension of the dataset to use as y-coordinate""",
+    )
 
-    ra_sampling = param.Integer(default=None, doc="""
-        How densely to sample the rasterized plot along the x-axis.""")
+    ra_sampling = param.Integer(
+        default=None,
+        doc="""
+        How densely to sample the rasterized plot along the x-axis.""",
+    )
 
-    dec_sampling = param.Integer(default=None, doc="""
-        How densely to sample the rasterized plot along the x-axis.""")
+    dec_sampling = param.Integer(
+        default=None,
+        doc="""
+        How densely to sample the rasterized plot along the x-axis.""",
+    )
 
-    x_sampling = param.Integer(default=5000, doc="""
-        How densely to sample the rasterized plot along the x-axis.""")
+    x_sampling = param.Integer(
+        default=5000,
+        doc="""
+        How densely to sample the rasterized plot along the x-axis.""",
+    )
 
-    y_sampling = param.Integer(default=5000, doc="""
-        How densely to sample the rasterized plot along the y-axis.""")
+    y_sampling = param.Integer(
+        default=5000,
+        doc="""
+        How densely to sample the rasterized plot along the y-axis.""",
+    )
 
-    max_points = param.Integer(default=10000, doc="""
-        Maximum number of points to display before switching to rasterize.""")
+    max_points = param.Integer(
+        default=10000,
+        doc="""
+        Maximum number of points to display before switching to rasterize.""",
+    )
 
-    scatter_cmap = param.String(default='fire', doc="""
-        Colormap to use for the scatter plot""")
+    scatter_cmap = param.String(
+        default="fire",
+        doc="""
+        Colormap to use for the scatter plot""",
+    )
 
-    sky_cmap = param.String(default='coolwarm', doc="""
-        Colormap to use for the sky plot""")
+    sky_cmap = param.String(
+        default="coolwarm",
+        doc="""
+        Colormap to use for the sky plot""",
+    )
 
-    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream, doc="""
-        Stream to which selection ranges get added.""")
+    filter_stream = param.ClassSelector(
+        default=FilterStream(),
+        class_=FilterStream,
+        doc="""
+        Stream to which selection ranges get added.""",
+    )
 
-    show_rawsky = param.Boolean(default=False, doc="""
+    show_rawsky = param.Boolean(
+        default=False,
+        doc="""
         Whether to show the "unselected" sky points in greyscale when
-        there is a selection.""")
+        there is a selection.""",
+    )
 
-    show_table = param.Boolean(default=False, doc="""
-        Whether to show the table next to the plots.""")
+    show_table = param.Boolean(
+        default=False,
+        doc="""
+        Whether to show the table next to the plots.""",
+    )
 
     sky_range_stream = param.ClassSelector(default=None, class_=RangeXY)
 
@@ -310,40 +391,41 @@ class scattersky(ParameterizedFunction):
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
         if self.p.xdim not in dset.dimensions():
-            raise ValueError('{} not in Dataset.'.format(self.p.xdim))
+            raise ValueError("{} not in Dataset.".format(self.p.xdim))
         if self.p.ydim not in dset.dimensions():
-            raise ValueError('{} not in Dataset.'.format(self.p.ydim))
-        if ('ra' not in dset.dimensions()) or ('dec' not in dset.dimensions()):
-            raise ValueError('ra and/or dec not in Dataset.')
+            raise ValueError("{} not in Dataset.".format(self.p.ydim))
+        if ("ra" not in dset.dimensions()) or ("dec" not in dset.dimensions()):
+            raise ValueError("ra and/or dec not in Dataset.")
 
         # Compute sampling
-        ra_range = (ra0, ra1) = dset.range('ra')
+        ra_range = (ra0, ra1) = dset.range("ra")
         if self.p.ra_sampling:
-            ra_sampling = (ra1-ra0)/self.p.xsampling
+            ra_sampling = (ra1 - ra0) / self.p.xsampling
         else:
             ra_sampling = None
 
-        dec_range = (dec0, dec1) = dset.range('dec')
+        dec_range = (dec0, dec1) = dset.range("dec")
         if self.p.dec_sampling:
-            dec_sampling = (dec1-dec0)/self.p.ysampling
+            dec_sampling = (dec1 - dec0) / self.p.ysampling
         else:
             dec_sampling = None
 
         x_range = (x0, x1) = dset.range(self.p.xdim)
         if self.p.x_sampling:
-            x_sampling = (x1-x0)/self.p.x_sampling
+            x_sampling = (x1 - x0) / self.p.x_sampling
         else:
             x_sampling = None
 
         y_range = (y0, y1) = dset.range(self.p.ydim)
         if self.p.y_sampling:
-            y_sampling = (y1-y0)/self.p.y_sampling
+            y_sampling = (y1 - y0) / self.p.y_sampling
         else:
             y_sampling = None
 
         # Set up scatter plot
         scatter_range = RangeXY()
         if self.p.scatter_range_stream:
+
             def redim_scatter(dset, x_range, y_range):
                 ranges = {}
                 if x_range and all(isfinite(v) for v in x_range):
@@ -351,112 +433,118 @@ class scattersky(ParameterizedFunction):
                 if y_range and all(isfinite(v) for v in x_range):
                     ranges[self.p.ydim] = y_range
                 return dset.redim.range(**ranges) if ranges else dset
+
             dset_scatter = dset.apply(redim_scatter, streams=[self.p.scatter_range_stream])
             link_streams(self.p.scatter_range_stream, scatter_range)
         else:
             dset_scatter = dset
         scatter_pts = dset_scatter.apply(
-            filterpoints, streams=[self.p.filter_stream],
-            xdim=self.p.xdim, ydim=self.p.ydim
+            filterpoints, streams=[self.p.filter_stream], xdim=self.p.xdim, ydim=self.p.ydim
         )
         scatter_streams = [scatter_range, PlotSize()]
         scatter_rasterize = rasterize.instance(
-            streams=scatter_streams, x_sampling=x_sampling,
-            y_sampling=y_sampling
+            streams=scatter_streams, x_sampling=x_sampling, y_sampling=y_sampling
         )
-        cmap = process_cmap(self.p.scatter_cmap)[:250] if self.p.scatter_cmap == 'fire' else self.p.scatter_cmap
+        cmap = (
+            process_cmap(self.p.scatter_cmap)[:250] if self.p.scatter_cmap == "fire" else self.p.scatter_cmap
+        )
         scatter_rasterized = apply_when(
-            scatter_pts, operation=scatter_rasterize,
-            predicate=lambda pts: len(pts) > self.p.max_points
+            scatter_pts, operation=scatter_rasterize, predicate=lambda pts: len(pts) > self.p.max_points
         ).opts(
-            opts.Image(clim=(1, np.nan), clipping_colors={'min': 'transparent'},
-                       cmap=cmap),
-            opts.Points(clim=(1, np.nan), clipping_colors={'min': 'transparent'},
-                        cmap=cmap),
-            opts.Overlay(hooks=[partial(reset_hook, x_range=x_range, y_range=y_range)])
+            opts.Image(clim=(1, np.nan), clipping_colors={"min": "transparent"}, cmap=cmap),
+            opts.Points(clim=(1, np.nan), clipping_colors={"min": "transparent"}, cmap=cmap),
+            opts.Overlay(hooks=[partial(reset_hook, x_range=x_range, y_range=y_range)]),
         )
 
         # Set up sky plot
         sky_range = RangeXY()
         if self.p.sky_range_stream:
+
             def redim_sky(dset, x_range, y_range):
                 ranges = {}
                 if x_range and all(isfinite(v) for v in x_range):
-                    ranges['ra'] = x_range
+                    ranges["ra"] = x_range
                 if y_range and all(isfinite(v) for v in x_range):
-                    ranges['dec'] = y_range
+                    ranges["dec"] = y_range
                 return dset.redim.range(**ranges) if ranges else dset
+
             dset_sky = dset.apply(redim_sky, streams=[self.p.sky_range_stream])
             link_streams(self.p.sky_range_stream, sky_range)
         else:
             dset_sky = dset
         sky_pts = dset_sky.apply(
-            filterpoints, xdim='ra', ydim='dec', set_title=False,
-            streams=[self.p.filter_stream]
+            filterpoints, xdim="ra", ydim="dec", set_title=False, streams=[self.p.filter_stream]
         )
         skyplot_streams = [sky_range, PlotSize()]
         sky_rasterize = rasterize.instance(
-            aggregator=ds.mean(self.p.ydim), streams=skyplot_streams,
-            x_sampling=ra_sampling, y_sampling=dec_sampling
+            aggregator=ds.mean(self.p.ydim),
+            streams=skyplot_streams,
+            x_sampling=ra_sampling,
+            y_sampling=dec_sampling,
         )
         sky_rasterized = apply_when(
-            sky_pts, operation=sky_rasterize,
-            predicate=lambda pts: len(pts) > self.p.max_points
+            sky_pts, operation=sky_rasterize, predicate=lambda pts: len(pts) > self.p.max_points
         ).opts(
             opts.Image(bgcolor="black", cmap=self.p.sky_cmap, symmetric=True),
             opts.Points(bgcolor="black", cmap=self.p.sky_cmap, symmetric=True),
-            opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range,
-                                        y_range=dec_range)])
+            opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range, y_range=dec_range)]),
         )
 
         # Set up BoundsXY streams to listen to box_select events and notify FilterStream
         scatter_select = BoundsXY(source=scatter_pts)
-        scatter_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
-                                   xdim=self.p.xdim, ydim=self.p.ydim)
+        scatter_notifier = partial(
+            notify_stream, filter_stream=self.p.filter_stream, xdim=self.p.xdim, ydim=self.p.ydim
+        )
         scatter_select.add_subscriber(scatter_notifier)
 
         sky_select = BoundsXY(source=sky_pts)
-        sky_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
-                               xdim='ra', ydim='dec')
+        sky_notifier = partial(notify_stream, filter_stream=self.p.filter_stream, xdim="ra", ydim="dec")
         sky_select.add_subscriber(sky_notifier)
 
         # Reset
         reset = PlotReset(source=sky_pts)
-        reset.add_subscriber(partial(reset_stream, self.p.filter_stream,
-                                     [self.p.sky_range_stream,
-                                      self.p.scatter_range_stream]))
+        reset.add_subscriber(
+            partial(
+                reset_stream, self.p.filter_stream, [self.p.sky_range_stream, self.p.scatter_range_stream]
+            )
+        )
 
         raw_scatterpts = filterpoints(dset, xdim=self.p.xdim, ydim=self.p.ydim)
         raw_scatter = datashade(
-            raw_scatterpts, cmap=list(Greys9[::-1][:5]), streams=scatter_streams,
-            x_sampling=x_sampling, y_sampling=y_sampling
+            raw_scatterpts,
+            cmap=list(Greys9[::-1][:5]),
+            streams=scatter_streams,
+            x_sampling=x_sampling,
+            y_sampling=y_sampling,
         )
-        scatter_p = (raw_scatter*scatter_rasterized)
+        scatter_p = raw_scatter * scatter_rasterized
 
         if self.p.show_rawsky:
             raw_skypts = filterpoints(dset, xdim=self.p.xdim, ydim=self.p.ydim)
             raw_sky = datashade(
-                rawskypts, cmap=list(Greys9[::-1][:5]), streams=skyplot_streams,
-                x_sampling=ra_sampling, y_sampling=dec_sampling
+                rawskypts,
+                cmap=list(Greys9[::-1][:5]),
+                streams=skyplot_streams,
+                x_sampling=ra_sampling,
+                y_sampling=dec_sampling,
             )
-            sky_p = raw_sky*sky_rasterized
+            sky_p = raw_sky * sky_rasterized
         else:
             sky_p = sky_rasterized
 
         if self.p.show_table:
             table = dset.apply(summary_table, ydim=self.p.ydim, streams=[self.p.filter_stream])
             table = table.opts()
-            layout = (table + scatter_p + sky_p)
+            layout = table + scatter_p + sky_p
         else:
-            layout = (scatter_p + sky_p).opts(sizing_mode='stretch_width')
+            layout = (scatter_p + sky_p).opts(sizing_mode="stretch_width")
 
         return layout.opts(
-            opts.Image(colorbar=True, responsive=True,
-                       tools=['box_select', 'hover']),
-            opts.Layout(sizing_mode='stretch_width'),
-            opts.Points(color=self.p.ydim, tools=['hover']),
+            opts.Image(colorbar=True, responsive=True, tools=["box_select", "hover"]),
+            opts.Layout(sizing_mode="stretch_width"),
+            opts.Points(color=self.p.ydim, tools=["hover"]),
             opts.RGB(alpha=0.5),
-            opts.Table(width=200)
+            opts.Table(width=200),
         )
 
 
@@ -468,8 +556,11 @@ class multi_scattersky(ParameterizedFunction):
 
     height = param.Number(default=300)
     width = param.Number(default=900)
-    xdim = param.String(default='x', doc="""
-        Dimension of the dataset to use as x-coordinate""")
+    xdim = param.String(
+        default="x",
+        doc="""
+        Dimension of the dataset to use as x-coordinate""",
+    )
 
     def _get_ydims(self, dset):
         # Get dimensions from first Dataset type found in input
@@ -477,27 +568,52 @@ class multi_scattersky(ParameterizedFunction):
 
     def __call__(self, dset, **params):
         self.p = param.ParamOverrides(self, params)
-        return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
-                                     xdim=self.p.xdim, ydim=ydim,
-                                     height=self.p.height, width=self.p.width)
-                          for ydim in self._get_ydims(dset)]).cols(3).opts(merge_tools=False)
+        return (
+            hv.Layout(
+                [
+                    scattersky(
+                        dset,
+                        filter_stream=self.p.filter_stream,
+                        xdim=self.p.xdim,
+                        ydim=ydim,
+                        height=self.p.height,
+                        width=self.p.width,
+                    )
+                    for ydim in self._get_ydims(dset)
+                ]
+            )
+            .cols(3)
+            .opts(merge_tools=False)
+        )
 
 
 class skypoints(Operation):
     """Creates Points with ra, dec as kdims, and interesting stuff as vdims
     """
-    filter_range = param.Dict(default={}, doc="""
-        Dictionary of filter bounds.""")
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
+
+    filter_range = param.Dict(
+        default={},
+        doc="""
+        Dictionary of filter bounds.""",
+    )
+    flags = param.List(
+        default=[],
+        doc="""
+        Flags to select.""",
+    )
+    bad_flags = param.List(
+        default=[],
+        doc="""
+        Flags to ignore""",
+    )
 
     def _process(self, dset, key=None):
-        dset = filter_dset(dset, filter_range=self.p.filter_range,
-                           flags=self.p.flags, bad_flags=self.p.bad_flags)
-        return hv.Points(dset, [dset.get_dimension('ra'), dset.get_dimension('dec')],
-                         dset.vdims).opts(responsive=True)
+        dset = filter_dset(
+            dset, filter_range=self.p.filter_range, flags=self.p.flags, bad_flags=self.p.bad_flags
+        )
+        return hv.Points(dset, [dset.get_dimension("ra"), dset.get_dimension("dec")], dset.vdims).opts(
+            responsive=True
+        )
 
 
 class skyplot(ParameterizedFunction):
@@ -506,32 +622,62 @@ class skyplot(ParameterizedFunction):
     Colormapped by a third dimension.
     """
 
-    aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'], doc="""
-        Aggregator for datashading.""")
+    aggregator = param.ObjectSelector(
+        default="mean",
+        objects=["mean", "std", "count"],
+        doc="""
+        Aggregator for datashading.""",
+    )
 
-    cmap = param.String(default='coolwarm', doc="""
-        Colormap to use.""")
+    cmap = param.String(
+        default="coolwarm",
+        doc="""
+        Colormap to use.""",
+    )
 
-    decimate_size = param.Number(default=5, doc="""
-        Size of (invisible) decimated points.""")
+    decimate_size = param.Number(
+        default=5,
+        doc="""
+        Size of (invisible) decimated points.""",
+    )
 
-    max_points = param.Integer(default=10000, doc="""
-        Maximum number of points to display before switching to rasterize.""")
+    max_points = param.Integer(
+        default=10000,
+        doc="""
+        Maximum number of points to display before switching to rasterize.""",
+    )
 
-    vdim = param.String(default=None, doc="""
-        Dimension to use for colormap.""")
+    vdim = param.String(
+        default=None,
+        doc="""
+        Dimension to use for colormap.""",
+    )
 
-    ra_sampling = param.Integer(default=None, doc="""
-        How densely to sample the rasterized plot along the x-axis.""")
+    ra_sampling = param.Integer(
+        default=None,
+        doc="""
+        How densely to sample the rasterized plot along the x-axis.""",
+    )
 
-    dec_sampling = param.Integer(default=None, doc="""
-        How densely to sample the rasterized plot along the y-axis.""")
+    dec_sampling = param.Integer(
+        default=None,
+        doc="""
+        How densely to sample the rasterized plot along the y-axis.""",
+    )
 
-    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream, doc="""
-        Filter stream to update plot with currently selected filters.""")
+    filter_stream = param.ClassSelector(
+        default=FilterStream(),
+        class_=FilterStream,
+        doc="""
+        Filter stream to update plot with currently selected filters.""",
+    )
 
-    range_stream = param.ClassSelector(default=RangeXY(), class_=RangeXY, doc="""
-        Range stream to share between plots to link and persist plot ranges.""")
+    range_stream = param.ClassSelector(
+        default=RangeXY(),
+        class_=RangeXY,
+        doc="""
+        Range stream to share between plots to link and persist plot ranges.""",
+    )
 
     flags = param.List(default=[], doc="Flags to select.")
 
@@ -545,34 +691,36 @@ class skyplot(ParameterizedFunction):
         else:
             vdim = self.p.vdim
 
-        ra_range = (ra0, ra1) = dset.range('ra')
+        ra_range = (ra0, ra1) = dset.range("ra")
         if self.p.ra_sampling:
-            xsampling = (ra1-ra0)/self.p.ra_sampling
+            xsampling = (ra1 - ra0) / self.p.ra_sampling
         else:
             xsampling = None
 
-        dec_range = (dec0, dec1) = dset.range('dec')
+        dec_range = (dec0, dec1) = dset.range("dec")
         if self.p.dec_sampling:
-            ysampling = (dec1-dec0)/self.p.dec_sampling
+            ysampling = (dec1 - dec0) / self.p.dec_sampling
         else:
             ysampling = None
 
-        if self.p.aggregator == 'mean':
+        if self.p.aggregator == "mean":
             aggregator = ds.mean(vdim)
-        elif self.p.aggregator == 'std':
+        elif self.p.aggregator == "std":
             aggregator = ds.std(vdim)
-        elif self.p.aggregator == 'count':
+        elif self.p.aggregator == "count":
             aggregator = ds.count()
 
         sky_range = RangeXY()
         if self.p.range_stream:
+
             def redim(dset, x_range, y_range):
                 ranges = {}
                 if x_range and all(isfinite(v) for v in x_range):
-                    ranges['ra'] = x_range
+                    ranges["ra"] = x_range
                 if y_range and all(isfinite(v) for v in x_range):
-                    ranges['dec'] = y_range
+                    ranges["dec"] = y_range
                 return dset.redim.range(**ranges) if ranges else dset
+
             dset = dset.apply(redim, streams=[self.p.range_stream])
             link_streams(self.p.range_stream, sky_range)
         streams = [sky_range, PlotSize()]
@@ -583,30 +731,37 @@ class skyplot(ParameterizedFunction):
         reset.add_subscriber(partial(reset_stream, None, [self.p.range_stream]))
 
         rasterize_inst = rasterize.instance(
-            aggregator=aggregator, streams=streams,
-            x_sampling=xsampling, y_sampling=ysampling
+            aggregator=aggregator, streams=streams, x_sampling=xsampling, y_sampling=ysampling
         )
         raster_pts = apply_when(
-            pts, operation=rasterize_inst,
-            predicate=lambda pts: len(pts) > self.p.max_points
+            pts, operation=rasterize_inst, predicate=lambda pts: len(pts) > self.p.max_points
         )
         return raster_pts.opts(
-            opts.Image(bgcolor='black', colorbar=True, cmap=self.p.cmap,
-                       min_height=100, responsive=True, tools=['hover'],
-                       symmetric=True
+            opts.Image(
+                bgcolor="black",
+                colorbar=True,
+                cmap=self.p.cmap,
+                min_height=100,
+                responsive=True,
+                tools=["hover"],
+                symmetric=True,
             ),
-            opts.Points(color=vdim, cmap=self.p.cmap, framewise=True,
-                        size=self.p.decimate_size, tools=['hover'],
-                        symmetric=True
+            opts.Points(
+                color=vdim,
+                cmap=self.p.cmap,
+                framewise=True,
+                size=self.p.decimate_size,
+                tools=["hover"],
+                symmetric=True,
             ),
-            opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range,
-                                        y_range=dec_range)])
+            opts.Overlay(hooks=[partial(reset_hook, x_range=ra_range, y_range=dec_range)]),
         )
 
 
 class skyplot_layout(ParameterizedFunction):
     """Layout of skyplots with linked crosshair
     """
+
     crosshair = param.Boolean(default=True)
 
     def __call__(self, skyplots, **params):
@@ -614,13 +769,14 @@ class skyplot_layout(ParameterizedFunction):
         self.p = param.ParamOverrides(self, params)
 
         pointer = hv.streams.PointerXY(x=0, y=0)
-        cross_opts = dict(style={'line_width': 1, 'color': 'black'})
-        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) *
-                                                 hv.HLine(y).opts(**cross_opts)), streams=[pointer])
+        cross_opts = dict(style={"line_width": 1, "color": "black"})
+        cross_dmap = hv.DynamicMap(
+            lambda x, y: (hv.VLine(x).opts(**cross_opts) * hv.HLine(y).opts(**cross_opts)), streams=[pointer]
+        )
         plots = []
         for s in skyplots:
             if self.p.crosshair:
-                plot = (s*cross_dmap).relabel(s.label)
+                plot = (s * cross_dmap).relabel(s.label)
             else:
                 plot = s
             plots.append(plot)
@@ -631,26 +787,26 @@ class skyplot_layout(ParameterizedFunction):
 class skyshade(Operation):
     """Experimental
     """
-    cmap = param.String(default='coolwarm')
-    aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
+
+    cmap = param.String(default="coolwarm")
+    aggregator = param.ObjectSelector(default="mean", objects=["mean", "std", "count"])
     width = param.Number(default=None)
     height = param.Number(default=None)
-    vdim = param.String(default='y')
+    vdim = param.String(default="y")
     decimate_size = param.Number(default=5)
     max_samples = param.Number(default=10000)
 
     def _process(self, element, key=None):
 
         vdim = self.p.vdim
-        if self.p.aggregator == 'mean':
+        if self.p.aggregator == "mean":
             aggregator = ds.mean(vdim)
-        elif self.p.aggregator == 'std':
+        elif self.p.aggregator == "std":
             aggregator = ds.std(vdim)
-        elif self.p.aggregator == 'count':
+        elif self.p.aggregator == "count":
             aggregator = ds.count()
 
-        kwargs = dict(cmap=list(cc.palette[self.p.cmap]),
-                      aggregator=aggregator)
+        kwargs = dict(cmap=list(cc.palette[self.p.cmap]), aggregator=aggregator)
 
         datashaded = dynspread(datashade(element, **kwargs))
 

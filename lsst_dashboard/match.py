@@ -1,4 +1,3 @@
-
 import scipy.spatial.kdtree
 import numpy
 from scipy import version
@@ -6,7 +5,8 @@ from numpy import arcsin
 import numpy as np
 import dask.array as da
 
-scipy_version = ('.'.join(version.version.split('.')[0:2])).split('.')[0:2]
+scipy_version = (".".join(version.version.split(".")[0:2])).split(".")[0:2]
+
 
 def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
     """Crossmatches the list of objects (ra1, dec1) with
@@ -35,17 +35,17 @@ def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
                 [3, 3]]))
 
     """
-    cosd = lambda x: da.cos(x * np.pi/180)
-    sind = lambda x: da.sin(x * np.pi/180)
-    mindist = 2 * sind(dist/2.)
-    getxyz = lambda r, d: [cosd(r)*cosd(d), sind(r)*cosd(d), sind(d)]
+    cosd = lambda x: da.cos(x * np.pi / 180)
+    sind = lambda x: da.sin(x * np.pi / 180)
+    mindist = 2 * sind(dist / 2.0)
+    getxyz = lambda r, d: [cosd(r) * cosd(d), sind(r) * cosd(d), sind(d)]
     xyz1 = numpy.array(getxyz(ra1, dec1))
     xyz2 = numpy.array(getxyz(ra2, dec2))
 
-    if (int(scipy_version[0])==0) and (int(scipy_version[1])<8):
-    # If old scipy version is detected then we use KDTree instead of 
-    # cKDTtree because there is a bug in the cKDTree
-    # http://projects.scipy.org/scipy/ticket/1178
+    if (int(scipy_version[0]) == 0) and (int(scipy_version[1]) < 8):
+        # If old scipy version is detected then we use KDTree instead of
+        # cKDTtree because there is a bug in the cKDTree
+        # http://projects.scipy.org/scipy/ticket/1178
         tree2 = scipy.spatial.KDTree(xyz2.T)
     else:
         tree2 = scipy.spatial.cKDTree(xyz2.T)
@@ -54,6 +54,6 @@ def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
     del xyz1
     dist, ind = ret
     finite = numpy.isfinite(dist)
-    dist[finite] = (2*arcsin(dist[finite]/2)) * 180 / np.pi
+    dist[finite] = (2 * arcsin(dist[finite] / 2)) * 180 / np.pi
 
     return dist, ind
