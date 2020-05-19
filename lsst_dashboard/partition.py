@@ -67,7 +67,7 @@ class DatasetPartitioner(object):
     df_chunk_size = 20
 
     def __init__(
-        self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8,
+        self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8
     ):
 
         self._butler = Butler(butlerpath)
