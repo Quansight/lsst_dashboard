@@ -70,10 +70,11 @@ def launch_dask_cluster(queue, nodes, localcluster):
         print(f"...requesting {nodes} nodes")
         cluster.scale(nodes * procs_per_node)
         print(
-            "run the command below from your local machine to forward ports for view dashboard and dask diagnostics:"
+            "run the command below from your local machine (assuming 'lsst-dev' is an entry in your "
+            + ".ssh/config) to forward ports for view dashboard and dask diagnostics:"
         )
         print(
-            f"\nssh -N -L {lsst_dashboard_port}:{host}:{lsst_dashboard_port} -L {dask_dashboard_port}:{host}:{dask_dashboard_port} {username}@{hostname}\n"
+            f"\nssh -NfL localhost:{lsst_dashboard_port}:localhost:{lsst_dashboard_port}; ssh -NfL localhost:{dask_dashboard_port}:localhost:{dask_dashboard_port} lsst-dev\n"
         )
     else:
         from dask.distributed import LocalCluster
