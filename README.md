@@ -1,26 +1,56 @@
-
 ## LSST Data Processing Explorer
-[![Travis Build Status](https://travis-ci.com/Quansight/lsst_dashboard.svg?branch=master)](https://travis-ci.com/Quansight/lsst_dashboard)
 
-### Getting Started...
+Here are end-to-end instructions of how to currently set up and run the in-development QA Dashboard on a dataset of your choosing.  N.B. the dataset must have had the `pipe_analysis` scripts and `visitMatch.py` run on them already.
 
-1. Download and Extract sample dataset from here:
-https://quansight.nyc3.digitaloceanspaces.com/datasets/RC2_w18.tar.gz
+### Setting up the stack
 
-**OR**
-Simply use the `download_sample_data.sh` to download smaller subsets.
+After sourcing the current stack, set up the `tickets/DM-21335` branches of `qa_explorer` and `obs_base`.  Run `scons` on `qa_explorer` in order to make the `prepareQADashboard.py` command-line task available.
 
-2. Setup and activate conda environment with Python 3.7 and PyViz stack
+### Install this package and various dependencies
+
+After the stack has been set up, install this package and a number of dependencies:
 ```
-conda env create -f environment.yml
-conda activate lsst-panel
-python setup.py develop
+git clone https://github.com/timothydmorton/lsst_dashboard
+cd lsst_dashboard
+pip install --user requirements.txt
+pip install --user -e .
 ```
 
-3. To launch dashboard in dev mode (server will restart, whenever files change):
+### Run `prepareQADashboard.py`
+
+Run the `prepareQADashboard.py` script on a repo as follows:
+
 ```
-panel serve dashboard.py --dev lsst_dashboard --show --port 5005
+prepareQADashboard.py /datasets/hsc/repo/rerun/RC/w_2020_14/DM-24359 --output /my/dashboard/data/path/w_14 --id tract=9615^9697^9813  filter=HSC-G^HSC-R^HSC-I^HSC-Z^HSC-Y^NB0921 --clobber-config --no-versions
 ```
+
+This is a very lightweight task that basically just writes the valid dataIds to a `.yaml` file that the data-repartitioning step will read.
+
+### Repartition dataset
+
+In order to read the on-disk data with maximal efficiency, we write the necessary data to [kartothek](https://kartothek.readthedocs.io/en/latest/) datasets, using the `lsst_data_repartition` command-line interface, pointing to the *output* repo of the `prepareQADashboard.py` task:
+
+```
+lsst_data_repartition --queue=normal --nodes=4 /my/dashboard/data/path/w_14
+```
+
+This program launches a dask cluster via slurm and uses that to manage the data repartitioning, which by default writes a new directory called `ktk` underneath the repo path entered above.  You can follow the progress of the dask tasks by opening a tunnel to the dask dashboard port (usually port `20000`), e.g.
+
+```
+ssh -NfL localhost:20000:localhost:20000 lsst-dev
+```
+
+and pointing a browser to `localhost:20000`.  The number of nodes (and various available chunking options) you want will depend on the size of the dataset you are repartitioning.  For datasets on the scale of RC2, defaults should generally be fine.
+
+### Launch dashboard
+
+If the above repartitioning completes correctly, you can then launch the dashboard and point it to that dataset.  You will also have to tunnel ports, as before; the default dashboard port is `20500`, but see the command-line output to make sure:
+
+```
+lsst_data_explorer --queue=normal --nodes=4
+```
+
+When the dashboard starts, point your browser to the correct address, enter the path to the kartothek-repartitioned dataset (e.g., `/my/dashboard/data/path/w_14/ktk`) in the box in the top-right of the window, and click the "Load Data" button.  It's good to also have another window pointing to the dask dashboard, so you can see dask activity when it happens.
 
 
 ### For developers...
