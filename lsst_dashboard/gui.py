@@ -756,7 +756,11 @@ class QuickLookComponent(Component):
             else:
                 self._filter_streams[filt] = filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt, metrics, selection.values)
-            skyplot_sampling = 1000
+
+            # We want sampling to be approximately 2000 pts/deg?  This doesn't work well...
+            # dec_range = dset.range("dec")
+            # skyplot_sampling = 2000 * np.abs(dec_range[1] - dec_range[0])
+            skyplot_sampling = None
             for i, metric in enumerate(metrics):
                 # Sky plots
                 skyplot_name = filt + " - " + metric
