@@ -756,11 +756,17 @@ class QuickLookComponent(Component):
             else:
                 self._filter_streams[filt] = filter_stream = FilterStream()
             dset = self.get_dataset_by_filter(filt, metrics, selection.values)
+            skyplot_sampling = 1000
             for i, metric in enumerate(metrics):
                 # Sky plots
                 skyplot_name = filt + " - " + metric
                 plot_sky = skyplot(
-                    dset, filter_stream=filter_stream, range_stream=self._skyplot_range_stream, vdim=metric
+                    dset,
+                    filter_stream=filter_stream,
+                    range_stream=self._skyplot_range_stream,
+                    vdim=metric,
+                    ra_sampling=skyplot_sampling,
+                    dec_sampling=skyplot_sampling,
                 )
                 if skyplot_name in existing_skyplots:
                     sky_panel = existing_sky_plots[skyplot_name]
@@ -777,6 +783,8 @@ class QuickLookComponent(Component):
                     sky_range_stream=self._skyplot_range_stream,
                     scatter_range_stream=self._scatter_range_stream,
                     filter_stream=filter_stream,
+                    ra_sampling=skyplot_sampling,
+                    dec_sampling=skyplot_sampling,
                 )
                 plots_list.append((metric, plots_ss))
             detail_plots[filt].extend([p for m, p in plots_list])
