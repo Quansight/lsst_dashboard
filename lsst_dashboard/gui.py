@@ -521,14 +521,8 @@ class QuickLookComponent(Component):
         return len(self.store.active_tracts)
 
     def get_visit_count(self):
-        return 1
         dvisits = self.get_datavisits()
-        visits = set()
-        for filt, metrics in self.selected_metrics_by_filter.items():
-            for metric in metrics:
-                df = dvisits[filt][metric]
-                visits = visits.union(set(df["visit"]))
-        return len(visits)
+        return len(np.unique(dvisits.index.codes[2]))
 
     def update_info_counts(self):
         self.tract_count = self.get_tract_count()
