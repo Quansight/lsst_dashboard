@@ -154,7 +154,20 @@ def get_metric_categories():
 
 
 def get_unique_object_count():
-    return np.random.randint(10e5, 10e7, size=(1))[0]
+    global datasets
+    global filtered_datasets
+
+    filters = list(datasets.keys())
+    filtered_filters = list(filtered_datasets.keys())
+
+    if filtered_filters:
+        filt = filtered_filters[0]
+        df = filtered_datasets[filt]
+    else:
+        filt = filters[0]
+        df = datasets[filt]
+
+    return len(df)
 
 
 class QuickLookComponent(Component):
@@ -428,10 +441,9 @@ class QuickLookComponent(Component):
         """
         html = ""
         html += self.create_info_element("Tracts", self.tract_count)
-        html += self.create_info_element("Patches", self.patch_count)
+        # html += self.create_info_element("Patches", self.patch_count)
         html += self.create_info_element("Visits", self.visit_count)
-        # html += self.create_info_element('Unique Objects',
-        #                                  self.unique_object_count)
+        html += self.create_info_element("Objects", self.unique_object_count)
         self._info.object = '<ul class="list-group list-group-horizontal" style="list-style: none;">{}</ul>'.format(
             html
         )
@@ -526,7 +538,7 @@ class QuickLookComponent(Component):
 
     def update_info_counts(self):
         self.tract_count = self.get_tract_count()
-        self.patch_count = self.get_patch_count()
+        # self.patch_count = self.get_patch_count()
         self.visit_count = self.get_visit_count()
         self.unique_object_count = get_unique_object_count()
 
