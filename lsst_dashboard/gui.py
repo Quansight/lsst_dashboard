@@ -533,7 +533,7 @@ class QuickLookComponent(Component):
         if self.store.active_tracts:
             return len(self.store.active_tracts)
         else:
-            return len(self.store.tracts)
+            return len(self.store.active_dataset.tracts)
 
     def get_visit_count(self):
         dvisits = self.get_datavisits()
