@@ -13,6 +13,7 @@ import holoviews as hv
 import numpy as np
 import dask.array as da
 import dask.dataframe as dd
+import pandas as pd
 
 from holoviews.streams import RangeXY, PlotSize
 
@@ -632,7 +633,16 @@ class QuickLookComponent(Component):
         return create_hv_dataset(df, stats=stats)
 
     def get_datavisits(self):
-        return store.active_dataset.stats["visit"]
+        df = self.store.active_dataset.stats["visit"]
+        tracts = self.store.active_tracts
+        if not tracts:
+            return df
+        else:
+            idx = pd.IndexSlice
+            subdf = df.loc[idx[:, tracts, :, :], :]
+            if len(subdf) == 0:
+                logger.warning(f"No visit summary data for tracts={tracts}!")
+            return subdf
 
     def add_message_from_error(self, title, info, exception_obj, level="error"):
 
