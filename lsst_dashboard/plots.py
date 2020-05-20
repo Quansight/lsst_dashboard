@@ -400,13 +400,13 @@ class scattersky(ParameterizedFunction):
         # Compute sampling
         ra_range = (ra0, ra1) = dset.range("ra")
         if self.p.ra_sampling:
-            ra_sampling = (ra1 - ra0) / self.p.xsampling
+            ra_sampling = (ra1 - ra0) / self.p.x_sampling
         else:
             ra_sampling = None
 
         dec_range = (dec0, dec1) = dset.range("dec")
         if self.p.dec_sampling:
-            dec_sampling = (dec1 - dec0) / self.p.ysampling
+            dec_sampling = (dec1 - dec0) / self.p.y_sampling
         else:
             dec_sampling = None
 
