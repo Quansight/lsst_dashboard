@@ -860,7 +860,7 @@ class QuickLookComponent(Component):
 
             self._on_load_data_repository(None, load_metrics=False)
             self.update_info_counts()
-            print("TRACTS UPDATED!!!!!! {}".format(tracts))
+            print("TRACTS UPDATED: {}".format(tracts))
 
     def jinja(self):
         debug("jinja")
