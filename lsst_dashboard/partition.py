@@ -64,8 +64,11 @@ class DatasetPartitioner(object):
     categories = ["filter", "tract"]
     bucket_by = "patch"
     _default_dataset = None
+    df_chunk_size = 20
 
-    def __init__(self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8):
+    def __init__(
+        self, butlerpath, destination=None, dataset=None, engine="pyarrow", sample_frac=None, num_buckets=8
+    ):
 
         self._butler = Butler(butlerpath)
         if dataset is None:
@@ -82,7 +85,7 @@ class DatasetPartitioner(object):
 
         self._store = None
         self.engine = engine
-        self.metadata = self.butler.get("qaDashboard_metadata")
+        self.metadata = self.butler.get("qaDashboard_info")
 
         self.dataIds = [
             dataId for dataId in self.iter_dataId() if self.butler.datasetExists(self.dataset, dataId)
@@ -148,18 +151,16 @@ class DatasetPartitioner(object):
 
         # TODO I think the partitioning destroys the original indexing if the index numbers are important we may need to do a reset_index()
 
-        df = (df.assign(
-                    ra=da.rad2deg(df.coord_ra),
-                    dec=da.rad2deg(df.coord_dec),
-                    psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
-                )
-                .replace(np.inf, np.nan)
-                .replace(-np.inf, np.nan)
-                .rename(columns={"patchId": "patch", "ccdId": "ccd"})
+        df = (
+            df.assign(
+                ra=da.rad2deg(df.coord_ra),
+                dec=da.rad2deg(df.coord_dec),
+                psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+            )
+            .replace(np.inf, np.nan)
+            .replace(-np.inf, np.nan)
+            .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
-
-        del df["coord_ra"]
-        del df["coord_dec"]
 
         if self.categories:
             df = df.categorize(columns=self.categories)
@@ -178,24 +179,22 @@ class DatasetPartitioner(object):
             set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         )
 
-    def get_df(self, filt):
-        dataIds = self.dataIds_by_filter[filt]
-        filenames = self.filenames_by_filter[filt]
-
-        columns = self.get_columns()
-
-        dfs = []
-        for filename, dataId in tqdm(
-            zip(filenames, dataIds),
-            desc=f"Building dask dataframe for {self.dataset} ({filt})",
-            total=len(dataIds),
-        ):
+    def df_generator(self, dataIds, filenames, columns, msg=None):
+        if msg is None:
+            desc = f"Building dask dataframe for {self.dataset}"
+        else:
+            desc = f"Building dask dataframe for {self.dataset} ({msg})"
+        for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
-            dfs.append(df)
+            yield df
 
-        if dfs:
-            df = dd.from_delayed(dfs)
+    def get_df(self, dataIds, filenames, msg=None):
+        columns = self.get_columns()
+
+        if len(dataIds) > 0:
+            df = dd.from_delayed(self.df_generator(dataIds, filenames, columns, msg=msg))
+
             if self.sample_frac:
                 df = df.sample(frac=self.sample_frac)
 
@@ -204,6 +203,18 @@ class DatasetPartitioner(object):
             return df
         else:
             return None
+
+    def iter_df_chunks(self, filt, chunk_dfs=False):
+        dataIds = self.dataIds_by_filter[filt]
+        filenames = self.filenames_by_filter[filt]
+
+        if chunk_dfs:
+            n_chunks = len(dataIds) // self.df_chunk_size
+        else:
+            n_chunks = 1
+        for i in range(n_chunks):
+            msg = f"{filt}, {i + 1} of {n_chunks}"
+            yield self.get_df(dataIds[i::n_chunks], filenames[i::n_chunks], msg=msg)
 
     @property
     def ktk_kwargs(self):
@@ -217,18 +228,24 @@ class DatasetPartitioner(object):
             partition_on=self.partition_on,
         )
 
-    def partition_filt(self, filt):
+    def partition_filt(self, filt, chunk_dfs=False):
         """Write partitioned dataset using kartothek
         """
-        df = self.get_df(filt)
-        if df is not None:
-            print(f"... ...ktk repartitioning {self.dataset} ({filt})")
+        for i, df in enumerate(self.iter_df_chunks(filt, chunk_dfs=chunk_dfs)):
+            if df is not None:
+                print(f"... ...ktk repartitioning {self.dataset} ({filt}, chunk {i + 1})")
+                graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
+                graph.compute()
+
+    def partition(self, chunk_by_filter=True, chunk_dfs=True):
+        if chunk_by_filter:
+            for filt in self.filters:
+                self.partition_filt(filt, chunk_dfs=chunk_dfs)
+        else:
+            df = self.get_df(self.dataIds, self.filenames)
+            print(f"... ...ktk repartitioning {self.dataset}")
             graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
             graph.compute()
-
-    def partition(self):
-        for filt in self.filters:
-            self.partition_filt(filt)
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
@@ -321,9 +338,10 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
 
 class VisitPartitioner(DatasetPartitioner):
     partition_on = ("filter", "tract", "visit")
-    categories = None # ["filter", "tract"] Some visit datasets are erroring on categorization
+    categories = None  # ["filter", "tract"] Some visit datasets are erroring on categorization
     bucket_by = "ccd"
     _default_dataset = "analysisVisitTable"
+    df_chunk_size = 80
 
     def get_metric_columns(self):
         return list(
@@ -337,6 +355,7 @@ class VisitPartitioner(DatasetPartitioner):
         )
 
     def get_columns(self):
+        # return None
         return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
 
     def iter_dataId(self):
