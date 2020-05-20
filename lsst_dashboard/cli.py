@@ -122,11 +122,11 @@ def start_dashboard(queue, nodes, localcluster):
 @click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
 @click.option(
-    "--chunk_by_filter", default=False, help="Set this if there are RAM issues with running repartition."
+    "--chunk_by_filter", is_flag=True, help="Set this if there are RAM issues with running repartition."
 )
 @click.option(
     "--chunk_dfs",
-    default=False,
+    is_flag=True,
     help="Set this if there are *still* RAM issues after setting --chunk_by_filter",
 )
 @click.option(
