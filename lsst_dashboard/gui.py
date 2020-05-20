@@ -635,12 +635,13 @@ class QuickLookComponent(Component):
     def get_datavisits(self):
         df = self.store.active_dataset.stats["visit"]
         tracts = self.store.active_tracts
-        print(tracts)
-        if len(tracts) == 0:
+        if not tracts:
             return df
         else:
             idx = pd.IndexSlice
             subdf = df.loc[idx[:, tracts, :, :], :]
+            if len(subdf) == 0:
+                logger.warning(f"No visit summary data for tracts={tracts}!")
             return subdf
 
     def add_message_from_error(self, title, info, exception_obj, level="error"):
