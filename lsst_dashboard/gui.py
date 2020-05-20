@@ -636,10 +636,13 @@ class QuickLookComponent(Component):
         df = self.store.active_dataset.stats["visit"]
         print(df.head())
         tracts = self.store.active_tracts
-        idx = pd.IndexSlice
-        subdf = df.loc[idx[:, tracts, :, :], :]
-        print(subdf.head())
-        return subdf
+        if not tracts:
+            return df
+        else:
+            idx = pd.IndexSlice
+            subdf = df.loc[idx[:, tracts, :, :], :]
+            print(subdf.head())
+            return subdf
 
     def add_message_from_error(self, title, info, exception_obj, level="error"):
 
