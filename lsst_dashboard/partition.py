@@ -204,11 +204,14 @@ class DatasetPartitioner(object):
         else:
             return None
 
-    def iter_df_chunks(self, filt):
+    def iter_df_chunks(self, filt, chunk_dfs=False):
         dataIds = self.dataIds_by_filter[filt]
         filenames = self.filenames_by_filter[filt]
 
-        n_chunks = len(dataIds) // self.df_chunk_size
+        if chunk_dfs:
+            n_chunks = len(dataIds) // self.df_chunk_size
+        else:
+            n_chunks = 1
         for i in range(n_chunks):
             msg = f"{filt}, {i + 1} of {n_chunks}"
             yield self.get_df(dataIds[i::n_chunks], filenames[i::n_chunks], msg=msg)
@@ -225,10 +228,10 @@ class DatasetPartitioner(object):
             partition_on=self.partition_on,
         )
 
-    def partition_filt(self, filt):
+    def partition_filt(self, filt, chunk_dfs=False):
         """Write partitioned dataset using kartothek
         """
-        for i, df in enumerate(self.iter_df_chunks(filt)):
+        for i, df in enumerate(self.iter_df_chunks(filt, chunk_dfs=chunk_dfs)):
             if df is not None:
                 print(f"... ...ktk repartitioning {self.dataset} ({filt}, chunk {i + 1})")
                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
