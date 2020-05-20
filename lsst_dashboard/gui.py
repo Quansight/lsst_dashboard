@@ -530,7 +530,10 @@ class QuickLookComponent(Component):
         return self.store.active_dataset.get_patch_count(filters, self.store.active_tracts)
 
     def get_tract_count(self):
-        return len(self.store.active_tracts)
+        if self.store.active_tracts:
+            return len(self.store.active_tracts)
+        else:
+            return len(self.store.tracts)
 
     def get_visit_count(self):
         dvisits = self.get_datavisits()
