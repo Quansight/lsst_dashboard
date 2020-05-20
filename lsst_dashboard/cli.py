@@ -58,11 +58,13 @@ def launch_dask_cluster(queue, nodes, localcluster):
 
         print(f"...starting dask cluster using slurm on {host} (queue={queue})")
         procs_per_node = 6
+        walltime = "24:00:00" if queue == "normal" else None
         cluster = SLURMCluster(
             queue=queue,
             cores=24,
             processes=procs_per_node,
             memory="128GB",
+            walltime=walltime,
             scheduler_options={"port": scheduler_port, "dashboard_address": f":{dask_dashboard_port}"},
             extra=[f'--worker-port {":".join(str(p) for p in DASK_ALLOWED_PORTS)}'],
         )
