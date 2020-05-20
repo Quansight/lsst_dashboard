@@ -162,12 +162,14 @@ def get_unique_object_count():
 
     if filtered_filters:
         filt = filtered_filters[0]
-        df = filtered_datasets[filt]
-    else:
+        n = len(filtered_datasets[filt])
+    elif filters:
         filt = filters[0]
-        df = datasets[filt]
+        n = len(datasets[filt])
+    else:
+        n = 0
 
-    return len(df)
+    return n
 
 
 class QuickLookComponent(Component):
