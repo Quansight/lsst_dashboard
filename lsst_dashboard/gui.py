@@ -154,7 +154,22 @@ def get_metric_categories():
 
 
 def get_unique_object_count():
-    return np.random.randint(10e5, 10e7, size=(1))[0]
+    global datasets
+    global filtered_datasets
+
+    filters = list(datasets.keys())
+    filtered_filters = list(filtered_datasets.keys())
+
+    if filtered_filters:
+        filt = filtered_filters[0]
+        df = filtered_datasets[filt]
+        print(f"counting filtered dataset {filt}")
+    else:
+        filt = filters[0]
+        df = datasets[filt]
+        print(f"counting unfiltered dataset {filt}")
+
+    return len(df)
 
 
 class QuickLookComponent(Component):
@@ -428,10 +443,9 @@ class QuickLookComponent(Component):
         """
         html = ""
         html += self.create_info_element("Tracts", self.tract_count)
-        html += self.create_info_element("Patches", self.patch_count)
+        # html += self.create_info_element("Patches", self.patch_count)
         html += self.create_info_element("Visits", self.visit_count)
-        # html += self.create_info_element('Unique Objects',
-        #                                  self.unique_object_count)
+        html += self.create_info_element("Objects", self.unique_object_count)
         self._info.object = '<ul class="list-group list-group-horizontal" style="list-style: none;">{}</ul>'.format(
             html
         )
@@ -518,21 +532,18 @@ class QuickLookComponent(Component):
         return self.store.active_dataset.get_patch_count(filters, self.store.active_tracts)
 
     def get_tract_count(self):
-        return len(self.store.active_tracts)
+        if self.store.active_tracts:
+            return len(self.store.active_tracts)
+        else:
+            return len(self.store.active_dataset.tracts)
 
     def get_visit_count(self):
-        return 1
         dvisits = self.get_datavisits()
-        visits = set()
-        for filt, metrics in self.selected_metrics_by_filter.items():
-            for metric in metrics:
-                df = dvisits[filt][metric]
-                visits = visits.union(set(df["visit"]))
-        return len(visits)
+        return len(np.unique(dvisits.index.codes[2]))
 
     def update_info_counts(self):
         self.tract_count = self.get_tract_count()
-        self.patch_count = self.get_patch_count()
+        # self.patch_count = self.get_patch_count()
         self.visit_count = self.get_visit_count()
         self.unique_object_count = get_unique_object_count()
 
@@ -775,6 +786,7 @@ class QuickLookComponent(Component):
         self.detail_plots = detail_plots
 
         self.update_display()
+        self.update_info_counts()
         self._switch_view_mode()
 
     def _update_detail_plots(self):
