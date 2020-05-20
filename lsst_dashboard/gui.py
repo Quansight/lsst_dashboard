@@ -163,11 +163,9 @@ def get_unique_object_count():
     if filtered_filters:
         filt = filtered_filters[0]
         df = filtered_datasets[filt]
-        print(f"counting filtered dataset {filt}")
     else:
         filt = filters[0]
         df = datasets[filt]
-        print(f"counting unfiltered dataset {filt}")
 
     return len(df)
 
