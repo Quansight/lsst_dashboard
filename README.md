@@ -52,6 +52,14 @@ lsst_data_explorer --queue=normal --nodes=4
 
 When the dashboard starts, point your browser to the correct address, enter the path to the kartothek-repartitioned dataset (e.g., `/my/dashboard/data/path/w_14/ktk`) in the box in the top-right of the window, and click the "Load Data" button.  It's good to also have another window pointing to the dask dashboard, so you can see dask activity when it happens.
 
+Instead of preparing your own dataset, you can also point to the following existing datasets that have been prepared:
+```
+/project/tmorton/tickets/DM-21335-new/w_2020_19
+/project/tmorton/tickets/DM-21335-new/pdr2/deep/xmm/ktk
+/project/tmorton/tickets/DM-21335-new/pdr2/wide/xmm/ktk
+```
+
+Hopefully soon an "entire PDR2" dataset should be available and explorable.
 
 ### For developers...
 To increment the version number, run `rever <version>`
