@@ -156,7 +156,7 @@ class DatasetPartitioner(object):
             df.assign(
                 ra=da.rad2deg(df.coord_ra),
                 dec=da.rad2deg(df.coord_dec),
-                psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+                # psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
             )
             .replace(np.inf, np.nan)
             .replace(-np.inf, np.nan)
