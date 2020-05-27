@@ -5,3 +5,4 @@ geopandas
 distributed>=2.16
 dask-jobqueue>=0.7.1
 kartothek
+numba<=0.48
