@@ -61,7 +61,8 @@ class DatasetPartitioner(object):
     """
 
     partition_on = ("filter", "tract")
-    categories = ["filter", "tract"]
+    categories = None
+    # categories = ["filter", "tract"]
     bucket_by = "patch"
     _default_dataset = None
     df_chunk_size = 20
