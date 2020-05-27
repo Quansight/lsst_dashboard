@@ -210,6 +210,7 @@ def repartition(
 @click.option(
     "--df_chunk_size",
     default=None,
+    type=int,
     help="Set this to non-zero if there are *still* RAM issues after setting --chunk_by_filter",
 )
 @click.option(
