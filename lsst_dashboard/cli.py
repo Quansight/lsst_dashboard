@@ -208,6 +208,11 @@ def repartition(
     help="Set this if there are *still* RAM issues after setting --chunk_by_filter",
 )
 @click.option(
+    "--df_chunk_size",
+    default=None,
+    help="Set this to non-zero if there are *still* RAM issues after setting --chunk_by_filter",
+)
+@click.option(
     "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
 )
 @click.option(
@@ -225,8 +230,9 @@ def repartition_dataset(
     visit,
     sample_frac,
     num_buckets,
-    chunk_by_filter,
     chunk_dfs,
+    chunk_by_filter,
+    df_chunk_size,
     queue,
     nodes,
     localcluster,
@@ -255,7 +261,12 @@ def repartition_dataset(
         Partitioner = DatasetPartitioner
 
     data = Partitioner(
-        butler_path, destination_path, dataset=dataset, sample_frac=sample_frac, num_buckets=num_buckets
+        butler_path,
+        destination_path,
+        dataset=dataset,
+        sample_frac=sample_frac,
+        num_buckets=num_buckets,
+        df_chunk_size=df_chunk_size,
     )
     data.partition(**partition_kws)
     data.write_stats()
