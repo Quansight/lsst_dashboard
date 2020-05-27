@@ -174,10 +174,10 @@ class DatasetPartitioner(object):
         return get_flags()
 
     def get_columns(self):
-        # return None
-        return list(
-            set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
-        )
+        return None
+        # return list(
+        #     set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
+        # )
 
     def df_generator(self, dataIds, filenames, columns, msg=None):
         if msg is None:
@@ -355,8 +355,8 @@ class VisitPartitioner(DatasetPartitioner):
         )
 
     def get_columns(self):
-        # return None
-        return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
+        return None
+        # return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
 
     def iter_dataId(self):
         d = self.metadata
