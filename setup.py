@@ -18,6 +18,7 @@ __name__ == "__main__" and setuptools.setup(
             "console_scripts": [
                 "lsst_data_explorer = lsst_dashboard.cli:start_dashboard",
                 "lsst_data_repartition = lsst_dashboard.cli:repartition",
+                "repartition_dataset = lsst_dashboard.cli:repartition_dataset",
             ]
         },
     )

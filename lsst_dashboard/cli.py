@@ -190,3 +190,66 @@ def repartition(
     visits.write_stats()
 
     print("...partitioning complete")
+
+
+@click.command()
+@click.argument("butler_path")
+@click.argument("dataset")
+@click.argument("destination_path", required=False)
+@click.option("--visit", is_flag=True, help="Set if this a per-visit dataset")
+@click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
+@click.option("--num_buckets", default=8, help="number of buckets per partition")
+@click.option(
+    "--chunk_by_filter", is_flag=True, help="Set this if there are RAM issues with running repartition."
+)
+@click.option(
+    "--chunk_dfs",
+    is_flag=True,
+    help="Set this if there are *still* RAM issues after setting --chunk_by_filter",
+)
+@click.option(
+    "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
+)
+@click.option(
+    "--nodes", default=2, help="Number of compute nodes to launch (default=2), ignored on local machine"
+)
+@click.option(
+    "--localcluster",
+    is_flag=True,
+    help="Launches a localcluster instead of slurmcluster, default on local machine",
+)
+def repartition_dataset(
+    butler_path,
+    dataset,
+    destination_path,
+    sample_frac,
+    num_buckets,
+    chunk_by_filter,
+    chunk_dfs,
+    queue,
+    nodes,
+    localcluster,
+):
+    cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
+    client = Client(cluster)
+    print(f"Dask Cluster: {cluster}")
+    print(f"Waiting for at least one worker")
+    client.wait_for_workers(1)
+
+    print(f"### repartitioning {dataset} from {butler_path}")
+    from lsst_dashboard.partition import DatasetPartitioner, VisitPartitioner
+
+    if destination_path is None:
+        destination_path = f"{butler_path}/ktk"
+
+    partition_kws = dict(chunk_by_filter=chunk_by_filter, chunk_dfs=chunk_dfs)
+
+    print(f"...partitioned data will be written to {destination_path}")
+
+    print(f"...partitioning {dataset}")
+
+    coadd_forced = DatasetPartitioner(
+        butler_path, destination_path, dataset=dataset, sample_frac=sample_frac, num_buckets=num_buckets
+    )
+    coadd_forced.partition(**partition_kws)
+    coadd_forced.write_stats()
