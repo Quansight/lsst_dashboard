@@ -222,6 +222,7 @@ def repartition_dataset(
     butler_path,
     dataset,
     destination_path,
+    visit,
     sample_frac,
     num_buckets,
     chunk_by_filter,
@@ -248,8 +249,13 @@ def repartition_dataset(
 
     print(f"...partitioning {dataset}")
 
-    coadd_forced = DatasetPartitioner(
+    if visit:
+        Partitioner = VisitPartitioner
+    else:
+        Partitioner = DatasetPartitioner
+
+    data = Partitioner(
         butler_path, destination_path, dataset=dataset, sample_frac=sample_frac, num_buckets=num_buckets
     )
-    coadd_forced.partition(**partition_kws)
-    coadd_forced.write_stats()
+    data.partition(**partition_kws)
+    data.write_stats()
