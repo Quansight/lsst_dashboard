@@ -196,22 +196,10 @@ def repartition(
 @click.argument("butler_path")
 @click.argument("dataset")
 @click.argument("destination_path", required=False)
-@click.option("--visit", is_flag=True, help="Set if this a per-visit dataset")
 @click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
 @click.option(
-    "--chunk_by_filter", is_flag=True, help="Set this if there are RAM issues with running repartition."
-)
-@click.option(
-    "--chunk_dfs",
-    is_flag=True,
-    help="Set this if there are *still* RAM issues after setting --chunk_by_filter",
-)
-@click.option(
-    "--df_chunk_size",
-    default=None,
-    type=int,
-    help="Set this to non-zero if there are *still* RAM issues after setting --chunk_by_filter",
+    "--chunk_dfs", default=None, type=int, is_flag=True, help="Set this to non-zero if there are RAM issues",
 )
 @click.option(
     "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
@@ -228,11 +216,8 @@ def repartition_dataset(
     butler_path,
     dataset,
     destination_path,
-    visit,
     sample_frac,
     num_buckets,
-    chunk_by_filter,
-    chunk_dfs,
     df_chunk_size,
     queue,
     nodes,
@@ -250,16 +235,11 @@ def repartition_dataset(
     if destination_path is None:
         destination_path = f"{butler_path}/ktk"
 
-    partition_kws = dict(chunk_by_filter=chunk_by_filter, chunk_dfs=chunk_dfs)
+    partition_kws = dict()
 
     print(f"...partitioned data will be written to {destination_path}")
 
     print(f"...partitioning {dataset}")
-
-    if visit:
-        Partitioner = VisitPartitioner
-    else:
-        Partitioner = DatasetPartitioner
 
     data = Partitioner(
         butler_path,
