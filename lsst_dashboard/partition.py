@@ -97,10 +97,7 @@ class DatasetPartitioner(object):
         self._store = None
         self.engine = engine
         self.metadata = self.butler.get("qaDashboard_info")
-
-        self.dataIds = [
-            dataId for dataId in self.iter_dataId() if self.butler.datasetExists(self.dataset, dataId)
-        ]
+        self.dataIds = self.metadata[self.dataset]
 
         self.filters = [filt for filt in self.metadata["visits"].keys()]
         self.dataIds_by_filter = {
@@ -131,29 +128,16 @@ class DatasetPartitioner(object):
             self._butler = Butler(butlerpath)
         return self._butler
 
-    def iter_dataId(self):
-        d = self.metadata
-        for filt in d["visits"].keys():
-            for tract in d["visits"][filt]:
-                yield {"filter": filt, "tract": tract}
-
     @property
     def filenames(self):
         if self._filenames is None:
             filenames = []
-            filenames_by_filter = {filt: [] for filt in self.filters}
             for dataId in tqdm(self.dataIds, desc=f"Getting filenames for {self.dataset} from Butler"):
                 filename = self.butler.get(self.dataset, **dataId).filename
                 filenames.append(filename)
                 filenames_by_filter[dataId["filter"]].append(filename)
             self._filenames = filenames
-            self._filenames_by_filter = filenames_by_filter
         return self._filenames
-
-    @property
-    def filenames_by_filter(self):
-        self.filenames
-        return self._filenames_by_filter
 
     def normalize_df(self, df):
         """
@@ -215,16 +199,16 @@ class DatasetPartitioner(object):
         else:
             return None
 
-    def iter_df_chunks(self, filt, chunk_dfs=False):
-        dataIds = self.dataIds_by_filter[filt]
-        filenames = self.filenames_by_filter[filt]
+    def iter_df_chunks(self, chunk_dfs=False):
+        dataIds = self.dataIds
+        filenames = self.filenames
 
         if chunk_dfs:
             n_chunks = len(dataIds) // self.df_chunk_size
         else:
             n_chunks = 1
         for i in range(n_chunks):
-            msg = f"{filt}, {i + 1} of {n_chunks}"
+            msg = f"{i + 1} of {n_chunks}"
             yield self.get_df(dataIds[i::n_chunks], filenames[i::n_chunks], msg=msg)
 
     @property
@@ -239,24 +223,14 @@ class DatasetPartitioner(object):
             partition_on=self.partition_on,
         )
 
-    def partition_filt(self, filt, chunk_dfs=False):
+    def partition(self, chunk_dfs=False):
         """Write partitioned dataset using kartothek
         """
-        for i, df in enumerate(self.iter_df_chunks(filt, chunk_dfs=chunk_dfs)):
+        for i, df in enumerate(self.iter_df_chunks(chunk_dfs=chunk_dfs)):
             if df is not None:
-                print(f"... ...ktk repartitioning {self.dataset} ({filt}, chunk {i + 1})")
+                print(f"... ...ktk repartitioning {self.dataset} (chunk {i + 1})")
                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
                 graph.compute()
-
-    def partition(self, chunk_by_filter=True, chunk_dfs=True):
-        if chunk_by_filter:
-            for filt in self.filters:
-                self.partition_filt(filt, chunk_dfs=chunk_dfs)
-        else:
-            df = self.get_df(self.dataIds, self.filenames)
-            print(f"... ...ktk repartitioning {self.dataset}")
-            graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
-            graph.compute()
 
     def load_from_ktk(self, predicates, columns=None, dask=True):
         ktk_kwargs = dict(
@@ -368,13 +342,6 @@ class VisitPartitioner(DatasetPartitioner):
     def get_columns(self):
         return None
         # return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
-
-    def iter_dataId(self):
-        d = self.metadata
-        for filt in d["visits"].keys():
-            for tract in d["visits"][filt]:
-                for visit in d["visits"][filt][tract]:
-                    yield {"filter": filt, "tract": tract, "visit": visit}
 
 
 def describe_dataId(
