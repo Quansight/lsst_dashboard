@@ -234,7 +234,7 @@ def repartition_dataset(
     client.wait_for_workers(1)
 
     print(f"### repartitioning {dataset} from {butler_path}")
-    from lsst_dashboard.partition import DatasetPartitioner, VisitPartitioner
+    from lsst_dashboard.partition import DatasetPartitioner
 
     if destination_path is None:
         destination_path = f"{butler_path}/ktk"
@@ -245,7 +245,7 @@ def repartition_dataset(
 
     print(f"...partitioning {dataset}")
 
-    data = Partitioner(
+    data = DatasetPartitioner(
         butler_path,
         destination_path,
         dataset=dataset,
