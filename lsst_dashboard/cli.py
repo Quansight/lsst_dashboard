@@ -199,7 +199,11 @@ def repartition(
 @click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
 @click.option(
-    "--chunk_dfs", default=None, type=int, is_flag=True, help="Set this to non-zero if there are RAM issues",
+    "--df_chunk_size",
+    default=None,
+    type=int,
+    is_flag=True,
+    help="Set this to non-zero if there are RAM issues",
 )
 @click.option(
     "--queue", default="debug", help="Slurm Queue to use (default=debug), ignored on local machine"
