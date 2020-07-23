@@ -99,13 +99,13 @@ class DatasetPartitioner(object):
         self.metadata = self.butler.get("qaDashboard_info")
         self.dataIds = self.metadata[self.dataset]
 
-        self.filters = [filt for filt in self.metadata["visits"].keys()]
-        self.dataIds_by_filter = {
-            filt: [d for d in self.dataIds if d["filter"] == filt] for filt in self.filters
-        }
+        # self.filters = [filt for filt in self.metadata["visits"].keys()]
+        # self.dataIds_by_filter = {
+        #     filt: [d for d in self.dataIds if d["filter"] == filt] for filt in self.filters
+        # }
 
         self._filenames = None
-        self._filenames_by_filter = None
+        # self._filenames_by_filter = None
 
     def __getstate__(self):
         d = self.__dict__
