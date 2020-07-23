@@ -135,7 +135,6 @@ class DatasetPartitioner(object):
             for dataId in tqdm(self.dataIds, desc=f"Getting filenames for {self.dataset} from Butler"):
                 filename = self.butler.get(self.dataset, **dataId).filename
                 filenames.append(filename)
-                filenames_by_filter[dataId["filter"]].append(filename)
             self._filenames = filenames
         return self._filenames
 
