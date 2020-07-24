@@ -224,7 +224,6 @@ def repartition_dataset(
     print(f"Waiting for at least one worker")
     client.wait_for_workers(1)
 
-    print(f"### repartitioning {dataset} from {butler_path}")
     from lsst_dashboard.partition import DatasetPartitioner
 
     if destination_path is None:
@@ -235,7 +234,7 @@ def repartition_dataset(
     print(f"...partitioned data will be written to {destination_path}")
 
     datasets = (
-        ("sourceTable_visit", ("filter", "visit",),),
+        ("sourceTable_visit", ("filter", "visit",)),
         ("analysisVisitTable", ("filter", "tract", "visit")),
         ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
         ("analysisCoaddTable_forced", ("filter", "tract")),
@@ -244,7 +243,7 @@ def repartition_dataset(
         ("objectTable_tract", ("tract",)),
     )
 
-    for dataset, keys, bucket_by in datasets:
+    for dataset, keys in datasets:
         print(f"...partitioning {dataset}")
 
         data = DatasetPartitioner(
