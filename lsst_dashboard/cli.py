@@ -252,7 +252,6 @@ def repartition_dataset(
             dataset=dataset,
             partition_on=keys,
             sample_frac=sample_frac,
-            bucket_by=bucket_by,
             num_buckets=num_buckets,
             df_chunk_size=df_chunk_size,
         )
