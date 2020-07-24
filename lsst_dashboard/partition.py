@@ -154,6 +154,8 @@ class DatasetPartitioner(object):
             flux_col = "PsFlux"
         elif "iPsFlux" in df.columns:
             flux_col = "iPsFlux"
+        else:
+            raise ValueError("No PSF Flux column name?")
 
         df = (
             df.assign(

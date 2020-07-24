@@ -225,14 +225,16 @@ def repartition_dataset(
     if destination_path is None:
         destination_path = f"{butler_path}/ktk"
 
-    partition_kws = dict()
+    chunk_dfs = df_chunk_size is not None
+
+    partition_kws = dict(chunk_dfs=chunk_dfs)
 
     print(f"...partitioned data will be written to {destination_path}")
 
     datasets = (
         ("sourceTable_visit", ("filter", "visit",)),
         ("analysisVisitTable", ("filter", "tract", "visit")),
-        ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
+        # ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
         ("analysisCoaddTable_forced", ("filter", "tract")),
         ("analysisCoaddTable_unforced", ("filter", "tract")),
         ("analysisColorTable", ("tract",)),
