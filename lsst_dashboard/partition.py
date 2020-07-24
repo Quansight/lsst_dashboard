@@ -215,7 +215,7 @@ class DatasetPartitioner(object):
         filenames = self.filenames
 
         if chunk_dfs:
-            n_chunks = len(dataIds) // self.df_chunk_size
+            n_chunks = len(dataIds) // self.df_chunk_size or 1
         else:
             n_chunks = 1
         for i in range(n_chunks):
