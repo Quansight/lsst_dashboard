@@ -60,10 +60,6 @@ class DatasetPartitioner(object):
     """Partitions datasets with ['filter', 'tract'] dataId keys
     """
 
-    partition_on = ("filter", "tract")
-    categories = None
-    # categories = ["filter", "tract"]
-    bucket_by = "patch"
     _default_dataset = None
     _default_df_chunk_size = 20
 
@@ -72,6 +68,9 @@ class DatasetPartitioner(object):
         butlerpath,
         destination=None,
         dataset=None,
+        partition_on=("filter", "tract"),
+        bucket_by="psfMag",
+        categories=None,
         engine="pyarrow",
         sample_frac=None,
         num_buckets=8,
@@ -83,6 +82,10 @@ class DatasetPartitioner(object):
             dataset = self._default_dataset
 
         self.dataset = dataset
+        self.partition_on = partition_on
+        self.bucket_by = bucket_by
+        self.categories = categories
+
         if destination is None:
             destination = f"{butlerpath}/ktk"
         self.destination = destination
@@ -145,11 +148,18 @@ class DatasetPartitioner(object):
 
         # TODO I think the partitioning destroys the original indexing if the index numbers are important we may need to do a reset_index()
 
+        if "base_PsfFlux_instFlux" in df.columns:
+            flux_col = "base_PsfFlux_instFlux"
+        elif "PsFlux" in df.columns:
+            flux_col = "PsFlux"
+        elif "iPsFlux" in df.columns:
+            flux_col = "iPsFlux"
+
         df = (
             df.assign(
                 ra=da.rad2deg(df.coord_ra),
                 dec=da.rad2deg(df.coord_dec),
-                # psfMag=-2.5 * da.log10(df.base_PsfFlux_instFlux),
+                psfMag=-2.5 * da.log10(df[flux_col]),
             )
             .replace(np.inf, np.nan)
             .replace(-np.inf, np.nan)

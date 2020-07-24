@@ -194,7 +194,6 @@ def repartition(
 
 @click.command()
 @click.argument("butler_path")
-@click.argument("dataset")
 @click.argument("destination_path", required=False)
 @click.option("--sample_frac", default=None, type=float, help="sample dataset by fraction [0-1]")
 @click.option("--num_buckets", default=8, help="number of buckets per partition")
@@ -217,15 +216,7 @@ def repartition(
     help="Launches a localcluster instead of slurmcluster, default on local machine",
 )
 def repartition_dataset(
-    butler_path,
-    dataset,
-    destination_path,
-    sample_frac,
-    num_buckets,
-    df_chunk_size,
-    queue,
-    nodes,
-    localcluster,
+    butler_path, destination_path, sample_frac, num_buckets, df_chunk_size, queue, nodes, localcluster,
 ):
     cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
@@ -243,15 +234,28 @@ def repartition_dataset(
 
     print(f"...partitioned data will be written to {destination_path}")
 
-    print(f"...partitioning {dataset}")
-
-    data = DatasetPartitioner(
-        butler_path,
-        destination_path,
-        dataset=dataset,
-        sample_frac=sample_frac,
-        num_buckets=num_buckets,
-        df_chunk_size=df_chunk_size,
+    datasets = (
+        ("sourceTable_visit", ("filter", "visit",),),
+        ("analysisVisitTable", ("filter", "tract", "visit")),
+        ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
+        ("analysisCoaddTable_forced", ("filter", "tract")),
+        ("analysisCoaddTable_unforced", ("filter", "tract")),
+        ("analysisColorTable", ("tract",)),
+        ("objectTable_tract", ("tract",)),
     )
-    data.partition(**partition_kws)
-    data.write_stats()
+
+    for dataset, keys, bucket_by in datasets:
+        print(f"...partitioning {dataset}")
+
+        data = DatasetPartitioner(
+            butler_path,
+            destination_path,
+            dataset=dataset,
+            partition_on=keys,
+            sample_frac=sample_frac,
+            bucket_by=bucket_by,
+            num_buckets=num_buckets,
+            df_chunk_size=df_chunk_size,
+        )
+        data.partition(**partition_kws)
+        data.write_stats()
