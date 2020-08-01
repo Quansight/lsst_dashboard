@@ -168,7 +168,7 @@ class DatasetPartitioner(object):
             .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
-        df = df.sort_index(axis=1)
+        df = df[sorted(df.columns)]
 
         if self.categories:
             df = df.categorize(columns=self.categories)
