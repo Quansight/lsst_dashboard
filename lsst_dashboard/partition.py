@@ -171,6 +171,9 @@ class DatasetPartitioner(object):
         if self.categories:
             df = df.categorize(columns=self.categories)
 
+        # Drop duplicate column names
+        df = df.loc[:, ~df.columns.duplicated()]
+
         return df
 
     def get_metric_columns(self):
@@ -194,7 +197,6 @@ class DatasetPartitioner(object):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             df = delayed(pd.DataFrame.sort_index)(df, axis=1)
-            df = delayed(df.loc[:, ~df.columns.duplicated()])
             yield df
 
     def get_df(self, dataIds, filenames, msg=None):
@@ -246,9 +248,6 @@ class DatasetPartitioner(object):
                 print(
                     f"... ...ktk repartitioning {self.dataset} (chunk {i + 1}; {n_cols} colums, {n_rows} rows)"
                 )
-                import pdb
-
-                pdb.set_trace()
                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
                 graph.compute()
 
