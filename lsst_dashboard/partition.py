@@ -240,7 +240,11 @@ class DatasetPartitioner(object):
         """
         for i, df in enumerate(self.iter_df_chunks(chunk_dfs=chunk_dfs)):
             if df is not None:
-                print(f"... ...ktk repartitioning {self.dataset} (chunk {i + 1})")
+                n_cols = len(df.columns)
+                n_rows = len(df)
+                print(
+                    f"... ...ktk repartitioning {self.dataset} (chunk {i + 1}; {n_cols} colums, {n_rows} rows)"
+                )
                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
                 graph.compute()
 
