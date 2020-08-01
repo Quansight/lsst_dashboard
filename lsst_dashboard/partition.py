@@ -192,8 +192,9 @@ class DatasetPartitioner(object):
             desc = f"Building dask dataframe for {self.dataset} ({msg})"
         for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
-            df = delayed(pd.DataFrame.assign)(df, **{k: v for k, v in dataId.items() if k not in df.columns})
+            df = delayed(pd.DataFrame.assign)(df, **dataId)
             df = delayed(pd.DataFrame.sort_index)(df, axis=1)
+            df = delayed(df.loc[:, ~df.columns.duplicated()])
             yield df
 
     def get_df(self, dataIds, filenames, msg=None):
