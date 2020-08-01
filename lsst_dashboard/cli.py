@@ -232,11 +232,11 @@ def repartition_dataset(
     print(f"...partitioned data will be written to {destination_path}")
 
     datasets = (
+        ("analysisCoaddTable_forced", ("filter", "tract")),
+        ("analysisCoaddTable_unforced", ("filter", "tract")),
         ("sourceTable_visit", ("filter", "visit",)),
         ("analysisVisitTable", ("filter", "tract", "visit")),
         # ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
-        ("analysisCoaddTable_forced", ("filter", "tract")),
-        ("analysisCoaddTable_unforced", ("filter", "tract")),
         ("analysisColorTable", ("tract",)),
         ("objectTable_tract", ("tract",)),
     )

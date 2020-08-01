@@ -168,8 +168,6 @@ class DatasetPartitioner(object):
             .rename(columns={"patchId": "patch", "ccdId": "ccd"})
         )
 
-        df = df[sorted(df.columns)]
-
         if self.categories:
             df = df.categorize(columns=self.categories)
 
@@ -195,6 +193,7 @@ class DatasetPartitioner(object):
         for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
+            df = delayed(pd.DataFrame.sort_index)(df, axis=1)
             yield df
 
     def get_df(self, dataIds, filenames, msg=None):
