@@ -245,6 +245,9 @@ class DatasetPartitioner(object):
                 print(
                     f"... ...ktk repartitioning {self.dataset} (chunk {i + 1}; {n_cols} colums, {n_rows} rows)"
                 )
+                import pdb
+
+                pdb.set_trace()
                 graph = update_dataset_from_ddf(df, **self.ktk_kwargs)
                 graph.compute()
 
