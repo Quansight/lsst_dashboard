@@ -232,7 +232,7 @@ def repartition_dataset(
     print(f"...partitioned data will be written to {destination_path}")
 
     datasets = (
-        ("objectTable", ("tract"),  # don't partition on patch
+        ("objectTable", ("tract",),  # don't partition on patch
         ("analysisCoaddTable_forced", ("filter", "tract")),
         ("analysisCoaddTable_unforced", ("filter", "tract")),
         ("sourceTable_visit", ("filter", "visit",)),
