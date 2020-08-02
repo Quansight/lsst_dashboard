@@ -220,7 +220,12 @@ def repartition_dataset(
     print(f"Waiting for at least one worker")
     client.wait_for_workers(1)
 
-    from lsst_dashboard.partition import DatasetPartitioner
+    from lsst_dashboard.partition import (
+        DatasetPartitioner,
+        CoaddForcedPartitioner,
+        CoaddUnforcedPartitioner,
+        VisitAnalysisPartitioner,
+    )
 
     if destination_path is None:
         destination_path = f"{butler_path}/ktk"
@@ -241,6 +246,8 @@ def repartition_dataset(
         ("analysisColorTable", ("tract",)),
     )
 
+    partitioners = []
+
     for dataset, keys in datasets:
         print(f"...partitioning {dataset}")
 
@@ -253,5 +260,13 @@ def repartition_dataset(
             num_buckets=num_buckets,
             df_chunk_size=df_chunk_size,
         )
+
+        partitioners.append(data)
+
+    partitioners.append(VisitAnalysisPartitioner(butler_path, destination_path))
+    partitioners.append(CoaddForcedPartitioner(butler_path, destination_path))
+    partitioners.append(CoaddUnforcedPartitioner(butler_path, destination_path))
+
+    for data in partitioners:
         data.partition(**partition_kws)
         data.write_stats()

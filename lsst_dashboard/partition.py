@@ -63,12 +63,14 @@ class DatasetPartitioner(object):
     _default_dataset = None
     _default_df_chunk_size = 20
 
+    _default_partition_on = ("filter", "tract")
+
     def __init__(
         self,
         butlerpath,
         destination=None,
         dataset=None,
-        partition_on=("filter", "tract"),
+        partition_on=None,
         bucket_by="psfMag",
         categories=None,
         engine="pyarrow",
@@ -82,7 +84,10 @@ class DatasetPartitioner(object):
             dataset = self._default_dataset
 
         self.dataset = dataset
-        self.partition_on = partition_on
+
+        if partition_on is None:
+            self.partition_on = self._default_partition_on
+
         self.bucket_by = bucket_by
         self.categories = categories
 
@@ -322,11 +327,19 @@ class DatasetPartitioner(object):
         return pd.read_parquet(self.stats_path, columns=columns)
 
 
-class CoaddForcedPartitioner(DatasetPartitioner):
+class PipeAnalysisPartitioner(DatasetPartitioner):
+    def get_columns(self):
+        return list(
+            set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
+        )
+
+
+class CoaddForcedPartitioner(PipeAnalysisPartitioner):
     _default_dataset = "analysisCoaddTable_forced"
+    _default_partition_on = ("filter", "tract")
 
 
-class CoaddUnforcedPartitioner(DatasetPartitioner):
+class CoaddUnforcedPartitioner(PipeAnalysisPartitioner):
     _default_dataset = "analysisCoaddTable_unforced"
 
     def get_metric_columns(self):
@@ -340,12 +353,10 @@ class CoaddUnforcedPartitioner(DatasetPartitioner):
         )
 
 
-class VisitPartitioner(DatasetPartitioner):
-    partition_on = ("filter", "tract", "visit")
-    categories = None  # ["filter", "tract"] Some visit datasets are erroring on categorization
-    bucket_by = "ccd"
+class VisitAnalysisPartitioner(PipeAnalysisPartitioner):
+    _default_partition_on = ("filter", "tract", "visit")
     _default_dataset = "analysisVisitTable"
-    _default_df_chunk_size = 80
+    # _default_df_chunk_size = 80
 
     def get_metric_columns(self):
         return list(
@@ -359,8 +370,7 @@ class VisitPartitioner(DatasetPartitioner):
         )
 
     def get_columns(self):
-        return None
-        # return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
+        return super().get_columns() + ["ccdId", "filter", "tract", "visit"]
 
 
 def describe_dataId(
