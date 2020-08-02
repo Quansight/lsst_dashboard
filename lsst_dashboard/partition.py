@@ -86,7 +86,8 @@ class DatasetPartitioner(object):
         self.dataset = dataset
 
         if partition_on is None:
-            self.partition_on = self._default_partition_on
+            partition_on = self._default_partition_on
+        self.partition_on = partition_on
 
         self.bucket_by = bucket_by
         self.categories = categories
