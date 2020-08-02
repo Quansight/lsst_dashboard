@@ -203,6 +203,7 @@ class DatasetPartitioner(object):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             df = delayed(pd.DataFrame.sort_index)(df, axis=1)
+            df = delayed(pd.DataFrame.astype)(df, df.dtypes.to_dict())  # normalize types
             yield df
 
     def get_df(self, dataIds, filenames, msg=None):

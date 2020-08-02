@@ -249,8 +249,6 @@ def repartition_dataset(
     partitioners = []
 
     for dataset, keys in datasets:
-        print(f"...partitioning {dataset}")
-
         data = DatasetPartitioner(
             butler_path,
             destination_path,
@@ -268,5 +266,7 @@ def repartition_dataset(
     partitioners.append(CoaddUnforcedPartitioner(butler_path, destination_path))
 
     for data in partitioners:
+        print(f"...partitioning {data.dataset}")
+
         data.partition(**partition_kws)
         data.write_stats()
