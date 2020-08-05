@@ -12,6 +12,30 @@ from tqdm import tqdm
 
 from lsst.daf.persistence import Butler
 
+NULL_VALUE = {
+    np.dtype("bool"): True,
+    np.dtype("int32"): 0,
+    np.dtype("int64"): 0,
+    np.dtype("float32"): np.nan,
+    np.dtype("float64"): np.nan,
+}
+
+
+def fix_dtypes(df, target_dtypes):
+    if all(df.dtypes == target_dtypes):
+        return df
+    else:
+        cols_to_fix = []
+        df_new = df.copy()
+        for c in df_new.columns:
+            if df_new[c].dtype == target_dtypes[c]:
+                continue
+            else:
+                target_dtype = target_dtypes[c]
+                df_new.loc[df_new[c].isnull(), c] = NULL_VALUE[target_dtype]
+                df_new[c] = df_new[c].astype(target_dtype)
+        return df_new
+
 
 def get_metrics():
     return [
@@ -79,7 +103,11 @@ class DatasetPartitioner(object):
         df_chunk_size=None,
     ):
 
-        self._butler = Butler(butlerpath)
+        if isinstance(butlerpath, Butler):
+            self._butler = butlerpath
+        else:
+            self._butler = Butler(butlerpath)
+
         if dataset is None:
             dataset = self._default_dataset
 
@@ -199,11 +227,22 @@ class DatasetPartitioner(object):
             desc = f"Building dask dataframe for {self.dataset}"
         else:
             desc = f"Building dask dataframe for {self.dataset} ({msg})"
+
+        target_dtypes = None
         for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
+            # Establish dtype standard from first dataframe
+            if target_dtypes is None:
+                first_df = (
+                    pd.read_parquet(filename, columns=columns, engine=self.engine)
+                    .assign(**dataId)
+                    .sort_index(axis=1)
+                )
+                target_dtypes = first_df.dtypes
+
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             df = delayed(pd.DataFrame.sort_index)(df, axis=1)
-            df = delayed(pd.DataFrame.astype)(df, df.dtypes.to_dict())  # normalize types
+            df = delayed(fix_dtypes)(df, target_dtypes)
             yield df
 
     def get_df(self, dataIds, filenames, msg=None):

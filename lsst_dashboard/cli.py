@@ -246,11 +246,15 @@ def repartition_dataset(
         ("analysisColorTable", ("tract",)),
     )
 
+    from lsst.daf.persistence import Butler
+
+    butler = Butler(butler_path)
+
     partitioners = []
 
     for dataset, keys in datasets:
         data = DatasetPartitioner(
-            butler_path,
+            butler,
             destination_path,
             dataset=dataset,
             partition_on=keys,
@@ -261,9 +265,10 @@ def repartition_dataset(
 
         partitioners.append(data)
 
-    partitioners.append(VisitAnalysisPartitioner(butler_path, destination_path))
-    partitioners.append(CoaddForcedPartitioner(butler_path, destination_path))
-    partitioners.append(CoaddUnforcedPartitioner(butler_path, destination_path))
+    # These ones have column subsets.
+    partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
+    partitioners.append(CoaddForcedPartitioner(butler, destination_path))
+    partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
 
     for data in partitioners:
         print(f"...partitioning {data.dataset}")
