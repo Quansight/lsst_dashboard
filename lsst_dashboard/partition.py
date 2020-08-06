@@ -18,6 +18,7 @@ NULL_VALUE = {
     np.dtype("int64"): 0,
     np.dtype("float32"): np.nan,
     np.dtype("float64"): np.nan,
+    np.dtype("O"): np.nan,
 }
 
 
