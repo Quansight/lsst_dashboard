@@ -22,12 +22,12 @@ NULL_VALUE = {
 }
 
 
-def fix_dtypes(df, target_dtypes):
+def fix_dtypes(df, target_dtypes, test_col="coord_ra"):
     if all(df.dtypes == target_dtypes):
         return df
     else:
         cols_to_fix = []
-        df_new = df.copy()
+        df_new = df.dropna(subset=[test_col])  # get rid if necessary col is nan
         for c in df_new.columns:
             if df_new[c].dtype == target_dtypes[c]:
                 continue
