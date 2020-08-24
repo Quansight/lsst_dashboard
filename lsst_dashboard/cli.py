@@ -237,10 +237,10 @@ def repartition_dataset(
     print(f"...partitioned data will be written to {destination_path}")
 
     datasets = (
-        # ("objectTable", ("tract",)),  # don't partition on patch
-        # # ("sourceTable_visit", ("filter", "visit",)),
-        # # ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
-        # ("analysisColorTable", ("tract",)),
+        ("objectTable", ("tract",)),  # don't partition on patch
+        # ("sourceTable_visit", ("filter", "visit",)),
+        # ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
+        ("analysisColorTable", ("tract",)),
     )
 
     from lsst.daf.persistence import Butler
