@@ -238,8 +238,8 @@ def repartition_dataset(
 
     datasets = (
         ("objectTable", ("tract",)),  # don't partition on patch
-        # ("sourceTable_visit", ("filter", "visit",)),
-        # ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
+        ("sourceTable_visit", ("filter", "visit",)),
+        ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
         ("analysisColorTable", ("tract",)),
     )
 
