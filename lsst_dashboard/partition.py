@@ -286,7 +286,7 @@ class DatasetPartitioner(object):
         #     set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         # )
 
-    def infer_target_dtypes(self, filenames, columns=None):
+    def infer_target_dtypes(self, filenames, dataId, columns=None):
 
         # Find file with the most common schema
         schemas, fnames, counts = count_schemas(filenames, columns=columns)
@@ -306,7 +306,7 @@ class DatasetPartitioner(object):
         else:
             desc = f"Building dask dataframe for {self.dataset} ({msg})"
 
-        target_dtypes = self.infer_target_dtypes(filenames, columns=columns)
+        target_dtypes = self.infer_target_dtypes(filenames, dataIds[0], columns=columns)
         for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
