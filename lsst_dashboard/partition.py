@@ -7,6 +7,7 @@ from storefact import get_store_from_url
 from functools import partial
 import pandas as pd
 import numpy as np
+import pyarrow.parquet as pq
 import dask.dataframe as dd
 import dask.array as da
 from tqdm import tqdm
