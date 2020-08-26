@@ -1,5 +1,6 @@
 import distributed
 from dask import delayed
+from pandas.testing import assert_series_equal
 from kartothek.io.dask.dataframe import update_dataset_from_ddf, read_dataset_as_ddf
 from kartothek.io.eager import read_dataset_as_dataframes
 from storefact import get_store_from_url
@@ -20,6 +21,67 @@ NULL_VALUE = {
     np.dtype("float64"): np.nan,
     np.dtype("O"): np.nan,
 }
+
+DTYPE_MAP = {
+    "DOUBLE": "float64",
+    "FLOAT": "float32",
+    "INT64": "int64",
+    "BOOLEAN": "bool",
+    "INT32": "int32",
+    "BYTE_ARRAY": "object",
+}
+
+
+def get_dtypes(filename, dtype_map=DTYPE_MAP, columns=None, skip_columns=None):
+    schema = pq.ParquetFile(filename).schema
+    if columns is None:
+        columns = schema.names
+    if skip_columns is None:
+        skip_columns = ["id"]
+    dtypes = pd.Series({x.name: dtype_map[x.physical_type] for x in schema if x.name != "id"})
+    dtypes.index.name = "column"
+    return dtypes.sort_index()
+
+
+def dtypes_identical(dtypes1, dtypes2, debug=False):
+    try:
+        assert_series_equal(dtypes1, dtypes2)
+        return True
+    except AssertionError:
+        if debug:
+            bad = dtypes1 != dtypes2
+            print(dtypes1[bad], len(dtypes1))
+            print(dtypes2[bad], len(dtypes2))
+            raise
+        return False
+
+
+def count_schemas(filenames, **kwargs):
+    """Returns list of pandas dtypes series, and corresponding list of occurrences
+    """
+    schemas = []
+    fnames = []
+    counts = []
+    for f in tqdm(filenames, desc="Reading schemas"):
+        #         print(f)
+        dtypes = get_dtypes(f, **kwargs)
+        if not schemas:
+            schemas.append(dtypes)
+            fnames.append(f)
+            counts.append(1)
+        else:
+            found = False
+            for i, dt in enumerate(schemas):
+                if dtypes_identical(dtypes, dt):
+                    counts[i] += 1
+                    found = True
+                    break
+            if not found:
+                schemas.append(dtypes)
+                fnames.append(f)
+                counts.append(1)
+
+    return schemas, fnames, counts
 
 
 def fix_dtypes(df, target_dtypes, test_col="coord_ra"):
@@ -223,23 +285,28 @@ class DatasetPartitioner(object):
         #     set(self.get_metric_columns() + self.get_flag_columns() + ["coord_ra", "coord_dec", "patchId"])
         # )
 
+    def infer_target_dtypes(self, filenames, columns=None):
+
+        # Find file with the most common schema
+        schemas, fnames, counts = count_schemas(filenames, columns=columns)
+        filename = fnames[np.argmax(counts)]
+
+        df = (
+            pd.read_parquet(filename, columns=columns, engine=self.engine)
+            .assign(**dataId)
+            .sort_index(axis=1)
+        )
+
+        return df.dtypes
+
     def df_generator(self, dataIds, filenames, columns, msg=None):
         if msg is None:
             desc = f"Building dask dataframe for {self.dataset}"
         else:
             desc = f"Building dask dataframe for {self.dataset} ({msg})"
 
-        target_dtypes = None
+        target_dtypes = self.infer_target_dtypes(filenames, columns=columns)
         for filename, dataId in tqdm(zip(filenames, dataIds), desc=desc, total=len(dataIds),):
-            # Establish dtype standard from first dataframe
-            if target_dtypes is None:
-                first_df = (
-                    pd.read_parquet(filename, columns=columns, engine=self.engine)
-                    .assign(**dataId)
-                    .sort_index(axis=1)
-                )
-                target_dtypes = first_df.dtypes
-
             df = delayed(pd.read_parquet(filename, columns=columns, engine=self.engine))
             df = delayed(pd.DataFrame.assign)(df, **dataId)
             df = delayed(pd.DataFrame.sort_index)(df, axis=1)
