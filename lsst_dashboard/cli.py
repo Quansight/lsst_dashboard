@@ -263,9 +263,9 @@ def repartition_dataset(
         partitioners.append(data)
 
     # These ones have column subsets.
-    partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
-    partitioners.append(CoaddForcedPartitioner(butler, destination_path))
-    partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
+    # partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
+    # partitioners.append(CoaddForcedPartitioner(butler, destination_path))
+    # partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
 
     for data in partitioners:
         print(f"...partitioning {data.dataset}")
