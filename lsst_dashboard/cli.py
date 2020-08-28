@@ -212,6 +212,7 @@ def repartition(
     help="Launches a localcluster instead of slurmcluster, default on local machine",
 )
 @click.option("--do_pipe_analysis", is_flag=True, help="If set, then partition the pipe_analysis datasets.")
+@click.option("--pipe_analysis_only", is_flag=True, help="If set, then *only* do pipe_analysis datasets.")
 def repartition_dataset(
     butler_path,
     destination_path,
@@ -245,10 +246,13 @@ def repartition_dataset(
 
     print(f"...partitioned data will be written to {destination_path}")
 
-    datasets = (
-        ("objectTable", ("tract",)),  # don't partition on patch
-        ("sourceTable_visit", ("filter", "visit",)),
-    )
+    if pipe_analysis_only:
+        datasets = tuple()
+    else:
+        datasets = (
+            ("objectTable", ("tract",)),  # don't partition on patch
+            ("sourceTable_visit", ("filter", "visit",)),
+        )
 
     if do_pipe_analysis:
         datasets += (("analysisVisitTable_commonZp", ("filter", "tract", "visit")),)(
