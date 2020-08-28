@@ -258,8 +258,9 @@ def repartition_dataset(
         )
 
     if not skip_pipe_analysis:
-        datasets += (("analysisVisitTable_commonZp", ("filter", "tract", "visit")),)(
-            "analysisColorTable", ("tract",)
+        datasets += (
+            ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
+            ("analysisColorTable", ("tract",)),
         )
 
     from lsst.daf.persistence import Butler
