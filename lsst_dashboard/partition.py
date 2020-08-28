@@ -356,6 +356,9 @@ class DatasetPartitioner(object):
     def partition(self, chunk_dfs=False):
         """Write partitioned dataset using kartothek
         """
+        if len(self.filenames) == 0:
+            return
+
         for i, df in enumerate(self.iter_df_chunks(chunk_dfs=chunk_dfs)):
             if df is not None:
                 n_cols = len(df.columns)
