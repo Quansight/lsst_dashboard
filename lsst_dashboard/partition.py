@@ -430,6 +430,9 @@ class DatasetPartitioner(object):
         return pd.concat(dfs, sort=True)
 
     def write_stats(self, dataIds=None):
+        if len(self.filenames) == 0:
+            return
+
         stats = self.compute_stats(dataIds=dataIds)
         stats.to_parquet(self.stats_path)
 
