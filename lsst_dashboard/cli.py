@@ -222,7 +222,7 @@ def repartition_dataset(
     queue,
     nodes,
     localcluster,
-    do_pipe_analysis,
+    pipe_analysis_only,
 ):
     cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
