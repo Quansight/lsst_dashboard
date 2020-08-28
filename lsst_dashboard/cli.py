@@ -211,8 +211,10 @@ def repartition(
     is_flag=True,
     help="Launches a localcluster instead of slurmcluster, default on local machine",
 )
-@click.option("--do_pipe_analysis", is_flag=True, help="If set, then partition the pipe_analysis datasets.")
-@click.option("--pipe_analysis_only", is_flag=True, help="If set, then *only* do pipe_analysis datasets.")
+@click.option("--skip_pipe_analysis", is_flag=True, help="If set, then skip the pipe_analysis datasets.")
+@click.option(
+    "--skip_object_tables", is_flag=True, help="If set, then skip objectTable and sourceTable_visit"
+)
 def repartition_dataset(
     butler_path,
     destination_path,
@@ -222,8 +224,8 @@ def repartition_dataset(
     queue,
     nodes,
     localcluster,
-    do_pipe_analysis,
-    pipe_analysis_only,
+    skip_pipe_analysis,
+    skip_object_tables,
 ):
     cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
@@ -247,7 +249,7 @@ def repartition_dataset(
 
     print(f"...partitioned data will be written to {destination_path}")
 
-    if pipe_analysis_only:
+    if skip_object_tables:
         datasets = tuple()
     else:
         datasets = (
@@ -255,7 +257,7 @@ def repartition_dataset(
             ("sourceTable_visit", ("filter", "visit",)),
         )
 
-    if do_pipe_analysis:
+    if not skip_pipe_analysis:
         datasets += (("analysisVisitTable_commonZp", ("filter", "tract", "visit")),)(
             "analysisColorTable", ("tract",)
         )
@@ -280,7 +282,7 @@ def repartition_dataset(
         partitioners.append(data)
 
     # These ones have column subsets.
-    if do_pipe_analysis:
+    if not skip_pipe_analysis:
         partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
         partitioners.append(CoaddForcedPartitioner(butler, destination_path))
         partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
