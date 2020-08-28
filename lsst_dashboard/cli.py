@@ -63,7 +63,7 @@ def launch_dask_cluster(queue, nodes, localcluster):
             queue=queue,
             cores=24,
             processes=procs_per_node,
-            memory="128GB",
+            memory="112GB",
             walltime=walltime,
             scheduler_options={"port": scheduler_port, "dashboard_address": f":{dask_dashboard_port}"},
             extra=[f'--worker-port {":".join(str(p) for p in DASK_ALLOWED_PORTS)}'],
