@@ -211,8 +211,17 @@ def repartition(
     is_flag=True,
     help="Launches a localcluster instead of slurmcluster, default on local machine",
 )
+@click.option("--do_pipe_analysis", is_flag=True, help="If set, then partition the pipe_analysis datasets.")
 def repartition_dataset(
-    butler_path, destination_path, sample_frac, num_buckets, df_chunk_size, queue, nodes, localcluster,
+    butler_path,
+    destination_path,
+    sample_frac,
+    num_buckets,
+    df_chunk_size,
+    queue,
+    nodes,
+    localcluster,
+    do_pipe_analysis,
 ):
     cluster, _ = launch_dask_cluster(queue, nodes, localcluster)
     client = Client(cluster)
@@ -239,9 +248,12 @@ def repartition_dataset(
     datasets = (
         ("objectTable", ("tract",)),  # don't partition on patch
         ("sourceTable_visit", ("filter", "visit",)),
-        ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
-        ("analysisColorTable", ("tract",)),
     )
+
+    if do_pipe_analysis:
+        datasets += (("analysisVisitTable_commonZp", ("filter", "tract", "visit")),)(
+            "analysisColorTable", ("tract",)
+        )
 
     from lsst.daf.persistence import Butler
 
@@ -263,9 +275,10 @@ def repartition_dataset(
         partitioners.append(data)
 
     # These ones have column subsets.
-    # partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
-    # partitioners.append(CoaddForcedPartitioner(butler, destination_path))
-    # partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
+    if do_pipe_analysis:
+        partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
+        partitioners.append(CoaddForcedPartitioner(butler, destination_path))
+        partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
 
     for data in partitioners:
         print(f"...partitioning {data.dataset}")
