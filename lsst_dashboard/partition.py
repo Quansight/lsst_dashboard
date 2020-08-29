@@ -503,10 +503,13 @@ def describe_dataId(
         columns={"table": columns},
     )
 
-    df = read_dataset_as_dataframes(**ktk_kwargs)[0]["table"]
-    return (
-        df.replace(np.inf, np.nan)
-        .replace(-np.inf, np.nan)
-        .dropna(how="any")
-        .describe(percentiles=percentiles)
-    )
+    try:
+        df = read_dataset_as_dataframes(**ktk_kwargs)[0]["table"]
+        return (
+            df.replace(np.inf, np.nan)
+            .replace(-np.inf, np.nan)
+            .dropna(how="any")
+            .describe(percentiles=percentiles)
+        )
+    except IndexError:
+        return pd.DataFrame()
