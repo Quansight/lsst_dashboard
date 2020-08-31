@@ -6,7 +6,7 @@ import panel as pn
 
 def visits_plot(dsets_visits, filters_to_metrics, filt, errors=[], statistic="mean", selections={}):
     metrics = filters_to_metrics[filt]
-    dset_filt = dsets_visits.loc[filt, :, :, statsitic].reset_index(drop=True)
+    dset_filt = dsets_visits.loc[filt, :, :, statistc].reset_index(drop=True)
     # there is one value per tract, take the median
     del dset_filt["visit"]
     dset_filt = dset_filt.groupby("visit").median().sort_index()
