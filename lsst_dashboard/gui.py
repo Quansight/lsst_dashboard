@@ -746,6 +746,7 @@ class QuickLookComponent(Component):
                     msg = msg.format(" ".join(errors))
                     self.add_status_message("Visits Plot Warning", msg, level="error", duration=10)
             except Exception as e:
+                raise
                 self.add_message_from_error("Visits Plot Error", "", e)
 
             self.plot_top = top_plot
