@@ -284,9 +284,9 @@ def repartition_dataset(
 
     # These ones have column subsets.
     if not skip_pipe_analysis:
-        partitioners.append(VisitAnalysisPartitioner(butler, destination_path))
-        partitioners.append(CoaddForcedPartitioner(butler, destination_path))
-        partitioners.append(CoaddUnforcedPartitioner(butler, destination_path))
+        partitioners.append(VisitAnalysisPartitioner(butler, destination_path, sample_frac=sample_frac))
+        partitioners.append(CoaddForcedPartitioner(butler, destination_path, sample_frac=sample_frac))
+        partitioners.append(CoaddUnforcedPartitioner(butler, destination_path, sample_frac=sample_frac))
 
     for data in partitioners:
         print(f"...partitioning {data.dataset}")
