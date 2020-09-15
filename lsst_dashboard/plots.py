@@ -90,13 +90,17 @@ class Selection(Selection1D):
 
 
 class SelectionCallback(Selection1DCallback):
+
     def _process_msg(self, msg):
         msg = super()._process_msg(msg)
         if "index" in msg:
             el = self.plot.current_frame
             stream = self.streams[0]
-            if len(msg["index"]):
-                selection = el.data.iloc[msg["index"]]
+            if len(msg['index']):
+                if el.interface.datatype == 'dask':
+                    selection = el.data.compute().iloc[msg['index']]
+                else:
+                    selection = el.data.iloc[msg['index']]
                 dim = el.get_dimension(stream.dimension)
                 msg["values"] = list(selection[dim.name])
             else:
@@ -383,6 +387,9 @@ class scattersky(ParameterizedFunction):
         Whether to show the table next to the plots.""",
     )
 
+    select_callback = param.Callable(default=None, doc="""
+        Callback to run when individual skattersky point is selected.""")
+
     sky_range_stream = param.ClassSelector(default=None, class_=RangeXY)
 
     scatter_range_stream = param.ClassSelector(default=None, class_=RangeXY)
@@ -509,6 +516,11 @@ class scattersky(ParameterizedFunction):
             )
         )
 
+        # Select
+        if self.p.select_callback:
+            selection = Selection(dimension=0, source=sky_pts)
+            selection.add_subscriber(self.p.select_callback)
+
         raw_scatterpts = filterpoints(dset, xdim=self.p.xdim, ydim=self.p.ydim)
         raw_scatter = datashade(
             raw_scatterpts,
@@ -542,7 +554,7 @@ class scattersky(ParameterizedFunction):
         return layout.opts(
             opts.Image(colorbar=True, responsive=True, tools=["box_select", "hover"]),
             opts.Layout(sizing_mode="stretch_width"),
-            opts.Points(color=self.p.ydim, tools=["hover"]),
+            opts.Points(color=self.p.ydim, tools=["hover", "tap"]),
             opts.RGB(alpha=0.5),
             opts.Table(width=200),
         )
