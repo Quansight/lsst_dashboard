@@ -30,11 +30,14 @@ def visits_plot_per_filter(dsets_filter, metrics, filt, statistic, errors=[], se
             df = dsets_filter[metric].reset_index()
             col_stat = f"{metric}_{statistic}"
             df.rename(columns={metric: col_stat}, inplace=True)
-            plot_metric = visits_plot_per_metric(df, "visit", col_stat, [col_stat, "visit"], filt=filt)
+            plot_metric = visits_plot_per_metric(df, 'visit',  col_stat,
+                                                 [col_stat, 'visit'],
+                                                 filt=filt)
             if (filt, metric) in selections:
                 stream = selections[(filt, metric)]
-                stream.source = plot_metric.get(1)
-                if stream.index:
+                plot = plot_metric.get(1)
+                stream.source = plot
+                if stream.index and plot is not None:
                     plot_metric.get(1).opts(selected=stream.index)
             plot_all = plot_all * plot_metric if plot_all else plot_metric
         except:

@@ -789,6 +789,7 @@ class QuickLookComponent(Component):
                     filter_stream=filter_stream,
                     ra_sampling=skyplot_sampling,
                     dec_sampling=skyplot_sampling,
+                    select_callback=self._load_postage_stamp
                 )
                 plots_list.append((metric, plots_ss))
             detail_plots[filt].extend([p for m, p in plots_list])
@@ -800,6 +801,9 @@ class QuickLookComponent(Component):
         self.update_display()
         self.update_info_counts()
         self._switch_view_mode()
+
+    def _load_postage_stamp(self, index, values):
+        print(index, values)
 
     def _update_detail_plots(self):
         tabs = []
